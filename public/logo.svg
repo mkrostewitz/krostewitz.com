@@ -1,0 +1,17 @@
+<svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="256" height="256" rx="28" fill="#020617" />
+
+  <!-- MK -->
+  <text
+    x="50%" y="50%"
+    text-anchor="middle"
+    dominant-baseline="central"
+    font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+    font-weight="800"
+    font-size="120"
+  >
+    <tspan fill="#22D3EE">M</tspan>
+    <tspan dx="-30" fill="#6366F1">K</tspan>
+  </text>
+</svg>

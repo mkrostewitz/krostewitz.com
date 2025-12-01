@@ -1,0 +1,28 @@
+<svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="borderGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#22D3EE"/>
+      <stop offset="100%" stop-color="#6366F1"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Card-style background -->
+  <rect width="256" height="256" rx="28" fill="#020617" />
+  <!-- Gradient border (inner stroke) -->
+  <rect x="8" y="8" width="240" height="240" rx="24"
+        fill="none" stroke="url(#borderGrad)" stroke-width="4" opacity="0.7"/>
+
+  <!-- MK -->
+  <text
+    x="50%" y="50%"
+    text-anchor="middle"
+    dominant-baseline="central"
+    font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+    font-weight="800"
+    font-size="112"
+    fill="#E5E7EB"
+  >
+    <tspan>M</tspan>
+    <tspan dx="-28">K</tspan>
+  </text>
+</svg>
