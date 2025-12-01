@@ -15,6 +15,9 @@ const ContactSection = () => {
   const [pendingEmail, setPendingEmail] = useState("");
   const [pendingName, setPendingName] = useState("");
   const [apiMessage, setApiMessage] = useState(null);
+  const logApiError = (endpoint, res, data) => {
+    console.warn("Contact API error", {endpoint, status: res.status, data});
+  };
 
   const contactSchema = useMemo(
     () =>
@@ -86,6 +89,7 @@ const ContactSection = () => {
 
                 const data = await res.json().catch(() => ({}));
                 if (!res.ok) {
+                  logApiError("/api/contact", res, data);
                   const message =
                     (data.errorCode && t(data.errorCode)) ||
                     data.error ||
@@ -198,6 +202,7 @@ const ContactSection = () => {
                 const data = await res.json().catch(() => ({}));
 
                 if (!res.ok) {
+                  logApiError("/api/contact/verify", res, data);
                   const message =
                     (data.errorCode && t(data.errorCode)) ||
                     data.error ||
