@@ -1,0 +1,40 @@
+.skills {
+  display: grid;
+  gap: 12px;
+}
+
+.skill {
+  background: rgba(255, 255, 255, 0.02);
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.skillTop {
+  display: flex;
+  justify-content: space-between;
+  color: #d9e4ff;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.skillBar {
+  height: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.skillFill {
+  height: 100%;
+  background: linear-gradient(90deg, #7c5cff, #4fd1c5);
+  border-radius: 999px;
+  width: 0;
+  animation: growBar 1.2s ease forwards;
+}
+
+@keyframes growBar {
+  to {
+    width: var(--target);
+  }
+}

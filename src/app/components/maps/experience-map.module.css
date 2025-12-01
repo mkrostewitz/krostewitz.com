@@ -1,0 +1,47 @@
+.mapShell {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+.map {
+  width: 100%;
+  height: 360px;
+}
+
+.mapLegend {
+  display: flex;
+  gap: 18px;
+  padding: 12px 14px;
+  background: rgba(0, 0, 0, 0.35);
+  color: #e5e7eb;
+  font-weight: 600;
+}
+
+.mapFallback {
+  padding: 24px;
+  color: #e2e8f0;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 14px;
+}
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 8px;
+}
+
+.dotLived {
+  background: #86ffb6;
+}
+
+.dotWorked {
+  background: #7dd2ff;
+}
+
+.dotPartner {
+  background: #f8c36b;
+}

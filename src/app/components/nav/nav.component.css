@@ -1,0 +1,81 @@
+.topBar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 10px 7vw 10px 7vw;
+  /* background: rgba(11, 15, 25, 0.92); */
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.kicker {
+  color: #8af5e6;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  font-size: 0.95rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo {
+  display: inline-block;
+  width: 48px;
+  height: 48px;
+}
+
+.nav {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+}
+
+.nav a {
+  color: #dbeafe;
+  font-weight: 600;
+  font-size: 0.95rem;
+  padding: 10px 14px;
+  border-radius: 12px;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.nav a:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.langSwitch {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.langButton {
+  background: rgba(255, 255, 255, 0.05);
+  color: #cbd5f5;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  transition: all 0.2s ease;
+}
+
+.langButton:hover {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.langActive {
+  background: linear-gradient(135deg, #7c5cff, #4fd1c5);
+  color: #0b0c10;
+  border-color: transparent;
+}

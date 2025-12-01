@@ -1,65 +1,81 @@
-import Image from "next/image";
+"use client";
+
+import {useMemo} from "react";
+import {useTranslation} from "react-i18next";
+
 import styles from "./page.module.css";
+import NavBar from "./components/nav/nav";
+import ExperienceMap from "./components/maps/ExpenrienceMap";
+import ContactSection from "./components/contact/ContactSection";
+import TimelineSection from "./components/timeline/TimelineSection";
+import AboutSection from "./components/about/AboutSection";
+import SkillsSection from "./components/skills/SkillsSection";
+import FoldSection from "./components/fold/FoldSection";
 
 export default function Home() {
+  const {t} = useTranslation();
+
+  const skills = useMemo(
+    () => [
+      {label: t("skills.leadership"), value: 96},
+      {label: t("skills.ops"), value: 94},
+      {label: t("skills.product"), value: 90},
+      {label: t("skills.data"), value: 86},
+    ],
+    [t]
+  );
+
+  const portfolio = t("portfolio", {returnObjects: true});
+
   return (
     <div className={styles.page}>
+      <div className={styles.backgroundGlow} aria-hidden />
+      <NavBar />
+      <FoldSection skills={skills} />
+
       <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className={styles.intro}>
-          <h1>To get started, edit the page.js file.</h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+        <AboutSection />
+
+        <SkillsSection skills={skills} />
+
+        <TimelineSection />
+
+        <section id="portfolio" className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <p className={styles.eyebrow}>{t("nav.portfolio")}</p>
+            <h2>{t("nav.portfolio")}</h2>
+          </div>
+          <div className={styles.cards}>
+            {portfolio.map((item) => (
+              <article key={item.title} className={styles.card}>
+                <div className={styles.cardMeta}>{item.role}</div>
+                <h3>{item.title}</h3>
+                <p>{item.impact}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section id="map" className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <p className={styles.eyebrow}>{t("map.title")}</p>
+            <h2>{t("map.title")}</h2>
+          </div>
+          <ExperienceMap labels={t("map", {returnObjects: true})} />
+        </section>
+
+        <section className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <p className={styles.eyebrow}>{t("backend.title")}</p>
+            <h2>{t("backend.title")}</h2>
+          </div>
+          <div className={styles.backend}>
+            <p>{t("backend.body")}</p>
+            <button className={styles.primary}>{t("backend.cta")}</button>
+          </div>
+        </section>
+
+        <ContactSection />
       </main>
     </div>
   );

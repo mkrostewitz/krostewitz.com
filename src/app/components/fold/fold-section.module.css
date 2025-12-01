@@ -1,0 +1,136 @@
+.hero {
+  position: relative;
+  z-index: 2;
+  padding: 48px 7vw 40px;
+  background: radial-gradient(
+      circle at 70% 10%,
+      rgba(124, 92, 255, 0.1),
+      transparent 38%
+    ),
+    radial-gradient(
+      circle at 10% 20%,
+      rgba(102, 252, 241, 0.1),
+      transparent 26%
+    );
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.heroContent {
+  display: grid;
+  grid-template-columns: minmax(280px, 1.1fr) minmax(260px, 0.9fr);
+  gap: 32px;
+  align-items: center;
+}
+
+.heroText {
+  display: grid;
+  gap: 16px;
+}
+
+.preTitle {
+  color: #8af5e6;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.title {
+  font-size: clamp(2.6rem, 4vw, 3.4rem);
+  color: #ecf4ff;
+  line-height: 1.05;
+}
+
+.subtitle {
+  color: #b9c6e4;
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.metricCard {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 20px;
+  color: #e5e7eb;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.25);
+}
+
+.metricLabel {
+  font-size: 0.95rem;
+  color: #cbd5f5;
+}
+
+.metricValue {
+  font-size: 3.6rem;
+  font-weight: 800;
+  color: #86ffb6;
+  display: flex;
+  align-items: baseline;
+}
+
+.metricSuffix {
+  font-size: 1.4rem;
+  color: #9ae6b4;
+  margin-left: 6px;
+}
+
+.metricBars {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.sparkline {
+  display: grid;
+  grid-auto-flow: column;
+  gap: 6px;
+  align-items: end;
+  height: 60px;
+  width: 160px;
+}
+
+.sparkline span {
+  display: block;
+  width: 8px;
+  background: linear-gradient(180deg, #7c5cff, #4fd1c5);
+  border-radius: 12px;
+  opacity: 0.9;
+}
+
+.metricNote {
+  color: #a5b4fc;
+  font-weight: 600;
+}
+
+.statGrid {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.statGrid p {
+  color: #cbd5f5;
+  font-size: 0.95rem;
+}
+
+.statGrid strong {
+  display: block;
+  font-size: 1.4rem;
+  color: #f8fafc;
+  margin-top: 4px;
+}
+
+@media (max-width: 960px) {
+  .heroContent {
+    grid-template-columns: 1fr;
+  }
+}

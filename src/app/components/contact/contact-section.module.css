@@ -1,0 +1,70 @@
+.contactGrid {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.75fr) minmax(320px, 1.25fr);
+  gap: 18px;
+}
+
+.contactCard {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 16px;
+  border-radius: 16px;
+  color: #dbeafe;
+}
+
+.form {
+  display: grid;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 16px;
+  border-radius: 16px;
+}
+
+.form label {
+  display: grid;
+  gap: 6px;
+  color: #e2e8f0;
+  font-weight: 600;
+}
+
+.form p {
+  color: #e2e8f0;
+}
+
+.form input,
+.form textarea {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(0, 0, 0, 0.35);
+  color: #f8fafc;
+}
+
+.form input:focus,
+.form textarea:focus {
+  outline: 2px solid rgba(124, 92, 255, 0.8);
+}
+
+.error {
+  color: #f6c344;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.success {
+  color: #86ffb6;
+  font-weight: 700;
+}
+
+.actionsRow {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 960px) {
+  .contactGrid {
+    grid-template-columns: 1fr;
+  }
+}
