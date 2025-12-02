@@ -84,7 +84,7 @@
 .metricBars {
   margin-top: 14px;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   gap: 14px;
 }
 
@@ -103,11 +103,6 @@
   background: linear-gradient(180deg, #7c5cff, #4fd1c5);
   border-radius: 12px;
   opacity: 0.9;
-}
-
-.metricNote {
-  color: #a5b4fc;
-  font-weight: 600;
 }
 
 .statGrid {

@@ -8,10 +8,38 @@ mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "";
 const mapRegions = [
   {name: "Germany", iso3: "DEU", status: "lived", center: [10.5, 51.2]},
   {name: "United States", iso3: "USA", status: "lived", center: [-98.6, 39.5]},
-  {name: "China", iso3: "CHN", status: "worked", center: [103.8, 35.7]},
-  {name: "Vietnam", iso3: "VNM", status: "partner", center: [106, 16.2]},
+  {name: "China", iso3: "CHN", status: "lived", center: [103.8, 35.7]},
+  {name: "Hong Kong SAR", iso3: "HKG", status: "lived", center: [114.2, 22.3]},
   {name: "India", iso3: "IND", status: "worked", center: [78.96, 22.1]},
-  {name: "Australia", iso3: "AUS", status: "partner", center: [134, -25.3]},
+  {name: "Mexico", iso3: "MEX", status: "worked", center: [-102, 23.6]},
+  {name: "Thailand", iso3: "THA", status: "worked", center: [100.9925, 15.87]},
+  {
+    name: "Singapore",
+    iso3: "SGP",
+    status: "worked",
+    center: [103.8198, 1.3521],
+  },
+  {name: "Vietnam", iso3: "VNM", status: "worked", center: [108.2772, 14.0583]},
+  {
+    name: "Bangladesh",
+    iso3: "BGD",
+    status: "worked",
+    center: [90.3563, 23.685],
+  },
+  {name: "Japan", iso3: "JPN", status: "worked", center: [138.2529, 36.2048]},
+  {
+    name: "South Korea",
+    iso3: "KOR",
+    status: "worked",
+    center: [127.7669, 35.9078],
+  },
+  {
+    name: "United Arab Emirates",
+    iso3: "ARE",
+    status: "worked",
+    center: [54.3, 23.4],
+  },
+  {name: "Australia", iso3: "AUS", status: "worked", center: [134, -25.3]},
 ];
 
 const regionCodes = mapRegions.reduce(
@@ -20,7 +48,7 @@ const regionCodes = mapRegions.reduce(
     acc[region.status].push(region.iso3);
     return acc;
   },
-  {all: [], lived: [], worked: [], partner: []}
+  {all: [], lived: [], worked: []}
 );
 
 const labelFeatures = {
@@ -100,21 +128,6 @@ const ExperienceMap = ({labels}) => {
         ],
         paint: {
           "fill-color": "#7dd2ff",
-          "fill-opacity": 0.3,
-        },
-      });
-      map.addLayer({
-        id: "partner-fill",
-        type: "fill",
-        source: "country-boundaries",
-        "source-layer": "country_boundaries",
-        filter: [
-          "in",
-          ["get", "iso_3166_1_alpha_3"],
-          ["literal", regionCodes.partner],
-        ],
-        paint: {
-          "fill-color": "#f8c36b",
           "fill-opacity": 0.3,
         },
       });

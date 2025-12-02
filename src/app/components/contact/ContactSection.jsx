@@ -53,24 +53,39 @@ const ContactSection = () => {
 
       <div className={styles.contactGrid}>
         <div className={styles.contactCard}>
-          <h3>{t("meeting")}</h3>
-          <p>{t("hero.subtitle")}</p>
-          <Link
-            className={pageStyles.primary}
-            href="https://koalendar.com/e/meet-with-mathias-krostewitz"
-            target="_blank"
-            rel="noreferrer"
-          >
-            {t("hero.booking")}
-          </Link>
-          <Link
-            href="https://www.linkedin.com/in/mathias-krostewitz"
-            className={pageStyles.secondary}
-            target="_blank"
-            rel="noreferrer"
-          >
-            {t("linkedin")}
-          </Link>
+          <h3>{t("contact.directTitle")}</h3>
+          <p>{t("contact.directNote")}</p>
+          <div className={styles.contactDetails}>
+            <a className={styles.contactLink} href="tel:+16505615752">
+              <span>{t("contact.phoneLabel")}</span>
+              <strong>+1 (650) 561 5752</strong>
+            </a>
+            <a
+              className={styles.contactLink}
+              href="mailto:mathias@krostewitz.com"
+            >
+              <span>{t("contact.emailLabel")}</span>
+              <strong>mathias@krostewitz.com</strong>
+            </a>
+          </div>
+          <div className={styles.contactActions}>
+            <Link
+              className={pageStyles.primary}
+              href="https://koalendar.com/e/meet-with-mathias-krostewitz"
+              target="_blank"
+              rel="noreferrer"
+            >
+              {t("hero.booking")}
+            </Link>
+            <Link
+              href="https://www.linkedin.com/in/mkrostewitz"
+              className={pageStyles.secondary}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {t("linkedin")}
+            </Link>
+          </div>
         </div>
 
         {phase === "form" && (
@@ -118,8 +133,7 @@ const ContactSection = () => {
                 setStatus({
                   state: "error",
                   message:
-                    err.message ||
-                    "Something went wrong. Please try again.",
+                    err.message || "Something went wrong. Please try again.",
                 });
               } finally {
                 setSubmitting(false);
@@ -221,8 +235,7 @@ const ContactSection = () => {
                 setStatus({
                   state: "error",
                   message:
-                    err.message ||
-                    "Something went wrong. Please try again.",
+                    err.message || "Something went wrong. Please try again.",
                 });
               } finally {
                 setSubmitting(false);
@@ -231,9 +244,7 @@ const ContactSection = () => {
           >
             {({isSubmitting, status}) => (
               <Form className={styles.form}>
-                <p>
-                  {t("contact.verifyPrompt", {email: pendingEmail})}
-                </p>
+                <p>{t("contact.verifyPrompt", {email: pendingEmail})}</p>
                 <label>
                   {t("contact.verifyCodeLabel")}
                   <Field

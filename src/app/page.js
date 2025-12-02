@@ -11,16 +11,17 @@ import TimelineSection from "./components/timeline/TimelineSection";
 import AboutSection from "./components/about/AboutSection";
 import SkillsSection from "./components/skills/SkillsSection";
 import FoldSection from "./components/fold/FoldSection";
+import LanguagesSection from "./components/languages/LanguagesSection";
 
 export default function Home() {
   const {t} = useTranslation();
 
   const skills = useMemo(
     () => [
-      {label: t("skills.leadership"), value: 96},
-      {label: t("skills.ops"), value: 94},
-      {label: t("skills.product"), value: 90},
-      {label: t("skills.data"), value: 86},
+      {label: t("skills.leadership"), value: 95},
+      {label: t("skills.ops"), value: 93},
+      {label: t("skills.product"), value: 87},
+      {label: t("skills.data"), value: 92},
     ],
     [t]
   );
@@ -64,16 +65,7 @@ export default function Home() {
           <ExperienceMap labels={t("map", {returnObjects: true})} />
         </section>
 
-        <section className={styles.section}>
-          <div className={styles.sectionHeader}>
-            <p className={styles.eyebrow}>{t("backend.title")}</p>
-            <h2>{t("backend.title")}</h2>
-          </div>
-          <div className={styles.backend}>
-            <p>{t("backend.body")}</p>
-            <button className={styles.primary}>{t("backend.cta")}</button>
-          </div>
-        </section>
+        <LanguagesSection />
 
         <ContactSection />
       </main>

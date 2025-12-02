@@ -1,0 +1,39 @@
+.grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.card {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, #7c5cff, #4fd1c5);
+  color: #0b1020;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.name {
+  margin: 0;
+  color: #f8fafc;
+  font-weight: 700;
+}
+
+.level {
+  margin: 0;
+  color: #cbd5f5;
+  font-size: 0.95rem;
+}

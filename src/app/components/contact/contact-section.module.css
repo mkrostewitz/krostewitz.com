@@ -12,6 +12,37 @@
   color: #dbeafe;
 }
 
+.contactDetails {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.contactLink {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #f8fafc;
+  text-decoration: none;
+}
+
+.contactLink span {
+  font-size: 0.9rem;
+  color: #cbd5e1;
+}
+
+.contactLink strong {
+  font-size: 1.05rem;
+}
+
+.contactActions {
+  display: grid;
+  gap: 10px;
+}
+
 .form {
   display: grid;
   gap: 12px;

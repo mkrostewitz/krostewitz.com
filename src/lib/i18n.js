@@ -6,96 +6,119 @@ export const resources = {
     translation: {
       hero: {
         kicker: "Mathias Krostewitz",
-        title: "Scaling companies with lean, data-driven leadership.",
+        title: "Dynamic, result-driven leader for industrial technology.",
         subtitle:
-          "Former CEO and President building profitable teams across Asia and the US. Now pairing operational rigor with full-stack and AI expertise.",
+          "15+ years starting, growing, and turning around businesses across the US, China, and Europe—pairing commercial rigor with hands-on software builds.",
         booking: "Schedule a call",
         contact: "Contact form",
       },
       nav: {
         about: "About",
-        timeline: "Timeline",
+        timeline: "Experience",
         portfolio: "Portfolio",
         map: "Map",
         contact: "Contact",
       },
       stats: {
-        yearsLeadership: "Years leading global teams",
-        revenuePerHead: "Revenue per head",
-        markets: "Markets launched",
-        product: "Products shipped",
+        yearsLeadership: "Years building global teams",
+        revenuePerHead: "Revenue scaled",
+        markets: "Markets opened",
+        product: "Systems & rollouts",
       },
       about: {
-        headline: "Operator, builder, lifelong learner.",
-        body: "I thrive on turning limited resources into repeatable systems. Over the past decade I have led teams across the US, China, Singapore, and Europe—scaling sales, marketing, and operations while keeping efficiency first. Alongside executive roles, I completed MIT's Full Stack program (MERN) and am continuing at MIT in Data Science and AI.",
+        headline: "Growth operator for automation and industrial tech.",
+        body: "I challenge the status quo, build efficient teams, and deliver sustainable growth. From New York to China and Germany, I combine strategic leadership with hands-on product and system design—covering strategy, commercial execution, and IT/automation.",
         highlights: [
-          "Bootstrapped companies to profitability with lean playbooks.",
-          "Built ERP, accounting, and B2B marketplace platforms.",
-          "Hands-on across go-to-market, operations, and product delivery.",
+          "Started and scaled businesses in the US and China with customer-centric playbooks.",
+          "Architected and coded CRM, ERP, and accounting systems tailored to unique processes.",
+          "Built distribution networks across North America, Asia-Pacific, and the Middle East.",
         ],
       },
       skills: {
-        title: "Execution strengths",
-        leadership: "Leadership & culture",
-        ops: "Operational excellence",
-        product: "Product & architecture",
-        data: "Data & automation",
+        title: "Value I bring",
+        leadership: "Business strategy & GTM",
+        ops: "General management & change",
+        product: "IT & software development",
+        data: "Process optimization & automation",
       },
       timeline: [
         {
-          period: "2022 — Present",
-          title: "President, Global Operations",
-          location: "Singapore, Remote-first",
+          period: "Aug 2023 — Present",
+          title: "Founder & CEO, INTUTEC LLC",
+          location: "Palo Alto, USA",
           detail:
-            "Scaled cross-border teams, restructured operations with lean KPIs, and uplifted profitability per head beyond $1.5M.",
+            "Building an AI marketplace for automation components—defining vision, data model, and UI while onboarding manufacturers.",
         },
         {
-          period: "2018 — 2022",
-          title: "CEO & Founder",
-          location: "Shanghai & Los Angeles",
+          period: "Jul 2022 — Present",
+          title: "President, Schlegel USA Inc.",
+          location: "New York, USA",
           detail:
-            "Built a B2B industrial marketplace from zero, delivering sales, marketing, and service delivery motions across two continents.",
+            "Steering vision, business planning, and cashflow for an HMI components manufacturer; recruiting partners and aligning forecasting.",
         },
         {
-          period: "2015 — 2018",
-          title: "Managing Director",
-          location: "Hong Kong & Shenzhen",
+          period: "Mar 2018 — Jun 2022",
+          title: "CEO & President, CAPTRON North America LP",
+          location: "New York, USA",
           detail:
-            "Opened and scaled new country P&Ls, negotiated key supplier partnerships, and launched multi-language sales teams.",
+            "Turned around the business: grew revenue from $0.8M (2017) to $13.5M (2021) with EBITDA >15%, localized supply chain to raise OTIF from 56% to 88%, and coded a DIY CRM/ERP/accounting stack.",
         },
         {
-          period: "2012 — 2015",
-          title: "Regional Commercial Lead",
-          location: "Germany & Greater China",
+          period: "Jun 2014 — Apr 2018",
+          title: "Head of Business Development, CAPTRON Electronic GmbH",
+          location: "Munich, Germany",
           detail:
-            "Introduced process automation, improved forecasting accuracy, and coached teams on consultative selling.",
+            "Built NAFTA distribution from $4k (2014) to $800k (2017) and created a new industry/product portfolio adding $10M+ globally.",
+        },
+        {
+          period: "Feb 2012 — May 2014",
+          title: "Regional Manager Asia, SATECO Asia Limited",
+          location: "Hong Kong & Suzhou, China",
+          detail:
+            "Opened the Chinese automotive market, incorporated a FICE with a €600k budget, and managed €4.5M revenue across China, India, and Korea.",
+        },
+        {
+          period: "2003 — 2012",
+          title: "GM & Commercial Roles (Mentor, MBG, Eisbär)",
+          location: "Munich & China",
+          detail:
+            "Led interim GM and purchasing mandates, building supplier relationships and project pipelines across consumer and electronics sectors.",
         },
       ],
       portfolio: [
         {
-          title: "Industrial B2B Marketplace",
-          role: "Founder & Product Lead",
+          title: "CAPTRON North America Turnaround",
+          role: "CEO & President",
           impact:
-            "Launched supply discovery, quote workflows, and onboarding for 1K+ vendors with integrated payments.",
+            "Scaled revenue from $0.8M to $13.5M with sustainable EBITDA while localizing supply chain and improving OTIF to 88%.",
         },
         {
-          title: "Custom ERP & Accounting",
+          title: "DIY CRM, ERP & Accounting Platform",
           role: "Architect & Builder",
           impact:
-            "Delivered a FileMaker-based ERP covering inventory, invoicing, and financial reporting with granular permissions.",
+            "Coded a custom system to match unique processes—covering CRM, ERP, and accounting to increase team efficiency and transparency.",
         },
         {
-          title: "Global Expansion Playbook",
-          role: "CEO",
+          title: "Global Distribution Network",
+          role: "Head of Business Development",
           impact:
-            "Designed a repeatable GTM kit (ICP, messaging, enablement) to open five markets with lean headcount.",
+            "Established distributors across NAFTA, MENA, and APAC, boosting export rates and opening new revenue streams.",
         },
       ],
       map: {
         title: "Where I've operated",
         lived: "Lived & led teams",
-        worked: "Built operations",
+        worked: "Developed markets",
+        partner: "Partner network",
         missingToken: "Add NEXT_PUBLIC_MAPBOX_TOKEN to show the map.",
+      },
+      languages: {
+        title: "Languages",
+        list: [
+          {code: "EN", name: "English", level: "Fluent"},
+          {code: "DE", name: "German", level: "Fluent"},
+          {code: "ZH", name: "Chinese", level: "Basic"},
+        ],
       },
       backend: {
         title: "Private backend",
@@ -105,7 +128,11 @@ export const resources = {
       contact: {
         title: "Let’s build something efficient",
         subtitle:
-          "Tell me about your challenge—operations, product, or data. I usually reply within one business day.",
+          "Reach out directly or share a note—strategy, market entry, or process automation. I usually reply within one business day.",
+        directTitle: "Direct contact",
+        directNote: "Prefer a quick call or email? I’m reachable right away.",
+        phoneLabel: "Phone",
+        emailLabel: "Email",
         name: "Name",
         email: "Email",
         message: "What can I help with?",
@@ -143,98 +170,120 @@ export const resources = {
     translation: {
       hero: {
         kicker: "Mathias Krostewitz",
-        title: "Unternehmen skalieren mit schlanker, datengetriebener Führung.",
+        title: "Dynamischer, ergebnisorientierter Leader für Industrietechnik.",
         subtitle:
-          "Ehemaliger CEO und President in Asien und den USA. Ich verbinde operative Exzellenz mit Full-Stack- und AI-Know-how.",
+          "Über 15 Jahre Aufbau, Wachstum und Turnarounds in USA, China und Europa—mit strategischer Führung und hands-on Software-Umsetzung.",
         booking: "Termin buchen",
         contact: "Kontaktformular",
       },
       nav: {
         about: "Über mich",
-        timeline: "Werdegang",
+        timeline: "Erfahrung",
         portfolio: "Portfolio",
         map: "Karte",
         contact: "Kontakt",
       },
       stats: {
         yearsLeadership: "Jahre Führung globaler Teams",
-        revenuePerHead: "Umsatz pro Kopf",
-        markets: "Neue Märkte",
-        product: "Produktstarts",
+        revenuePerHead: "Umsatzwachstum",
+        markets: "Markteintritte",
+        product: "Systeme & Rollouts",
       },
       about: {
-        headline: "Macher, Builder, stetiger Lerner.",
-        body: "Ich liebe es, aus wenig Ressourcen robuste Systeme aufzubauen. In den letzten Jahren habe ich Teams in den USA, China, Singapur und Europa geführt—immer mit Effizienz als Leitstern. Parallel habe ich den MIT Full-Stack-Kurs (MERN) abgeschlossen und erweitere mein Wissen in Data Science & AI am MIT.",
+        headline: "Growth Operator für Automatisierung und Industrietechnik.",
+        body: "Ich stelle den Status quo infrage, baue effiziente Teams auf und liefere nachhaltiges Wachstum. Von New York über China bis Deutschland verbinde ich Strategie, Kommerz und IT/Automation—inklusive System- und Produktdesign.",
         highlights: [
-          "Unternehmen mit schlanken Playbooks in die Profitabilität geführt.",
-          "ERP-, Buchhaltungs- und B2B-Marktplatz-Plattformen gebaut.",
-          "Hands-on in Go-to-Market, Operations und Produktentwicklung.",
+          "Unternehmen in den USA und China mit kundenzentrierten Playbooks aufgebaut und skaliert.",
+          "CRM-, ERP- und Buchhaltungs-Systeme selbst konzipiert und entwickelt.",
+          "Distributionsnetzwerke in Nordamerika, Asien-Pazifik und dem Nahen Osten aufgebaut.",
         ],
       },
       skills: {
-        title: "Stärken in der Umsetzung",
-        leadership: "Leadership & Kultur",
-        ops: "Operative Exzellenz",
-        product: "Produkt & Architektur",
-        data: "Daten & Automatisierung",
+        title: "Wertbeitrag",
+        leadership: "Business-Strategie & GTM",
+        ops: "General Management & Change",
+        product: "IT & Softwareentwicklung",
+        data: "Prozessoptimierung & Automatisierung",
       },
       timeline: [
         {
-          period: "2022 — Heute",
-          title: "President, Global Operations",
-          location: "Singapur, Remote-first",
+          period: "Aug 2023 — Heute",
+          title: "Founder & CTO, INTUTEC LLC",
+          location: "New York, USA",
           detail:
-            "Grenzüberschreitende Teams skaliert, Lean-KPIs eingeführt und die Profitabilität pro Kopf über 1,5 Mio. USD gehoben.",
+            "Aufbau eines AI-Marktplatzes für Automatisierungskomponenten—Vision, Datenmodell und UI sowie Hersteller-Onboarding.",
         },
         {
-          period: "2018 — 2022",
-          title: "CEO & Gründer",
-          location: "Shanghai & Los Angeles",
+          period: "Jul 2022 — Heute",
+          title: "President, Schlegel USA Inc.",
+          location: "New York, USA",
           detail:
-            "Einen B2B-Industrie-Marktplatz von Null aufgebaut—Sales, Marketing und Delivery über zwei Kontinente orchestriert.",
+            "Vision, Business Planning und Cashflow für einen HMI-Hersteller; Partnergewinnung und Forecasting-Alignment.",
         },
         {
-          period: "2015 — 2018",
-          title: "Managing Director",
-          location: "Hongkong & Shenzhen",
+          period: "Mär 2018 — Jun 2022",
+          title: "CEO & President, CAPTRON North America LP",
+          location: "New York, USA",
           detail:
-            "Neue Länder-P&Ls eröffnet, Lieferantenpartnerschaften verhandelt und mehrsprachige Vertriebsteams aufgebaut.",
+            "Turnaround erreicht: Umsatz von 0,8 Mio. (2017) auf 13,5 Mio. USD (2021) mit EBITDA >15%, Supply Chain lokalisiert und OTIF von 56% auf 88% gesteigert; eigenes CRM/ERP/Buchhaltungssystem entwickelt.",
         },
         {
-          period: "2012 — 2015",
-          title: "Regional Commercial Lead",
-          location: "Deutschland & Greater China",
+          period: "Jun 2014 — Apr 2018",
+          title: "Head of Business Development, CAPTRON Electronic GmbH",
+          location: "München, Deutschland",
           detail:
-            "Prozessautomatisierung eingeführt, Forecasting verbessert und Teams in beratendem Verkauf geschult.",
+            "NAFTA-Vertrieb von 4k (2014) auf 800k USD (2017) aufgebaut und ein neues Industrie-/Produktportfolio mit >10 Mio. USD Umsatzpotenzial geschaffen.",
+        },
+        {
+          period: "Feb 2012 — Mai 2014",
+          title: "Regional Manager Asia, SATECO Asia Limited",
+          location: "Hongkong & Suzhou, China",
+          detail:
+            "Markteintritt in China für Automotive umgesetzt, FICE mit 600k € Budget gegründet und 4,5 Mio. € Umsatz in China, Indien und Korea verantwortet.",
+        },
+        {
+          period: "2003 — 2012",
+          title: "GM & Commercial Roles (Mentor, MBG, Eisbär)",
+          location: "München & China",
+          detail:
+            "Interims-GM und Einkaufsmandate geleitet und Lieferantenbeziehungen sowie Projekt-Pipelines aufgebaut.",
         },
       ],
       portfolio: [
         {
-          title: "Industrieller B2B-Marktplatz",
-          role: "Gründer & Produktlead",
+          title: "CAPTRON North America Turnaround",
+          role: "CEO & President",
           impact:
-            "Supply-Discovery, Angebots-Workflows und Onboarding für 1.000+ Anbieter mit integrierten Payments.",
+            "Umsatz von 0,8 Mio. auf 13,5 Mio. USD skaliert, EBITDA >15% gehalten und OTIF durch lokalisierte Supply Chain auf 88% gebracht.",
         },
         {
-          title: "Custom ERP & Buchhaltung",
+          title: "Eigenes CRM-, ERP- & Buchhaltungssystem",
           role: "Architekt & Builder",
           impact:
-            "FileMaker-ERP für Bestand, Rechnungen und Reporting mit granularen Berechtigungen geliefert.",
+            "Ein maßgeschneidertes System entwickelt, das CRM, ERP und Accounting abbildet und die Teameffizienz deutlich erhöht.",
         },
         {
-          title: "Expansion-Playbook",
-          role: "CEO",
+          title: "Globales Distributionsnetzwerk",
+          role: "Head of Business Development",
           impact:
-            "Wiederholbares GTM-Kit (ICP, Messaging, Enablement) entwickelt, um fünf Märkte mit schlankem Team zu eröffnen.",
+            "Distributoren in NAFTA, MENA und APAC aufgebaut, Exportquote gesteigert und neue Umsatzströme erschlossen.",
         },
       ],
       map: {
         title: "Hier habe ich gewirkt",
         lived: "Gelebt & Teams geführt",
         worked: "Operationen aufgebaut",
-        partner: "Tiefe Partnerschaften",
+        partner: "Partnernetzwerk",
         missingToken:
           "Füge NEXT_PUBLIC_MAPBOX_TOKEN hinzu, um die Karte zu laden.",
+      },
+      languages: {
+        title: "Sprachen",
+        list: [
+          {code: "EN", name: "Englisch", level: "Fließend"},
+          {code: "DE", name: "Deutsch", level: "Fließend"},
+          {code: "ZH", name: "Chinesisch", level: "Grundkenntnisse"},
+        ],
       },
       backend: {
         title: "Privater Backend-Bereich",
@@ -244,7 +293,12 @@ export const resources = {
       contact: {
         title: "Lass uns effizient bauen",
         subtitle:
-          "Erzähl mir von deiner Herausforderung—Operations, Produkt oder Daten. Ich antworte in der Regel innerhalb eines Werktags.",
+          "Melde dich direkt oder per Formular—für Strategie, Markteintritt oder Prozessautomatisierung. Antwort meist innerhalb eines Werktags.",
+        directTitle: "Direkter Kontakt",
+        directNote:
+          "Lieber schnell per Telefon oder E-Mail? Ich bin erreichbar.",
+        phoneLabel: "Telefon",
+        emailLabel: "E-Mail",
         name: "Name",
         email: "E-Mail",
         message: "Wobei kann ich unterstützen?",
@@ -256,7 +310,8 @@ export const resources = {
         verifyCodePlaceholder: "123456",
         verifySubmit: "E-Mail bestätigen",
         verifyEdit: "Angaben bearbeiten",
-        verifySent: "Bitte prüfe deine E-Mail und gib den 6-stelligen Code ein.",
+        verifySent:
+          "Bitte prüfe deine E-Mail und gib den 6-stelligen Code ein.",
         verifySuccess: "E-Mail bestätigt. Wir haben deine Nachricht erhalten.",
         alreadyExists: "Wir stehen bereits in Kontakt.",
         missingFields: "Bitte alle Pflichtfelder ausfüllen.",

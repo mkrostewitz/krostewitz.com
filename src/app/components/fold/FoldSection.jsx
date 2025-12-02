@@ -33,9 +33,9 @@ const FoldSection = ({skills}) => {
   const {t} = useTranslation();
 
   const leadershipYears = useCountUp(15, 2200);
-  const revenue = useCountUp(1.8, 2200);
-  const markets = useCountUp(5, 2200);
-  const launches = useCountUp(12, 2200);
+  const revenue = useCountUp(13.5, 2200);
+  const markets = useCountUp(9, 2200);
+  const launches = useCountUp(10, 2200);
 
   return (
     <header className={styles.hero}>
@@ -57,7 +57,7 @@ const FoldSection = ({skills}) => {
               {t("hero.contact")}
             </a>
             <Link
-              href="https://www.linkedin.com/in/mathias-krostewitz"
+              href="https://www.linkedin.com/in/mkrostewitz"
               className={pageStyles.secondaryGhost}
               target="_blank"
               rel="noreferrer"
@@ -85,7 +85,6 @@ const FoldSection = ({skills}) => {
                 />
               ))}
             </div>
-            <div className={styles.metricNote}>{t("meeting")}</div>
           </div>
           <div className={styles.statGrid}>
             <div>
