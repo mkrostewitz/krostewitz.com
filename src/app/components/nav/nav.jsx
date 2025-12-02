@@ -27,7 +27,7 @@ const NavBar = () => {
       <nav className="nav">
         <a href="#about">{t("nav.about")}</a>
         <a href="#timeline">{t("nav.timeline")}</a>
-        <a href="#portfolio">{t("nav.portfolio")}</a>
+        <a href="#executiveSummary">{t("nav.executiveSummary")}</a>
         <a href="#map">{t("nav.map")}</a>
         <a href="#contact">{t("nav.contact")}</a>
       </nav>

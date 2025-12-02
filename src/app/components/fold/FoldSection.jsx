@@ -33,7 +33,7 @@ const FoldSection = ({skills}) => {
   const {t} = useTranslation();
 
   const leadershipYears = useCountUp(15, 2200);
-  const revenue = useCountUp(13.5, 2200);
+  const revenue = useCountUp(35.5, 2200);
   const markets = useCountUp(9, 2200);
   const launches = useCountUp(10, 2200);
 
@@ -75,11 +75,12 @@ const FoldSection = ({skills}) => {
           </div>
           <div className={styles.metricBars}>
             <div className={styles.sparkline}>
-              {skills.map((skill) => (
+              {skills.map((skill, idx) => (
                 <span
                   key={skill.label}
                   style={{
-                    height: `${Math.min(skill.value, 100)}%`,
+                    "--bar-height": `${Math.min(skill.value, 100)}%`,
+                    "--bar-delay": `${idx * 90}ms`,
                   }}
                   title={skill.label}
                 />

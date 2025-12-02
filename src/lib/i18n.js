@@ -15,13 +15,13 @@ export const resources = {
       nav: {
         about: "About",
         timeline: "Experience",
-        portfolio: "Portfolio",
+        executiveSummary: "Executive Summary",
         map: "Map",
         contact: "Contact",
       },
       stats: {
-        yearsLeadership: "Years building global teams",
-        revenuePerHead: "Revenue scaled",
+        yearsLeadership: "Years leading global teams",
+        revenuePerHead: "Revenue scaled to",
         markets: "Markets opened",
         product: "Systems & rollouts",
       },
@@ -68,7 +68,7 @@ export const resources = {
           title: "Head of Business Development, CAPTRON Electronic GmbH",
           location: "Munich, Germany",
           detail:
-            "Built NAFTA distribution from $4k (2014) to $800k (2017) and created a new industry/product portfolio adding $10M+ globally.",
+            "Built NAFTA distribution from $4k (2014) to $800k (2017) and created a new industry/product executiveSummary adding $10M+ globally.",
         },
         {
           period: "Feb 2012 — May 2014",
@@ -85,10 +85,10 @@ export const resources = {
             "Led interim GM and purchasing mandates, building supplier relationships and project pipelines across consumer and electronics sectors.",
         },
       ],
-      portfolio: [
+      executiveSummary: [
         {
-          title: "CAPTRON North America Turnaround",
-          role: "CEO & President",
+          title: "CEO & President",
+          role: "Market Development",
           impact:
             "Scaled revenue from $0.8M to $13.5M with sustainable EBITDA while localizing supply chain and improving OTIF to 88%.",
         },
@@ -99,8 +99,8 @@ export const resources = {
             "Coded a custom system to match unique processes—covering CRM, ERP, and accounting to increase team efficiency and transparency.",
         },
         {
-          title: "Global Distribution Network",
-          role: "Head of Business Development",
+          title: "Global Distribution Network for Industrial Commponents",
+          role: "Market Development",
           impact:
             "Established distributors across NAFTA, MENA, and APAC, boosting export rates and opening new revenue streams.",
         },
@@ -122,7 +122,7 @@ export const resources = {
       },
       backend: {
         title: "Private backend",
-        body: "A secure admin area will let me update the resume, add portfolio entries, and adjust availability. Authentication and content editing are staged for the next iteration.",
+        body: "A secure admin area will let me update the resume, add executiveSummary entries, and adjust availability. Authentication and content editing are staged for the next iteration.",
         cta: "Plan backend scope",
       },
       contact: {
@@ -179,7 +179,7 @@ export const resources = {
       nav: {
         about: "Über mich",
         timeline: "Erfahrung",
-        portfolio: "Portfolio",
+        executiveSummary: "Executive Summary",
         map: "Karte",
         contact: "Kontakt",
       },
@@ -232,7 +232,7 @@ export const resources = {
           title: "Head of Business Development, CAPTRON Electronic GmbH",
           location: "München, Deutschland",
           detail:
-            "NAFTA-Vertrieb von 4k (2014) auf 800k USD (2017) aufgebaut und ein neues Industrie-/Produktportfolio mit >10 Mio. USD Umsatzpotenzial geschaffen.",
+            "NAFTA-Vertrieb von 4k (2014) auf 800k USD (2017) aufgebaut und ein neues Industrie-/ProduktexecutiveSummary mit >10 Mio. USD Umsatzpotenzial geschaffen.",
         },
         {
           period: "Feb 2012 — Mai 2014",
@@ -249,7 +249,7 @@ export const resources = {
             "Interims-GM und Einkaufsmandate geleitet und Lieferantenbeziehungen sowie Projekt-Pipelines aufgebaut.",
         },
       ],
-      portfolio: [
+      executiveSummary: [
         {
           title: "CAPTRON North America Turnaround",
           role: "CEO & President",
@@ -287,7 +287,7 @@ export const resources = {
       },
       backend: {
         title: "Privater Backend-Bereich",
-        body: "Ein gesicherter Admin-Bereich ermöglicht es mir, Lebenslauf und Portfolio zu pflegen. Authentifizierung und Editing folgen im nächsten Schritt.",
+        body: "Ein gesicherter Admin-Bereich ermöglicht es mir, Lebenslauf und Executive Summary zu pflegen. Authentifizierung und Editing folgen im nächsten Schritt.",
         cta: "Backend-Plan definieren",
       },
       contact: {

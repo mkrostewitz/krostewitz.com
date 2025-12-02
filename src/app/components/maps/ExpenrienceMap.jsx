@@ -180,19 +180,26 @@ const ExperienceMap = ({labels}) => {
   }
 
   return (
-    <div className={styles.mapShell}>
-      <div ref={mapContainer} className={styles.map} />
-      <div className={styles.mapLegend}>
-        <span>
-          <span className={`${styles.dot} ${styles.dotLived}`} />
-          {t("map.lived")}
-        </span>
-        <span>
-          <span className={`${styles.dot} ${styles.dotWorked}`} />
-          {t("map.worked")}
-        </span>
+    <section id="map" className={styles.section}>
+      <div className={styles.sectionHeader}>
+        <p className={styles.eyebrow}>{t("map.title")}</p>
+        <h2>{t("map.title")}</h2>
+
+        <div className={styles.mapShell}>
+          <div ref={mapContainer} className={styles.map} />
+          <div className={styles.mapLegend}>
+            <span>
+              <span className={`${styles.dot} ${styles.dotLived}`} />
+              {t("map.lived")}
+            </span>
+            <span>
+              <span className={`${styles.dot} ${styles.dotWorked}`} />
+              {t("map.worked")}
+            </span>
+          </div>
+        </div>
       </div>
-    </div>
+    </section>
   );
 };
 

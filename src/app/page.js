@@ -12,6 +12,7 @@ import AboutSection from "./components/about/AboutSection";
 import SkillsSection from "./components/skills/SkillsSection";
 import FoldSection from "./components/fold/FoldSection";
 import LanguagesSection from "./components/languages/LanguagesSection";
+import ExecutiveSummary from "./components/executive/ExecutiveSection";
 
 export default function Home() {
   const {t} = useTranslation();
@@ -26,7 +27,7 @@ export default function Home() {
     [t]
   );
 
-  const portfolio = t("portfolio", {returnObjects: true});
+  const executiveSummary = t("executiveSummary", {returnObjects: true});
 
   return (
     <div className={styles.page}>
@@ -35,38 +36,25 @@ export default function Home() {
       <FoldSection skills={skills} />
 
       <main className={styles.main}>
+        {/* About Me */}
         <AboutSection />
 
+        {/* My Skills */}
         <SkillsSection skills={skills} />
 
+        {/* Executive Summary */}
+        <ExecutiveSummary />
+
+        {/* Timeline */}
         <TimelineSection />
 
-        <section id="portfolio" className={styles.section}>
-          <div className={styles.sectionHeader}>
-            <p className={styles.eyebrow}>{t("nav.portfolio")}</p>
-            <h2>{t("nav.portfolio")}</h2>
-          </div>
-          <div className={styles.cards}>
-            {portfolio.map((item) => (
-              <article key={item.title} className={styles.card}>
-                <div className={styles.cardMeta}>{item.role}</div>
-                <h3>{item.title}</h3>
-                <p>{item.impact}</p>
-              </article>
-            ))}
-          </div>
-        </section>
+        {/* Experience Map */}
+        <ExperienceMap labels={t("map", {returnObjects: true})} />
 
-        <section id="map" className={styles.section}>
-          <div className={styles.sectionHeader}>
-            <p className={styles.eyebrow}>{t("map.title")}</p>
-            <h2>{t("map.title")}</h2>
-          </div>
-          <ExperienceMap labels={t("map", {returnObjects: true})} />
-        </section>
-
+        {/* Languages */}
         <LanguagesSection />
 
+        {/* Contact Me */}
         <ContactSection />
       </main>
     </div>
