@@ -1,4 +1,5 @@
 import i18n from "i18next";
+import LanguageDetector from "i18next-browser-languagedetector";
 import {initReactI18next} from "react-i18next";
 
 export const resources = {
@@ -335,13 +336,44 @@ export const resources = {
   },
 };
 
+const isBrowser = typeof window !== "undefined";
+
 if (!i18n.isInitialized) {
+  const detector = isBrowser ? LanguageDetector : null;
+
+  if (detector) {
+    i18n.use(detector);
+  }
+
   i18n.use(initReactI18next).init({
     resources,
-    lng: "en",
     fallbackLng: "en",
+    supportedLngs: ["en", "de"],
+    nonExplicitSupportedLngs: true,
+    detection: {
+      order: ["querystring", "localStorage", "cookie", "navigator"],
+      caches: ["localStorage", "cookie"],
+    },
     interpolation: {escapeValue: false},
   });
+}
+
+// If we initialized on the server without the detector, attach it on the client
+// and re-run detection to pick up user language preference.
+if (
+  isBrowser &&
+  !i18n.services?.languageDetector &&
+  typeof i18n.use === "function"
+) {
+  i18n.use(LanguageDetector);
+  i18n.services.languageDetector.init({
+    order: ["querystring", "localStorage", "cookie", "navigator"],
+    caches: ["localStorage", "cookie"],
+  });
+  const detected = i18n.services.languageDetector.detect();
+  if (detected && detected !== i18n.language) {
+    i18n.changeLanguage(detected);
+  }
 }
 
 export default i18n;
