@@ -4,28 +4,28 @@ import nodemailer from "nodemailer";
 
 import {getDb} from "../../lib/mongo";
 
-const {
-  APPLE_MAIL_USER,
-  APPLE_MAIL_APP_PASSWORD,
-  APPLE_MAIL_FROM,
-} = process.env;
+export const runtime = "nodejs";
 
 const CONTACTS_COLLECTION = "contacts";
 
-const transporter =
-  APPLE_MAIL_USER && APPLE_MAIL_APP_PASSWORD
-    ? nodemailer.createTransport({
-        host: "smtp.mail.me.com",
-        port: 587,
-        secure: false,
-        auth: {
-          user: APPLE_MAIL_USER,
-          pass: APPLE_MAIL_APP_PASSWORD,
-        },
-      })
-    : null;
+const getTransport = () => {
+  const {APPLE_MAIL_USER, APPLE_MAIL_APP_PASSWORD} = process.env;
+  if (!APPLE_MAIL_USER || !APPLE_MAIL_APP_PASSWORD) return null;
+
+  return nodemailer.createTransport({
+    host: "smtp.mail.me.com",
+    port: 587,
+    secure: false,
+    auth: {
+      user: APPLE_MAIL_USER,
+      pass: APPLE_MAIL_APP_PASSWORD,
+    },
+  });
+};
 
 export async function POST(request) {
+  const {APPLE_MAIL_USER, APPLE_MAIL_FROM} = process.env;
+  const transporter = getTransport();
   if (!transporter) {
     return NextResponse.json(
       {errorCode: "contact.mailNotConfigured"},
