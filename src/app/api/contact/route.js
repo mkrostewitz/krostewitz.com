@@ -1,11 +1,10 @@
-import "server-only";
+"use server";
+
 import crypto from "crypto";
 import {NextResponse} from "next/server";
 import nodemailer from "nodemailer";
 
 import {getDb} from "../../lib/mongo";
-
-export const runtime = "nodejs";
 
 const CONTACTS_COLLECTION = "contacts";
 
@@ -76,7 +75,9 @@ export async function POST(request) {
     from: APPLE_MAIL_FROM || APPLE_MAIL_USER,
     to: normalizedEmail,
     subject: "Verify your contact request",
-    text: `Hi ${name || "there"},\n\nPlease confirm your email to send your message:\n\nVerification code: ${verificationCode}\n\nIf you did not request this, you can ignore the email.`,
+    text: `Hi ${
+      name || "there"
+    },\n\nPlease confirm your email to send your message:\n\nVerification code: ${verificationCode}\n\nIf you did not request this, you can ignore the email.`,
   };
 
   try {
@@ -84,9 +85,6 @@ export async function POST(request) {
     return NextResponse.json({status: "verify_required"});
   } catch (error) {
     console.error("Contact verification send error", error);
-    return NextResponse.json(
-      {errorCode: "contact.sendFailed"},
-      {status: 500}
-    );
+    return NextResponse.json({errorCode: "contact.sendFailed"}, {status: 500});
   }
 }
