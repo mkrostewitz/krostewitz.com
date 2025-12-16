@@ -88,10 +88,20 @@
   font-weight: 700;
 }
 
+.successBlock {
+  gap: 18px;
+}
+
+.successBlock button {
+  margin-top: 6px;
+  align-self: flex-start;
+}
+
 .actionsRow {
   display: flex;
-  gap: 10px;
+  gap: 14px;
   flex-wrap: wrap;
+  align-items: center;
 }
 
 @media (max-width: 960px) {

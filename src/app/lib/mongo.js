@@ -11,6 +11,7 @@ if (!uri || !dbName || !user || !pass) {
 
 let cachedClient = null;
 let cachedDb = null;
+let initPromise = null;
 
 export async function getDb() {
   if (cachedDb) return cachedDb;
@@ -24,6 +25,30 @@ export async function getDb() {
   cachedClient = client;
   cachedDb = db;
   return db;
+}
+
+export async function initMongoConnection() {
+  if (cachedDb) {
+    console.info("[mongo] Connected to database \"%s\".", cachedDb.databaseName);
+    return cachedDb;
+  }
+
+  if (!initPromise) {
+    initPromise = getDb()
+      .then((db) => {
+        console.info("[mongo] Connected to database \"%s\".", db.databaseName);
+        return db;
+      })
+      .catch((err) => {
+        console.error("[mongo] Failed to connect on startup:", err);
+        throw err;
+      })
+      .finally(() => {
+        initPromise = null;
+      });
+  }
+
+  return initPromise;
 }
 
 export async function closeDb() {

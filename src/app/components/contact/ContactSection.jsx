@@ -182,6 +182,7 @@ const ContactSection = () => {
                   type="submit"
                   disabled={isSubmitting}
                   className={pageStyles.primary}
+                  style={{width: "200px"}}
                 >
                   {isSubmitting ? "Sending..." : t("contact.submit")}
                 </button>
@@ -263,6 +264,7 @@ const ContactSection = () => {
                     type="submit"
                     disabled={isSubmitting}
                     className={pageStyles.primary}
+                    style={{width: "150px"}}
                   >
                     {isSubmitting
                       ? t("contact.verifySubmit")
@@ -271,6 +273,7 @@ const ContactSection = () => {
                   <button
                     type="button"
                     className={pageStyles.secondary}
+                    style={{width: "150px"}}
                     onClick={() => {
                       setPhase("form");
                       setApiMessage(null);
@@ -289,7 +292,17 @@ const ContactSection = () => {
         )}
 
         {phase === "success" && (
-          <div className={styles.form}>
+          <div
+            // className={`${styles.form} ${styles.successBlock}`}
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              textAlign: "center",
+              gap: "1rem",
+            }}
+          >
             <p className={styles.success}>{t("contact.verifySuccess")}</p>
             <button
               type="button"
@@ -301,7 +314,7 @@ const ContactSection = () => {
                 setApiMessage(null);
               }}
             >
-              Send another
+              {t("contact.sendAnother")}
             </button>
           </div>
         )}
