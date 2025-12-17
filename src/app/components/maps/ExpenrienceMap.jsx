@@ -78,9 +78,9 @@ const ExperienceMap = ({labels}) => {
     mapRef.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: "mapbox://styles/mapbox/dark-v11",
-      center: [25, 20],
-      projection: {name: "mercator"},
-      zoom: 1.3,
+      center: [-95, 35],
+      projection: {name: "globe"},
+      zoom: 1.6,
     });
 
     const map = mapRef.current;
@@ -182,8 +182,9 @@ const ExperienceMap = ({labels}) => {
   return (
     <section id="map" className={styles.section}>
       <div className={styles.sectionHeader}>
-        <p className={styles.eyebrow}>{t("map.title")}</p>
+        <p className={styles.eyebrow}>{t("nav.map")}</p>
         <h2>{t("map.title")}</h2>
+        <p className={styles.lead}>{t("map.subtitle")}</p>
 
         <div className={styles.mapShell}>
           <div ref={mapContainer} className={styles.map} />
