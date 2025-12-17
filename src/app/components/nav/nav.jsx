@@ -18,14 +18,16 @@ const NavBar = () => {
   return (
     <div className="topBar">
       <div className="kicker">
-        <Image
-          src="/logo.svg"
-          alt="MK logo"
-          width={60}
-          height={60}
-          className="logo"
-          priority
-        />
+        <a href="#top" onClick={closeMenu} aria-label="Back to top">
+          <Image
+            src="/logo.svg"
+            alt="MK logo"
+            width={60}
+            height={60}
+            className="logo"
+            priority
+          />
+        </a>
       </div>
       <button
         className={`menuToggle ${menuOpen ? "menuOpen" : ""}`}
@@ -41,14 +43,17 @@ const NavBar = () => {
         <a href="#about" onClick={closeMenu}>
           {t("nav.about")}
         </a>
+        <a href="#skills" onClick={closeMenu}>
+          {t("nav.impact")}
+        </a>
+        <a href="#executiveSummary" onClick={closeMenu}>
+          {t("nav.executiveSummary")}
+        </a>
         <a href="#timeline" onClick={closeMenu}>
           {t("nav.timeline")}
         </a>
         <a href="#map" onClick={closeMenu}>
           {t("nav.map")}
-        </a>
-        <a href="#executiveSummary" onClick={closeMenu}>
-          {t("nav.executiveSummary")}
         </a>
         <a href="#cv" onClick={closeMenu}>
           {t("nav.cv")}

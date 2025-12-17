@@ -10,8 +10,7 @@ import ContactSection from "./components/contact/ContactSection";
 import TimelineSection from "./components/timeline/TimelineSection";
 import AboutSection from "./components/about/AboutSection";
 import SkillsSection from "./components/skills/SkillsSection";
-import FoldSection from "./components/fold/OfferSection";
-import SummarySection from "./components/fold/FoldSection";
+import FoldSection from "./components/fold/FoldSection";
 import LanguagesSection from "./components/languages/LanguagesSection";
 import ExecutiveSummary from "./components/executive/ExecutiveSection";
 import CvSection from "./components/contact/CvSection";
@@ -55,26 +54,21 @@ export default function Home() {
     [t]
   );
 
-  const executiveSummary = t("executiveSummary", {returnObjects: true});
-
   return (
-    <div className={styles.page}>
+    <div className={styles.page} id="top">
       <div className={styles.backgroundGlow} aria-hidden />
       <NavBar />
       <FoldSection />
 
       <main className={styles.main}>
-        {/* Summary / Outcomes */}
-        <SummarySection skills={skills} />
+        {/* Executive Summary & Outcomes */}
+        <ExecutiveSummary skills={skills} />
 
         {/* About Me */}
         <AboutSection />
 
         {/* My Skills */}
         <SkillsSection skills={skills} />
-
-        {/* Executive Summary */}
-        <ExecutiveSummary />
 
         {/* Timeline */}
         <TimelineSection />

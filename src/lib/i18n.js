@@ -9,7 +9,7 @@ export const resources = {
         kicker: "Mathias Krostewitz",
         title: "Industrial Tech Operator & Builder",
         subtitle:
-          "15+ years scaling and turning around industrial-tech businesses across the US, China, and Europe—combining GTM leadership with hands-on system builds (CRM/ERP/data) to drive revenue, delivery performance, and margin.",
+          "15+ years scaling and turning around industrial-tech businesses across the US, China, and Europe, combining GTM leadership with hands-on system builds (CRM/ERP/data) to drive revenue, delivery performance, and margin.",
         booking: "Schedule a call",
         contact: "Contact form",
       },
@@ -19,17 +19,17 @@ export const resources = {
         executiveSummary: "Summary",
         map: "Countries",
         cv: "CV",
+        impact: "Impact",
         contact: "Contact",
       },
       offer: {
         eyebrow: "How I help",
-        title:
-          "Stabilize operations, unlock growth, and build the systems to run it.",
+        title: "I build and run growth engines for industrial tech.",
         subtitle:
-          "Industrial/automation operator who pairs turnaround discipline with hands-on software delivery.",
+          "CEO with a track record of building and scaling industrial-tech businesses and turning around performance when needed through execution and systems.",
         points: [
           "Design sustainable GTM playbooks and partner routes that fit your market",
-          "Turbaround your operations and build efficient teams",
+          "Turnaround your operations and build efficient teams",
           "Stabilize cash, supply, and delivery with pragmatic ops changes",
         ],
         cta: "Schedule a Call",
@@ -37,9 +37,8 @@ export const resources = {
       },
       stats: {
         yearsLeadership: "Years leading global teams",
-        revenuePerHead: "Revenue scaled to",
-        markets: "Markets opened",
-        product: "Systems & rollouts",
+        revenuePerHead: "Revenue generated",
+        markets: "Markets established",
       },
       about: {
         headline:
@@ -53,7 +52,7 @@ export const resources = {
       },
       skills: {
         title: "Impact areas",
-        headline: "Where create value",
+        headline: "Where I create value",
         description:
           "I combine commercial leadership with hands-on systems thinking—so companies grow faster, execute cleaner, and scale without chaos.",
         industriesTitle: "Industry focus",
@@ -230,6 +229,7 @@ export const resources = {
         executiveSummary: "Auf einen Blick",
         map: "Ländererfahrung",
         cv: "Lebenslauf",
+        impact: "Wirkung",
         contact: "Kontakt",
       },
       offer: {

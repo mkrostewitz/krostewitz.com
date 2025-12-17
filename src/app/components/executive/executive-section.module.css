@@ -1,0 +1,94 @@
+.summaryCard {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  padding: 18px;
+  display: grid;
+  grid-template-columns: minmax(200px, 0.9fr) minmax(200px, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.2);
+}
+
+.statColumn {
+  display: grid;
+  gap: 10px;
+}
+
+.statLabel {
+  font-size: 0.95rem;
+  color: #cbd5f5;
+}
+
+.statValue {
+  font-size: 3.2rem;
+  font-weight: 800;
+  color: #86ffb6;
+  display: flex;
+  align-items: baseline;
+}
+
+.statSuffix {
+  font-size: 1.3rem;
+  color: #9ae6b4;
+  margin-left: 6px;
+}
+
+.sparkline {
+  display: grid;
+  grid-auto-flow: column;
+  gap: 6px;
+  align-items: end;
+  height: 60px;
+}
+
+.sparkline span {
+  display: block;
+  width: 8px;
+  height: 0;
+  background: linear-gradient(180deg, #7c5cff, #4fd1c5);
+  border-radius: 12px;
+  opacity: 0.9;
+  animation: growSpark 1s ease-out forwards;
+  animation-delay: var(--bar-delay, 0ms);
+}
+
+@keyframes growSpark {
+  from {
+    height: 0;
+    opacity: 0.4;
+  }
+  to {
+    height: var(--bar-height, 60%);
+    opacity: 0.95;
+  }
+}
+
+.statGrid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  align-content: center;
+}
+
+.statGrid p {
+  color: #cbd5f5;
+  font-size: 0.95rem;
+}
+
+.statGrid strong {
+  display: block;
+  font-size: 1.3rem;
+  color: #f8fafc;
+  margin-top: 4px;
+}
+
+@media (max-width: 960px) {
+  .summaryCard {
+    grid-template-columns: 1fr;
+  }
+
+  .statValue {
+    font-size: 2.6rem;
+  }
+}

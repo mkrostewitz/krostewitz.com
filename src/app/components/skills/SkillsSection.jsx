@@ -13,7 +13,7 @@ const SkillsSection = ({skills}) => {
   };
 
   return (
-    <section className={pageStyles.section}>
+    <section id="skills" className={pageStyles.section}>
       <div className={pageStyles.sectionHeader}>
         <p className={pageStyles.eyebrow}>{t("skills.title")}</p>
         <h2>{t("skills.headline")}</h2>
