@@ -12,7 +12,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Mathias Krostewitz — Operator & Builder",
+  title: "Mathias Krostewitz - Operator & Builder",
   description:
     "Lean operator and full-stack builder with leadership across Asia and the US.",
   icons: {

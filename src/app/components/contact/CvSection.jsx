@@ -18,7 +18,16 @@ const CvSection = () => {
   );
 
   return (
-    <section id="cv" className={pageStyles.section}>
+    <section
+      id="cv"
+      className={pageStyles.section}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        textAlign: "center",
+      }}
+    >
       <div className={pageStyles.sectionHeader}>
         <h2>{t("cv.title")}</h2>
         <p className={pageStyles.lead}>{t("cv.subtitle")}</p>

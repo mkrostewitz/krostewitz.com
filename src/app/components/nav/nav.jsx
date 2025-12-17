@@ -40,20 +40,18 @@ const NavBar = () => {
         <span />
       </button>
       <nav className={`nav ${menuOpen ? "navOpen" : ""}`}>
+        <a href="#executiveSummary" onClick={closeMenu}>
+          {t("nav.executiveSummary")}
+        </a>
         <a href="#about" onClick={closeMenu}>
           {t("nav.about")}
         </a>
         <a href="#skills" onClick={closeMenu}>
           {t("nav.impact")}
         </a>
-        <a href="#executiveSummary" onClick={closeMenu}>
-          {t("nav.executiveSummary")}
-        </a>
+
         <a href="#timeline" onClick={closeMenu}>
           {t("nav.timeline")}
-        </a>
-        <a href="#map" onClick={closeMenu}>
-          {t("nav.map")}
         </a>
         <a href="#cv" onClick={closeMenu}>
           {t("nav.cv")}

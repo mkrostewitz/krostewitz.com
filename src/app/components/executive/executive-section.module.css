@@ -39,7 +39,7 @@
   grid-auto-flow: column;
   gap: 6px;
   align-items: end;
-  height: 60px;
+  height: 36px;
 }
 
 .sparkline span {
@@ -66,8 +66,8 @@
 
 .statGrid {
   display: grid;
-  gap: 10px;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   align-content: center;
 }
 
@@ -81,6 +81,66 @@
   font-size: 1.3rem;
   color: #f8fafc;
   margin-top: 4px;
+}
+
+.languages {
+  grid-column: 1 / -1;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 12px 14px;
+}
+
+.languagesLabel {
+  margin: 0 0 8px;
+  color: #8af5e6;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 0.9rem;
+}
+
+.languagesGrid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  align-items: stretch;
+}
+
+.languageCard {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  min-width: 0;
+}
+
+.languageIcon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, #7c5cff, #4fd1c5);
+  color: #0b1020;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+
+.languageName {
+  margin: 0;
+  color: #f8fafc;
+  font-weight: 700;
+}
+
+.languageLevel {
+  margin: 0;
+  color: #cbd5f5;
+  font-size: 0.95rem;
 }
 
 @media (max-width: 960px) {

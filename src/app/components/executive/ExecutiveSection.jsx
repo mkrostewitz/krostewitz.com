@@ -31,6 +31,7 @@ function useCountUp(target, duration = 2000) {
 const ExecutiveSummary = ({skills = []}) => {
   const {t} = useTranslation();
   const executiveSummary = t("executiveSummary", {returnObjects: true});
+  const languages = t("languages.list", {returnObjects: true}) || [];
   const stats = useMemo(
     () => ({
       leadershipYears: 15,
@@ -52,6 +53,7 @@ const ExecutiveSummary = ({skills = []}) => {
       </div>
 
       <div className={styles.summaryCard}>
+        {/* Stats Section */}
         <div className={styles.statColumn}>
           <div className={styles.statLabel}>{t("stats.yearsLeadership")}</div>
           <div className={styles.statValue}>
@@ -73,26 +75,49 @@ const ExecutiveSummary = ({skills = []}) => {
             ))}
           </div>
         </div>
-        <div className={styles.statGrid}>
-          <div>
-            <p>{t("stats.revenuePerHead")}</p>
-            <strong>{revenue}M USD</strong>
+        <div
+          className={styles.statGrid}
+          style={{display: "flex", flexDirection: "column", gap: "1rem"}}
+        >
+          {/* Stats Section */}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "row",
+              gap: "2rem",
+              justifyContent: "space-between",
+            }}
+          >
+            <div>
+              <p>{t("stats.revenuePerHead")}</p>
+              <strong>{revenue}M US$</strong>
+            </div>
+            <div>
+              <p>{t("stats.markets")}</p>
+              <strong>{markets}</strong>
+            </div>
           </div>
+
+          {/* Languages Section */}
           <div>
-            <p>{t("stats.markets")}</p>
-            <strong>{markets}</strong>
+            <div
+              style={{display: "flex", flexDirection: "column", gap: "0.5rem"}}
+            >
+              <p>{t("languages.title")}</p>
+              <div className={styles.languagesGrid}>
+                {languages.map((lang) => (
+                  <div key={lang.code} className={styles.languageCard}>
+                    <div className={styles.languageIcon}>{lang.code}</div>
+                    <div>
+                      <p className={styles.languageName}>{lang.name}</p>
+                      <p className={styles.languageLevel}>{lang.level}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-
-      <div className={pageStyles.cards}>
-        {executiveSummary.map((item) => (
-          <article key={item.title} className={pageStyles.card}>
-            <div className={pageStyles.cardMeta}>{item.role}</div>
-            <h3>{item.title}</h3>
-            <p>{item.impact}</p>
-          </article>
-        ))}
       </div>
     </section>
   );

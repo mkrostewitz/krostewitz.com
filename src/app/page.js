@@ -64,6 +64,9 @@ export default function Home() {
         {/* Executive Summary & Outcomes */}
         <ExecutiveSummary skills={skills} />
 
+        {/* Languages */}
+        {/* <LanguagesSection /> */}
+
         {/* About Me */}
         <AboutSection />
 
@@ -78,9 +81,6 @@ export default function Home() {
 
         {/* CV Section */}
         <CvSection />
-
-        {/* Languages */}
-        <LanguagesSection />
 
         {/* Contact Me */}
         <ContactSection />
