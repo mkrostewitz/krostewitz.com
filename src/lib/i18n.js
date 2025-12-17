@@ -7,9 +7,9 @@ export const resources = {
     translation: {
       hero: {
         kicker: "Mathias Krostewitz",
-        title: "Dynamic, result-driven leader for industrial technology.",
+        title: "Industrial Tech Operator & Builder",
         subtitle:
-          "15+ years starting, growing, and turning around businesses across the US, China, and Europe—pairing commercial rigor with hands-on software builds.",
+          "15+ years scaling and turning around industrial-tech businesses across the US, China, and Europe—combining GTM leadership with hands-on system builds (CRM/ERP/data) to drive revenue, delivery performance, and margin.",
         booking: "Schedule a call",
         contact: "Contact form",
       },
@@ -42,20 +42,40 @@ export const resources = {
         product: "Systems & rollouts",
       },
       about: {
-        headline: "Growth operator for automation and industrial tech.",
-        body: "I challenge the status quo, build efficient teams, and deliver sustainable growth. From New York to China and Germany, I combine strategic leadership with hands-on product and system design—covering strategy, commercial execution, and IT/automation.",
+        headline:
+          "I build growth engines for industrial technology—strategy to execution.",
+        body: "I lead teams through change, design scalable operating systems, and turn complex sales + supply chain realities into predictable performance.",
         highlights: [
-          "Started and scaled businesses in the US and China with customer-centric playbooks.",
-          "Architected and coded CRM, ERP, and accounting systems tailored to unique processes.",
-          "Built distribution networks across North America, Asia-Pacific, and the Middle East.",
+          "Scaled and turned around industrial businesses with customer-centric GTM playbooks.",
+          "Built and shipped CRM/ERP/accounting workflows tailored to real-world processes.",
+          "Developed distribution and partner networks across North America, APAC, and MENA.",
         ],
       },
       skills: {
-        title: "Value I bring",
-        leadership: "Business strategy & GTM",
-        ops: "General management & change",
-        product: "IT & software development",
-        data: "Process optimization & automation",
+        title: "Impact areas",
+        headline: "Where create value",
+        description:
+          "I combine commercial leadership with hands-on systems thinking—so companies grow faster, execute cleaner, and scale without chaos.",
+        industriesTitle: "Industry focus",
+        industriesSubtitle:
+          "Where I’ve driven outcomes across GTM, operations, and systems delivery.",
+        salesLabel: "Sales",
+        salesDetail: "Enterprise growth, channels, key accounts",
+        marketingLabel: "Marketing",
+        marketingDetail: "Positioning + performance marketing for pipeline",
+        opsLabel: "Operations (Supply Chain / Execution)",
+        opsDetail: "OTIF, localization, scalable execution cadence",
+        financeLabel: "Administration & Finance",
+        financeDetail: "Forecasting, cash flow, KPI discipline",
+        productLabel: "Engineering / Product",
+        productDetail: "Market-to-product translation, roadmap clarity",
+        productionLabel: "Production / Manufacturing",
+        productionDetail: "Throughput and quality aligned to demand",
+        levels: {
+          support: "Support",
+          lead: "Lead",
+          own: "Own",
+        },
       },
       timeline: [
         {
@@ -63,7 +83,7 @@ export const resources = {
           title: "Founder & CEO, INTUTEC LLC",
           location: "Palo Alto, USA",
           detail:
-            "Building an AI marketplace for automation components—defining vision, data model, and UI while onboarding manufacturers.",
+            "Building an industrial marketplace for automation components—defining vision, data model, and UI while onboarding manufacturers.",
         },
         {
           period: "Jul 2022 — Present",
@@ -198,9 +218,9 @@ export const resources = {
     translation: {
       hero: {
         kicker: "Mathias Krostewitz",
-        title: "Dynamischer, ergebnisorientierter Leader für Industrietechnik.",
+        title: "Growth Operator für industrielle Technologie",
         subtitle:
-          "Über 15 Jahre Aufbau, Wachstum und Turnarounds in USA, China und Europa—mit strategischer Führung und hands-on Software-Umsetzung.",
+          "15+ Jahre Skalierung und Turnarounds in USA, China und Europa—mit GTM-Führung und hands-on Systemaufbau (CRM/ERP/Data), um Umsatz, Liefertreue und Marge zu steigern.",
         booking: "Termin buchen",
         contact: "Kontaktformular",
       },
@@ -233,20 +253,40 @@ export const resources = {
         product: "Systeme & Rollouts",
       },
       about: {
-        headline: "Growth Operator für Automatisierung und Industrietechnik.",
-        body: "Ich stelle den Status quo infrage, baue effiziente Teams auf und liefere nachhaltiges Wachstum. Von New York über China bis Deutschland verbinde ich Strategie, Kommerz und IT/Automation—inklusive System- und Produktdesign.",
+        headline:
+          "Ich baue Growth-Engines für Industrietechnik—von Strategie bis Umsetzung.",
+        body: "Ich führe Teams durch Wandel, designe skalierbare Betriebssysteme und mache komplexe Sales- & Supply-Realitäten planbar.",
         highlights: [
-          "Unternehmen in den USA und China mit kundenzentrierten Playbooks aufgebaut und skaliert.",
-          "CRM-, ERP- und Buchhaltungs-Systeme selbst konzipiert und entwickelt.",
-          "Distributionsnetzwerke in Nordamerika, Asien-Pazifik und dem Nahen Osten aufgebaut.",
+          "Industriebetriebe mit kundenzentrierten GTM-Playbooks skaliert und gedreht.",
+          "CRM/ERP/Buchhaltungs-Workflows gebaut und ausgeliefert, passend zu realen Prozessen.",
+          "Distributions- und Partnernetzwerke in Nordamerika, APAC und MENA aufgebaut.",
         ],
       },
       skills: {
-        title: "Wertbeitrag",
-        leadership: "Business-Strategie & GTM",
-        ops: "General Management & Change",
-        product: "IT & Softwareentwicklung",
-        data: "Prozessoptimierung & Automatisierung",
+        title: "Wirkung & Branchenfokus",
+        headline: "Wo ich Mehrwerte schaffe",
+        description:
+          "Ich verbinde kommerzielle Führung mit Systemdenken—für schnelleres Wachstum, saubere Ausführung und skalierbare Abläufe.",
+        industriesTitle: "Branchenfokus",
+        industriesSubtitle:
+          "Branchen, in denen ich GTM, Operations und Systeme verantwortet habe.",
+        salesLabel: "Vertrieb",
+        salesDetail: "Enterprise-Wachstum, Kanäle, Key Accounts",
+        marketingLabel: "Marketing",
+        marketingDetail: "Positionierung + Performance-Marketing für Pipeline",
+        opsLabel: "Operations (Supply Chain / Execution)",
+        opsDetail: "OTIF, Lokalisierung, skalierbare Umsetzungsrhythmen",
+        financeLabel: "Administration & Finanzen",
+        financeDetail: "Forecasting, Cashflow, KPI-Disziplin",
+        productLabel: "Entwicklung",
+        productDetail: "Market-to-Product, klare Roadmaps",
+        productionLabel: "Fertigung",
+        productionDetail: "Durchsatz und Qualität abgestimmt auf Nachfrage",
+        levels: {
+          support: "Mitwirkung",
+          lead: "Federführend",
+          own: "Gesamtverantwortlich",
+        },
       },
       timeline: [
         {

@@ -124,11 +124,27 @@
 }
 
 @media (max-width: 960px) {
-  .offer {
+  .hero {
     grid-template-columns: 1fr;
+    padding: 30px 18px 32px;
+    gap: 22px;
   }
 
   .copy h2 {
     font-size: 1.6rem;
+  }
+
+  .points li {
+    width: 100%;
+  }
+
+  .actions {
+    justify-content: flex-start;
+  }
+
+  .portraitShell {
+    max-width: 320px;
+    margin: 6px auto 0;
+    aspect-ratio: 3 / 4;
   }
 }

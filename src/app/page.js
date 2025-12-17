@@ -21,10 +21,36 @@ export default function Home() {
 
   const skills = useMemo(
     () => [
-      {label: t("skills.leadership"), value: 95},
-      {label: t("skills.ops"), value: 93},
-      {label: t("skills.product"), value: 87},
-      {label: t("skills.data"), value: 92},
+      {
+        label: t("skills.salesLabel"),
+        detail: t("skills.salesDetail"),
+        score: 10,
+      },
+      {
+        label: t("skills.marketingLabel"),
+        detail: t("skills.marketingDetail"),
+        score: 8,
+      },
+      {
+        label: t("skills.opsLabel"),
+        detail: t("skills.opsDetail"),
+        score: 9,
+      },
+      {
+        label: t("skills.financeLabel"),
+        detail: t("skills.financeDetail"),
+        score: 8,
+      },
+      {
+        label: t("skills.productLabel"),
+        detail: t("skills.productDetail"),
+        score: 3,
+      },
+      {
+        label: t("skills.productionLabel"),
+        detail: t("skills.productionDetail"),
+        score: 4,
+      },
     ],
     [t]
   );

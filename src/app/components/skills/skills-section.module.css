@@ -18,23 +18,139 @@
   margin-bottom: 8px;
 }
 
+.label {
+  display: block;
+}
+
+.detail {
+  margin: 4px 0 0;
+  color: #9fb3d8;
+  font-size: 0.92rem;
+  font-weight: 500;
+}
+
+.level {
+  font-size: 0.9rem;
+  color: #8af5e6;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
 .skillBar {
   height: 8px;
   background: rgba(255, 255, 255, 0.06);
   border-radius: 999px;
   overflow: hidden;
+  position: relative;
+}
+
+.skillBar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, #7c5cff, #4fd1c5);
+  transform-origin: left center;
+  transform: scaleX(1);
+  opacity: 0.08;
 }
 
 .skillFill {
   height: 100%;
   background: linear-gradient(90deg, #7c5cff, #4fd1c5);
   border-radius: 999px;
-  width: 0;
-  animation: growBar 1.2s ease forwards;
+  width: 100%;
+  position: relative;
+  transform-origin: left center;
 }
 
-@keyframes growBar {
-  to {
-    width: var(--target);
+.skillFill::after {
+  content: attr(data-label);
+  position: absolute;
+  right: 8px;
+  top: -28px;
+  font-size: 0.85rem;
+  color: #8af5e6;
+  font-weight: 700;
+}
+
+.legend {
+  display: flex;
+  justify-content: space-between;
+  color: #8af5e6;
+  font-weight: 700;
+  font-size: 0.9rem;
+  margin-top: 14px;
+}
+
+.flashcards {
+  margin-top: 20px;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.flashcardsHeader {
+  margin-top: 18px;
+  margin-bottom: 4px;
+}
+
+.flashcardsTitle {
+  color: #8af5e6;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin: 0 0 4px;
+}
+
+.flashcardsSubtitle {
+  margin: 0;
+  color: #9fb3d8;
+  font-size: 0.98rem;
+}
+
+.flashcard {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 14px;
+  padding: 12px 14px;
+  color: #dbeafe;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.2);
+}
+
+.flashcardHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.flashcardIcon {
+  font-size: 1.2rem;
+}
+
+.flashcard h4 {
+  margin: 0 0 6px;
+  color: #f8fafc;
+  font-size: 1rem;
+}
+
+.flashcard p {
+  margin: 0;
+  color: #9fb3d8;
+  line-height: 1.5;
+  font-size: 0.95rem;
+}
+
+@media (max-width: 960px) {
+  .skillTop {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .level {
+    align-self: flex-start;
+  }
+
+  .legend {
+    justify-content: space-between;
   }
 }
