@@ -6,11 +6,14 @@ import "./nav.component.css";
 
 const NavBar = () => {
   const [lang, setLang] = useState("en");
+  const [menuOpen, setMenuOpen] = useState(false);
   const {t, i18n} = useTranslation();
 
   useEffect(() => {
     i18n.changeLanguage(lang);
   }, [lang]);
+
+  const closeMenu = () => setMenuOpen(false);
 
   return (
     <div className="topBar">
@@ -24,12 +27,49 @@ const NavBar = () => {
           priority
         />
       </div>
-      <nav className="nav">
-        <a href="#about">{t("nav.about")}</a>
-        <a href="#timeline">{t("nav.timeline")}</a>
-        <a href="#executiveSummary">{t("nav.executiveSummary")}</a>
-        <a href="#map">{t("nav.map")}</a>
-        <a href="#contact">{t("nav.contact")}</a>
+      <button
+        className={`menuToggle ${menuOpen ? "menuOpen" : ""}`}
+        onClick={() => setMenuOpen((open) => !open)}
+        aria-label={menuOpen ? "Close menu" : "Open menu"}
+        aria-expanded={menuOpen}
+      >
+        <span />
+        <span />
+        <span />
+      </button>
+      <nav className={`nav ${menuOpen ? "navOpen" : ""}`}>
+        <a href="#about" onClick={closeMenu}>
+          {t("nav.about")}
+        </a>
+        <a href="#timeline" onClick={closeMenu}>
+          {t("nav.timeline")}
+        </a>
+        <a href="#executiveSummary" onClick={closeMenu}>
+          {t("nav.executiveSummary")}
+        </a>
+        <a href="#map" onClick={closeMenu}>
+          {t("nav.map")}
+        </a>
+        <a href="#cv" onClick={closeMenu}>
+          {t("nav.cv")}
+        </a>
+        <a href="#contact" onClick={closeMenu}>
+          {t("nav.contact")}
+        </a>
+        <div className="navLangSwitch">
+          {Object.keys(resources).map((code) => (
+            <button
+              key={code}
+              onClick={() => {
+                setLang(code);
+                closeMenu();
+              }}
+              className={`langButton ${lang === code ? "langActive" : ""}`}
+            >
+              {code.toUpperCase()}
+            </button>
+          ))}
+        </div>
       </nav>
       <div className="langSwitch">
         {Object.keys(resources).map((code) => (

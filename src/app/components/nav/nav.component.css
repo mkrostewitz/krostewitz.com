@@ -4,7 +4,7 @@
   left: 0;
   right: 0;
   z-index: 40;
-  overflow: hidden;
+  overflow: visible;
   display: grid;
   grid-template-columns: 1fr auto auto;
   align-items: center;
@@ -35,6 +35,7 @@
   display: flex;
   gap: 16px;
   justify-content: center;
+  align-items: center;
 }
 
 .nav a {
@@ -78,4 +79,92 @@
   background: linear-gradient(135deg, #7c5cff, #4fd1c5);
   color: #0b0c10;
   border-color: transparent;
+}
+
+.navLangSwitch {
+  display: none;
+}
+
+.menuToggle {
+  display: none;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 5px 7px;
+  cursor: pointer;
+  gap: 4px;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  transition: background 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+}
+
+.menuToggle span {
+  display: block;
+  width: 16px;
+  height: 2px;
+  background: #e5e7eb;
+  border-radius: 2px;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.menuToggle.menuOpen span:nth-child(1) {
+  transform: translateY(6px) rotate(45deg);
+}
+.menuToggle.menuOpen span:nth-child(2) {
+  opacity: 0;
+}
+.menuToggle.menuOpen span:nth-child(3) {
+  transform: translateY(-6px) rotate(-45deg);
+}
+
+@media (max-width: 960px) {
+  .topBar {
+    grid-template-columns: auto auto;
+    align-items: center;
+  }
+
+  .menuToggle {
+    display: inline-flex;
+  }
+
+  .nav {
+    position: fixed;
+    top: 66px;
+    left: 0;
+    right: 0;
+    padding: 12px 7vw 16px;
+    background: rgba(11, 15, 25, 0.94);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    display: grid;
+    gap: 8px;
+    transform: translateY(-140%);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.24s ease, opacity 0.24s ease;
+    z-index: 50;
+  }
+
+  .navOpen {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .nav a {
+    padding: 12px 14px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  .navLangSwitch {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding-top: 6px;
+  }
+
+  .langSwitch {
+    display: none;
+  }
 }
