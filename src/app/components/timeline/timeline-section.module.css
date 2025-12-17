@@ -29,7 +29,6 @@
 .timelineItem::before {
   content: "";
   position: absolute;
-
   left: 68px;
   top: 24px;
   width: 14px;
@@ -87,11 +86,27 @@
 }
 
 @media (max-width: 960px) {
+  .timeline {
+    gap: 12px;
+    padding: 0;
+  }
+
+  .timeline::before {
+    display: none;
+  }
+
   .timelineItem {
     grid-template-columns: 1fr;
+    gap: 10px;
   }
 
   .timelineItem::before {
     display: none;
+  }
+
+  .timelineBadge {
+    width: fit-content;
+    justify-self: start;
+    padding: 10px 14px;
   }
 }
