@@ -44,11 +44,11 @@ const NavBar = () => {
         <a href="#timeline" onClick={closeMenu}>
           {t("nav.timeline")}
         </a>
-        <a href="#executiveSummary" onClick={closeMenu}>
-          {t("nav.executiveSummary")}
-        </a>
         <a href="#map" onClick={closeMenu}>
           {t("nav.map")}
+        </a>
+        <a href="#executiveSummary" onClick={closeMenu}>
+          {t("nav.executiveSummary")}
         </a>
         <a href="#cv" onClick={closeMenu}>
           {t("nav.cv")}
