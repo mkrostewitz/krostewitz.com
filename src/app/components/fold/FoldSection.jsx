@@ -29,7 +29,7 @@ function useCountUp(target, duration = 2000) {
   return value;
 }
 
-const FoldSection = ({skills}) => {
+const SummarySection = ({skills}) => {
   const {t} = useTranslation();
 
   const leadershipYears = useCountUp(15, 2200);
@@ -44,27 +44,6 @@ const FoldSection = ({skills}) => {
           <p className={styles.preTitle}>{t("hero.kicker")}</p>
           <h1 className={styles.title}>{t("hero.title")}</h1>
           <p className={styles.subtitle}>{t("hero.subtitle")}</p>
-          <div className={styles.actions}>
-            <Link
-              href="https://koalendar.com/e/meet-with-mathias-krostewitz"
-              className={pageStyles.primary}
-              target="_blank"
-              rel="noreferrer"
-            >
-              {t("hero.booking")}
-            </Link>
-            <a className={pageStyles.secondary} href="#contact">
-              {t("hero.contact")}
-            </a>
-            <Link
-              href="https://www.linkedin.com/in/mkrostewitz"
-              className={pageStyles.secondaryGhost}
-              target="_blank"
-              rel="noreferrer"
-            >
-              {t("linkedin")}
-            </Link>
-          </div>
         </div>
 
         <div className={styles.metricCard}>
@@ -107,4 +86,4 @@ const FoldSection = ({skills}) => {
   );
 };
 
-export default FoldSection;
+export default SummarySection;
