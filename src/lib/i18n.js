@@ -16,9 +16,24 @@ export const resources = {
       nav: {
         about: "About",
         timeline: "Experience",
-        executiveSummary: "Executive Summary",
-        map: "Map",
+        executiveSummary: "Summary",
+        map: "Countries",
+        cv: "CV",
         contact: "Contact",
+      },
+      offer: {
+        eyebrow: "How I help",
+        title:
+          "Stabilize operations, unlock growth, and build the systems to run it.",
+        subtitle:
+          "Industrial/automation operator who pairs turnaround discipline with hands-on software delivery.",
+        points: [
+          "Design sustainable GTM playbooks and partner routes that fit your market",
+          "Turbaround your operations and build efficient teams",
+          "Stabilize cash, supply, and delivery with pragmatic ops changes",
+        ],
+        cta: "Schedule a Call",
+        alt: "Portrait of Mathias Krostewitz",
       },
       stats: {
         yearsLeadership: "Years leading global teams",
@@ -107,7 +122,9 @@ export const resources = {
         },
       ],
       map: {
-        title: "Where I've operated",
+        title: "Global experience footprint",
+        subtitle:
+          "Countries I've lived in and markets I've developed—spanning leadership roles and partner networks across three continents.",
         lived: "Lived & led teams",
         worked: "Developed markets",
         partner: "Partner network",
@@ -168,6 +185,11 @@ export const resources = {
           codeRequired: "Verification code is required",
         },
       },
+      cv: {
+        title: "Download my CV",
+        subtitle: "Grab the latest PDF with roles, outcomes, and highlights.",
+        download: "Download CV",
+      },
       meeting: "Book time on my Calendar",
       linkedin: "LinkedIn",
     },
@@ -185,9 +207,24 @@ export const resources = {
       nav: {
         about: "Über mich",
         timeline: "Erfahrung",
-        executiveSummary: "Executive Summary",
-        map: "Karte",
+        executiveSummary: "Auf einen Blick",
+        map: "Ländererfahrung",
+        cv: "Lebenslauf",
         contact: "Kontakt",
+      },
+      offer: {
+        eyebrow: "So helfe ich",
+        title: "Nachhaltiger Unternehmensaufbau in den USA und Asien.",
+        subtitle:
+          "Industrie-/Automations-Operator, der Turnaround-Disziplin mit hands-on Software-Delivery verbindet",
+        points: [
+          "Entwicklung von Markteintrits-Strategien und Distributionskanälen, die zu ihrem Unternehmen und Produkten passen",
+          "Cash, Supply und Delivery mit pragmatischen Ops-Maßnahmen stabilisieren",
+
+          "Schlanke CRM/ERP-Automatisierungen bauen, zugeschnitten auf eure Arbeitsweise.",
+        ],
+        cta: "Termin vereinbaren",
+        alt: "Portrait von Mathias Krostewitz",
       },
       stats: {
         yearsLeadership: "Jahre Führung globaler Teams",
@@ -276,9 +313,11 @@ export const resources = {
         },
       ],
       map: {
-        title: "Hier habe ich gewirkt",
+        title: "Globale Erfahrungs-Landkarte",
+        subtitle:
+          "Länder, in denen ich gelebt und Teams geführt habe, sowie Märkte, die ich aufgebaut habe—über drei Kontinente hinweg.",
         lived: "Gelebt & Teams geführt",
-        worked: "Operationen aufgebaut",
+        worked: "Märkte entwickelt",
         partner: "Partnernetzwerk",
         missingToken:
           "Füge NEXT_PUBLIC_MAPBOX_TOKEN hinzu, um die Karte zu laden.",
@@ -339,6 +378,12 @@ export const resources = {
           code: "Bitte den 6-stelligen Code eingeben",
           codeRequired: "Verifizierungscode ist erforderlich",
         },
+      },
+      cv: {
+        title: "Lebenslauf",
+        subtitle:
+          "Aktueller Lebenslauf meiner Expertise, Ergebnisse und Highlights.",
+        download: "Lebenslauf herunterladen",
       },
       meeting: "Termin buchen",
       linkedin: "LinkedIn",
