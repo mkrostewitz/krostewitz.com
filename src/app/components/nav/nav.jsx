@@ -1,7 +1,7 @@
 import Image from "next/image";
 import {useTranslation} from "react-i18next";
 import {resources} from "../../../lib/i18n";
-import {useEffect, useState} from "react";
+import {useEffect, useRef, useState} from "react";
 import "./nav.component.css";
 
 const NavBar = () => {
@@ -14,20 +14,21 @@ const NavBar = () => {
     () => i18n.resolvedLanguage || i18n.language || "en"
   );
   const supported = Object.keys(resources);
+  const autoDetected = useRef(false);
 
-  // After hydration, detect browser language and switch if supported and different
+  // After hydration, detect browser language once; don't override manual choice
   useEffect(() => {
-    if (typeof navigator === "undefined") return;
+    if (autoDetected.current || typeof navigator === "undefined") return;
     const browserLang = navigator.language?.split("-")[0];
     if (
       browserLang &&
       supported.includes(browserLang) &&
-      browserLang !== i18n.language &&
       browserLang !== lang
     ) {
       setLang(browserLang);
     }
-  }, [i18n.language, lang, supported]);
+    autoDetected.current = true;
+  }, [lang, supported]);
 
   useEffect(() => {
     if (lang && lang !== i18n.language) {
