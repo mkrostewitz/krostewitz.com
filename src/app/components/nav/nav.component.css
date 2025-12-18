@@ -5,7 +5,7 @@
   right: 0;
   z-index: 40;
   overflow: visible;
-  display: grid;
+  display: flex;
   grid-template-columns: 1fr auto auto;
   align-items: center;
   gap: 1rem;
@@ -55,8 +55,9 @@
 
 .langSwitch {
   display: flex;
-  gap: 8px;
-  justify-content: flex-end;
+  margin-left: auto;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
 .langButton {
@@ -87,12 +88,14 @@
 
 .menuToggle {
   display: none;
+  width: 60px;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 12px;
   padding: 5px 7px;
   cursor: pointer;
   gap: 4px;
+  margin-left: auto;
   flex-direction: column;
   justify-content: center;
   align-items: center;
@@ -118,6 +121,7 @@
   transform: translateY(-6px) rotate(-45deg);
 }
 
+/* Nobile View */
 @media (max-width: 960px) {
   .topBar {
     grid-template-columns: auto auto;

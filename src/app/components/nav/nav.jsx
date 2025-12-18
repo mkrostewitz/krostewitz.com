@@ -5,18 +5,42 @@ import {useEffect, useState} from "react";
 import "./nav.component.css";
 
 const NavBar = () => {
-  const [lang, setLang] = useState("en");
-  const [menuOpen, setMenuOpen] = useState(false);
   const {t, i18n} = useTranslation();
 
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  // Track currently selected language (defaults to what i18n resolved, else English)
+  const [lang, setLang] = useState(
+    () => i18n.resolvedLanguage || i18n.language || "en"
+  );
+  const supported = Object.keys(resources);
+
+  // After hydration, detect browser language and switch if supported and different
   useEffect(() => {
-    i18n.changeLanguage(lang);
-  }, [lang]);
+    if (typeof navigator === "undefined") return;
+    const browserLang = navigator.language?.split("-")[0];
+    if (
+      browserLang &&
+      supported.includes(browserLang) &&
+      browserLang !== i18n.language &&
+      browserLang !== lang
+    ) {
+      setLang(browserLang);
+    }
+  }, [i18n.language, lang, supported]);
+
+  useEffect(() => {
+    if (lang && lang !== i18n.language) {
+      console.log("Setting language to", lang);
+      i18n.changeLanguage(lang);
+    }
+  }, [lang, i18n]);
 
   const closeMenu = () => setMenuOpen(false);
 
   return (
     <div className="topBar">
+      {/* Logo / back-to-top anchor */}
       <div className="kicker">
         <a href="#top" onClick={closeMenu} aria-label="Back to top">
           <Image
@@ -29,6 +53,8 @@ const NavBar = () => {
           />
         </a>
       </div>
+
+      {/* Hamburger Button (Mobile Menu) */}
       <button
         className={`menuToggle ${menuOpen ? "menuOpen" : ""}`}
         onClick={() => setMenuOpen((open) => !open)}
@@ -39,6 +65,8 @@ const NavBar = () => {
         <span />
         <span />
       </button>
+
+      {/* Primary nav links */}
       <nav className={`nav ${menuOpen ? "navOpen" : ""}`}>
         <a href="#executiveSummary" onClick={closeMenu}>
           {t("nav.executiveSummary")}
@@ -59,6 +87,7 @@ const NavBar = () => {
         <a href="#contact" onClick={closeMenu}>
           {t("nav.contact")}
         </a>
+        {/* Language switcher inside mobile menu */}
         <div className="navLangSwitch">
           {Object.keys(resources).map((code) => (
             <button
@@ -74,6 +103,7 @@ const NavBar = () => {
           ))}
         </div>
       </nav>
+      {/* Language switcher on desktop */}
       <div className="langSwitch">
         {Object.keys(resources).map((code) => (
           <button

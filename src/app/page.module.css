@@ -167,19 +167,3 @@
   padding: 16px;
   color: #dbeafe;
 }
-
-@media (max-width: 960px) {
-  .topBar {
-    grid-template-columns: 1fr;
-    align-items: flex-start;
-  }
-
-  .langSwitch {
-    justify-content: flex-start;
-  }
-
-  .nav {
-    justify-content: flex-start;
-    flex-wrap: wrap;
-  }
-}
