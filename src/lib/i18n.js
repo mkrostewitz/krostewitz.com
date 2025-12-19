@@ -5,13 +5,9 @@ import {initReactI18next} from "react-i18next";
 export const resources = {
   en: {
     translation: {
-      hero: {
-        kicker: "Mathias Krostewitz",
-        title: "Industrial Tech Operator & Builder",
-        subtitle:
-          "15+ years scaling and turning around industrial-tech businesses across the US, China, and Europe, combining GTM leadership with hands-on system builds (CRM/ERP/data) to drive revenue, delivery performance, and margin.",
+      buttons: {
         booking: "Schedule a call",
-        contact: "Contact form",
+        linkedin: "LinkedIn",
       },
       nav: {
         about: "About",
@@ -35,19 +31,35 @@ export const resources = {
         cta: "Schedule a Call",
         alt: "Portrait of Mathias Krostewitz",
       },
-      stats: {
-        yearsLeadership: "Years leading global teams",
-        revenuePerHead: "Revenue generated",
-        markets: "Markets established",
+
+      executiveSummary: {
+        eyebrow: "Executive Summary",
+        title: "At a glance",
+        languages: {
+          title: "Languages",
+          list: [
+            {code: "EN", name: "English", level: "Fluent"},
+            {code: "DE", name: "German", level: "Fluent"},
+            {code: "ZH", name: "Chinese", level: "Basic"},
+          ],
+        },
+        stats: {
+          yearsLeadership: "Years leading global teams",
+          revenuePerHead: "Revenue generated",
+          markets: "Markets established",
+        },
       },
+
       about: {
         headline:
-          "I build growth engines for industrial technology-strategy to execution.",
-        body: "I lead teams through change, design scalable operating systems, and turn complex sales + supply chain realities into predictable performance.",
+          "Building industrial technology businesses, from strategy to execution.",
+        body: "My career has been shaped by building businesses under real-world conditions: new markets, limited resources, and high complexity.<br/><br/>Over the past 15+ years, I have built, scaled, and stabilized industrial companies across Europe, North America, and Asia — often in situations without a blueprint, where execution mattered more than theory.<br/><br/>I work hands-on at the intersection of market, organization, and technology: from go-to-market strategy and sales & supply-chain structures to operational systems such as CRM, ERP, and reporting. For me, strategy does not end with a concept — it ends with measurable results.<br/><br/>Outside of work, I find balance in sailing and hiking. Both strongly influence how I work: setting a clear course, planning ahead, navigating uncertainty, and making decisions as conditions change.",
         highlights: [
-          "Scaled and turned around industrial businesses with customer-centric GTM playbooks.",
-          "Built and shipped CRM/ERP/accounting workflows tailored to real-world processes.",
-          "Developed distribution and partner networks across North America, APAC, and MENA.",
+          "Built international industrial businesses from the ground up, including in the U.S., China, and APAC",
+          "Scaled revenue from $0.8M to $13.5M while achieving >15% EBITDA",
+          "Established customer-centric go-to-market models (NPS >60, NRR ~126%)",
+          "Designed and implemented custom CRM, ERP, and accounting systems for real operational workflows",
+          "Developed partner and distribution networks across North America, APAC, and MENA",
         ],
       },
       skills: {
@@ -58,6 +70,43 @@ export const resources = {
         industriesTitle: "Industry focus",
         industriesSubtitle:
           "Where I’ve driven outcomes across GTM, operations, and systems delivery.",
+        industries: [
+          {
+            icon: "\ud83c\udfed",
+            title: "Industrial Manufacturing",
+            detail: "Factory / discrete manufacturing environments",
+          },
+          {
+            icon: "\u2699\ufe0f",
+            title: "Automation & Controls",
+            detail: "Industrial components and systems suppliers",
+          },
+          {
+            icon: "\ud83d\udce6",
+            title: "Wholesale / Distribution",
+            detail: "B2B technical and industrial distribution",
+          },
+          {
+            icon: "\ud83d\ude89",
+            title: "Transportation & Infrastructure",
+            detail: "Traffic / transit tech and related systems",
+          },
+          {
+            icon: "\ud83d\ude97",
+            title: "Automotive",
+            detail: "OEMs and Tier suppliers, China market experience",
+          },
+          {
+            icon: "\ud83d\udd0c",
+            title: "Electronics Manufacturing",
+            detail: "Industrial electronics / EMS contexts",
+          },
+          {
+            icon: "\ud83d\udce6",
+            title: "Intralogistics / Warehousing",
+            detail: "Supply-chain execution and logistics automation",
+          },
+        ],
         salesLabel: "Sales",
         salesDetail: "Enterprise growth, channels, key accounts",
         marketingLabel: "Marketing",
@@ -75,93 +124,69 @@ export const resources = {
           lead: "Lead",
           own: "Own",
         },
+        map: {
+          eyebrow: "International Impact",
+          title: "Global Operating Experience",
+          subtitle:
+            "Countries where I have lived, led teams, and built markets across three continents.",
+          lived: "Lived & led teams",
+          worked: "Built markets",
+          partner: "Partner networks",
+          missingToken: "Add NEXT_PUBLIC_MAPBOX_TOKEN to show the map.",
+        },
       },
+
       timeline: [
         {
           period: "Aug 2023 — Present",
           title: "Founder & CEO, INTUTEC LLC",
           location: "Palo Alto, USA",
           detail:
-            "Building an industrial marketplace for automation components-defining vision, data model, and UI while onboarding manufacturers.",
+            "Founded and built an industrial marketplace for automation components. Responsible for vision, product definition, data model, UI architecture, go-to-market, and manufacturer onboarding.",
         },
         {
           period: "Jul 2022 — Present",
           title: "President, Schlegel USA Inc.",
           location: "New York, USA",
           detail:
-            "Steering vision, business planning, and cashflow for an HMI components manufacturer; recruiting partners and aligning forecasting.",
+            "Leading the U.S. organization of an HMI components manufacturer. Responsibility for strategy, business planning, cash flow management, forecasting, and partner development.",
         },
         {
           period: "Mar 2018 — Jun 2022",
           title: "CEO & President, CAPTRON North America LP",
           location: "New York, USA",
           detail:
-            "Turned around the business: grew revenue from $0.8M (2017) to $13.5M (2021) with EBITDA >15%, localized supply chain to raise OTIF from 56% to 88%, and coded a DIY CRM/ERP/accounting stack.",
+            "Turned around and scaled the business. Increased revenue from $0.8M (2017) to $13.5M (2021) while achieving >15% EBITDA. Localized the supply chain, improving OTIF from 56% to 88%. Designed and implemented a custom CRM, ERP, and accounting system.",
         },
         {
           period: "Jun 2014 — Apr 2018",
           title: "Head of Business Development, CAPTRON Electronic GmbH",
           location: "Munich, Germany",
           detail:
-            "Built NAFTA distribution from $4k (2014) to $800k (2017) and created a new industry/product executiveSummary adding $10M+ globally.",
+            "Built the NAFTA distribution network and grew revenue from $4k (2014) to $800k (2017). Developed new industry segments and product portfolios, generating more than $10M in additional global revenue.",
         },
         {
           period: "Feb 2012 — May 2014",
           title: "Regional Manager Asia, SATECO Asia Limited",
           location: "Hong Kong & Suzhou, China",
           detail:
-            "Opened the Chinese automotive market, incorporated a FICE with a €600k budget, and managed €4.5M revenue across China, India, and Korea.",
+            "Led market entry into the Chinese automotive sector. Incorporated a FICE in Suzhou with a €600k investment budget and managed €4.5M in revenue across China, India, and Korea.",
         },
         {
           period: "2003 — 2012",
           title: "GM & Commercial Roles (Mentor, MBG, Eisbär)",
           location: "Munich & China",
           detail:
-            "Led interim GM and purchasing mandates, building supplier relationships and project pipelines across consumer and electronics sectors.",
+            "Held interim general management and commercial roles. Led purchasing, built supplier networks, and developed project pipelines across consumer and industrial electronics.",
         },
       ],
-      executiveSummary: [
-        {
-          title: "CEO & President",
-          role: "Market Development",
-          impact:
-            "Scaled revenue from $0.8M to $13.5M with sustainable EBITDA while localizing supply chain and improving OTIF to 88%.",
-        },
-        {
-          title: "DIY CRM, ERP & Accounting Platform",
-          role: "Architect & Builder",
-          impact:
-            "Coded a custom system to match unique processes, covering CRM, ERP, and accounting to increase team efficiency and transparency.",
-        },
-        {
-          title: "Global Distribution Network for Industrial Commponents",
-          role: "Market Development",
-          impact:
-            "Established distributors across NAFTA, MENA, and APAC, boosting export rates and opening new revenue streams.",
-        },
-      ],
-      map: {
-        title: "Global experience footprint",
-        subtitle:
-          "Countries I've lived in and markets I've developed—spanning leadership roles and partner networks across three continents.",
-        lived: "Lived & led teams",
-        worked: "Developed markets",
-        partner: "Partner network",
-        missingToken: "Add NEXT_PUBLIC_MAPBOX_TOKEN to show the map.",
+
+      cv: {
+        title: "Download my CV",
+        subtitle: "Grab the latest PDF with roles, outcomes, and highlights.",
+        download: "Download CV",
       },
-      languages: {
-        title: "Languages",
-        list: [
-          {code: "EN", name: "English", level: "Fluent"},
-          {code: "DE", name: "German", level: "Fluent"},
-          {code: "ZH", name: "Chinese", level: "Basic"},
-        ],
-      },
-      backend: {
-        title: "Private backend",
-        body: "A secure admin area will let me update the resume, add executiveSummary entries, and adjust availability. Authentication and content editing are staged for the next iteration.",
-        cta: "Plan backend scope",
-      },
+
       contact: {
         title: "Let’s build something efficient",
         subtitle:
@@ -204,24 +229,13 @@ export const resources = {
           codeRequired: "Verification code is required",
         },
       },
-      cv: {
-        title: "Download my CV",
-        subtitle: "Grab the latest PDF with roles, outcomes, and highlights.",
-        download: "Download CV",
-      },
-      meeting: "Book time on my Calendar",
-      linkedin: "LinkedIn",
     },
   },
   de: {
     translation: {
-      hero: {
-        kicker: "Mathias Krostewitz",
-        title: "Industrial Tech Operator & Builder",
-        subtitle:
-          "Über 15 Jahre Markteintritt, Unternehmensaufbau und Skalierung in den USA, China und Europa – mit Fokus auf Go-to-Market, operative Umsetzung und Profitabilität.",
-        booking: "Termin vereinbaren",
-        contact: "Kontaktformular",
+      buttons: {
+        booking: "Gespräch vereinbaren",
+        linkedin: "LinkedIn",
       },
 
       nav: {
@@ -236,171 +250,199 @@ export const resources = {
 
       offer: {
         eyebrow: "So helfe ich",
-        title: "Ich baue Unternehmen auf – und mache Wachstum wieder planbar.",
+        title:
+          "Ich baue stabile Strukturen auf und mache Wachstum wieder planbar.",
         subtitle:
-          "CEO mit Erfahrung im Aufbau und Skalieren von Industrieunternehmen – und in ausgewählten Fällen auch in der Stabilisierung und Neuausrichtung von Performance.",
+          "CEO mit über 15 Jahren Erfahrung im Aufbau, der Skalierung, und wo notwendig der Stabilisierung von Industrie- und Technologieunternehmen.<br/><br/>Mein Fokus: nachhaltiges Wachstum, klare Strukturen und messbare Ergebnisse.",
         points: [
-          "Markteintritts- und Go-to-Market-Strategien entwickeln – inkl. Partner- und Distributionskanälen",
-          "Vertrieb, Operations und Teams auf klare Ziele, Rhythmus und Ergebnisverantwortung ausrichten",
-          "Cashflow, Lieferfähigkeit und Liefertreue durch pragmatische Maßnahmen stabilisieren",
+          "<strong>Markteintritts</strong> - und Go-to-Market-Strategien entwickeln und umsetzen, inklusive Partner- und Distributionsmodellen",
+          "<strong>Vertrieb, Operations und Organisationen</strong> auf klare Ziele, Verbindlichkeit und Ergebnisverantwortung ausrichten",
+          "<strong>Cashflow, Lieferfähigkeit und operative Performance</strong> durch pragmatische Maßnahmen stabilisieren",
         ],
-        cta: "Termin vereinbaren",
+        cta: "Gespräch vereinbaren",
         alt: "Portrait von Mathias Krostewitz",
       },
 
-      stats: {
-        yearsLeadership: "Jahre Führung internationaler Teams",
-        revenuePerHead: "Generierter Umsatz",
-        markets: "Aufgebaute Märkte",
-        product: "Rollouts & Umsetzungen",
+      executiveSummary: {
+        eyebrow: "Kurzprofil",
+        title: "Auf einen Blick",
+        languages: {
+          title: "Sprachen",
+          list: [
+            {code: "EN", name: "Englisch", level: "Verhandlungssicher"},
+            {code: "DE", name: "Deutsch", level: "Muttersprache"},
+            {code: "ZH", name: "Chinesisch", level: "Grundkenntnisse"},
+          ],
+        },
+        stats: {
+          yearsLeadership: "Jahre internationale Führungserfahrung",
+          revenuePerHead: "Verantworteter Umsatz",
+          markets: "Aufgebaute internationale Märkte",
+        },
       },
 
       about: {
         headline:
-          "Unternehmensaufbau in Industrietechnik – von Strategie bis Umsetzung.",
-        body: "Ich führe Teams durch Veränderung, schärfe Go-to-Market und mache komplexe Vertriebs- und Supply-Chain-Themen steuerbar – mit messbaren Ergebnissen in Wachstum, Liefertreue und Marge.",
+          "Unternehmensaufbau in Industrietechnik, von Strategie bis Umsetzung.",
+        body: "Mein beruflicher Weg ist geprägt von Aufbauarbeit unter realen Bedingungen: neue Märkte, begrenzte Ressourcen, hohe Komplexität.<br/><br/>In den letzten 15+ Jahren habe ich Industrieunternehmen in Europa, Nordamerika und Asien aufgebaut, skaliert und in kritischen Phasen stabilisiert, oft dort, wo es keine Blaupause gab und Execution entscheidend war.<br /><br/>Ich arbeite hands-on an der Schnittstelle von Markt, Organisation und Technologie: vom Go-to-Market über Vertriebs- und Supply-Chain-Strukturen bis hin zu operativen Systemen wie CRM, ERP und Reporting. Strategie endet für mich nicht im Konzept, sondern in messbaren Ergebnissen.<br/><br/>Außerhalb des Büros finde ich Ausgleich im Segeln und Wandern. Beides prägt auch meine Arbeitsweise: Kurs halten, vorausschauend planen, mit Unsicherheit umgehen und Entscheidungen treffen, wenn sich die Bedingungen ändern.",
         highlights: [
-          "Industriegeschäft aufgebaut und skaliert – mit kundenzentrierter Go-to-Market-Strategie.",
-          "Vertriebs- und Prozessabläufe professionalisiert (CRM/ERP/Reporting) – passend zur realen Arbeitsweise.",
-          "Partner- und Distributionsnetzwerke in Nordamerika, APAC und MENA aufgebaut.",
+          "Internationale Industriegeschäfte von Grund auf aufgebaut, u. a. in den USA, China und APAC",
+          "Umsatz von 0,8 Mio. US$ auf 13,5 Mio. US$ skaliert bei >15 % EBITDA",
+          "Kundenzentrierte Go-to-Market-Modelle etabliert (NPS >60, NRR ~126 %)",
+          "Eigene CRM-/ERP- und Accounting-Systeme für reale, operative Prozesse entwickelt",
+          "Distributions- und Partnernetzwerke in Nordamerika, APAC und MENA aufgebaut",
         ],
       },
 
       skills: {
         title: "Wirkungsfelder",
-        headline: "Wo ich Mehrwert schaffe",
+        headline: "Wo ich Verantwortung übernehme",
         description:
-          "Ich verbinde unternehmerische Führung mit pragmatischer Umsetzung – damit Unternehmen schneller wachsen, sauberer liefern und profitabler werden.",
+          "Ich verbinde unternehmerische Führung mit pragmatischer Umsetzung, um Wachstum voranzubringen, Komplexität zu reduzieren und nachhaltige Profitabilität zu sichern.",
+
         industriesTitle: "Branchenfokus",
         industriesSubtitle:
-          "Branchen, in denen ich Wachstum und Umsetzung verantwortet habe.",
+          "Branchen, in denen ich Unternehmen aufgebaut, skaliert und operativ verantwortet habe.",
+        industries: [
+          {
+            icon: "🏭",
+            title: "Industrielle Fertigung",
+            detail: "Fabrik- / diskrete Fertigungsumgebungen",
+          },
+          {
+            icon: "⚙️",
+            title: "Automation & Steuerung",
+            detail: "Industriekomponenten- und Systemlieferanten",
+          },
+          {
+            icon: "📦",
+            title: "Großhandel / Distribution",
+            detail: "B2B-Technik- und Industriedistribution",
+          },
+          {
+            icon: "🚉",
+            title: "Transport & Infrastruktur",
+            detail: "Verkehrs- / ÖPNV-Technik und verwandte Systeme",
+          },
+          {
+            icon: "🚗",
+            title: "Automotive",
+            detail: "OEMs und Tier-Zulieferer, China-Erfahrung",
+          },
+          {
+            icon: "🔌",
+            title: "Elektronikfertigung",
+            detail: "Industrielle Elektronik- / EMS-Umfelder",
+          },
+          {
+            icon: "📦",
+            title: "Intralogistik / Lager",
+            detail: "Supply-Chain-Execution und Logistikautomation",
+          },
+        ],
 
         salesLabel: "Vertrieb",
-        salesDetail: "Enterprise-Wachstum, Kanäle, Key Accounts",
+        salesDetail:
+          "Markteinführung, Vertriebskanäle und strategische Schlüsselkunden",
 
         marketingLabel: "Marketing",
         marketingDetail:
-          "Positionierung und Performance-Marketing für Pipeline",
+          "Positionierung, Marktbearbeitung und vertriebsunterstützendes Marketing",
 
-        opsLabel: "Operations (Supply Chain / Umsetzung)",
-        opsDetail: "OTIF, Lokalisierung, skalierbarer Umsetzungsrhythmus",
+        opsLabel: "Operations & Lieferkette",
+        opsDetail:
+          "Lieferfähigkeit (OTIF), Lokalisierung und verlässliche operative Umsetzung",
 
-        financeLabel: "Administration & Finanzen",
-        financeDetail: "Forecasting, Cashflow, KPI-Disziplin",
+        financeLabel: "Finanzen & Administration",
+        financeDetail:
+          "Liquiditätsplanung, Forecasting und Führung über Kennzahlen",
 
-        productLabel: "Entwicklung & Produkt",
-        productDetail: "Übersetzung Markt → Produkt, klare Roadmaps",
+        productLabel: "Produkt & Entwicklung",
+        productDetail:
+          "Übersetzung von Marktanforderungen in klare Produkt- und Entwicklungsplanung",
 
-        productionLabel: "Produktion / Fertigung",
+        productionLabel: "Produktion & Fertigung",
         productionDetail:
-          "Durchsatz und Qualität im Einklang mit der Nachfrage",
+          "Durchsatz, Qualität und Kapazitätssteuerung im Einklang mit der Nachfrage",
 
         levels: {
           support: "Mitwirkung",
-          lead: "Federführend",
+          lead: "Federführende Verantwortung",
           own: "Gesamtverantwortung",
+        },
+
+        map: {
+          eyebrow: "Internationale Wirkung",
+          title: "Internationale Führungs- und Markterfahrung",
+          subtitle:
+            "Länder, in denen ich gelebt, Teams geführt und Märkte aufgebaut habe – über drei Kontinente hinweg.",
+          lived: "Gelebt & Teams geführt",
+          worked: "Märkte aufgebaut",
+          partner: "Partnernetzwerke",
+          missingToken:
+            "Bitte NEXT_PUBLIC_MAPBOX_TOKEN setzen, um die Karte anzuzeigen.",
         },
       },
 
       timeline: [
         {
-          period: "Aug 2023 — Heute",
+          period: "Aug 2023 — heute",
           title: "Gründer & CEO, INTUTEC LLC",
           location: "Palo Alto, USA",
           detail:
-            "Aufbau eines industriellen Marktplatzes für Automatisierungskomponenten – Produkt, Go-to-Market und Hersteller-Onboarding.",
+            "Aufbau eines industriellen Marktplatzes für Automatisierungskomponenten. Verantwortung für Vision, Produkt, Datenmodell, UI sowie Go-to-Market und Hersteller-Onboarding.",
         },
         {
-          period: "Jul 2022 — Heute",
+          period: "Jul 2022 — heute",
           title: "President, Schlegel USA Inc.",
           location: "New York, USA",
           detail:
-            "Strategie, Business Planning und Cashflow-Steuerung für einen HMI-Hersteller; Partnergewinnung sowie Forecasting- und Vertriebsabstimmung.",
+            "Strategische Weiterentwicklung eines HMI-Herstellers. Business Planning, Liquiditätssteuerung, Forecasting sowie Aufbau von Partner- und Vertriebsstrukturen.",
         },
         {
           period: "Mär 2018 — Jun 2022",
           title: "CEO & President, CAPTRON North America LP",
           location: "New York, USA",
           detail:
-            "Unternehmen erfolgreich gedreht und skaliert: Umsatz von 0,8 Mio. USD (2017) auf 13,5 Mio. USD (2021) gesteigert (EBITDA >15%); Lieferkette lokalisiert und OTIF von 56% auf 88% verbessert.",
+            "Unternehmen erfolgreich gedreht und skaliert: Umsatz von 0,8 Mio. USD (2017) auf 13,5 Mio. USD (2021) gesteigert bei >15 % EBITDA. Lieferkette lokalisiert und OTIF von 56 % auf 88 % verbessert. Eigenes CRM-/ERP-/FiBu-System entwickelt.",
         },
         {
           period: "Jun 2014 — Apr 2018",
-          title: "Head of Business Development, CAPTRON Electronic GmbH",
+          title: "Leiter Business Development, CAPTRON Electronic GmbH",
           location: "München, Deutschland",
           detail:
-            "NAFTA-Vertrieb von 4 Tsd. USD (2014) auf 800 Tsd. USD (2017) aufgebaut und durch neues Branchen- und Produktportfolio >10 Mio. USD globalen Umsatzbeitrag erschlossen.",
+            "NAFTA-Distributionsnetz aufgebaut und Umsatz von 4 Tsd. USD (2014) auf 800 Tsd. USD (2017) skaliert. Neues Branchen- und Produktportfolio entwickelt mit >10 Mio. USD zusätzlichem globalem Umsatzbeitrag.",
         },
         {
           period: "Feb 2012 — Mai 2014",
-          title: "Regional Manager Asia, SATECO Asia Limited",
+          title: "Regional Manager Asien, SATECO Asia Limited",
           location: "Hongkong & Suzhou, China",
           detail:
-            "Markteintritt im chinesischen Automotive-Umfeld umgesetzt, FICE gegründet (Budget 600 Tsd. €) und 4,5 Mio. € Umsatz in China, Indien und Korea verantwortet.",
+            "Markteintritt in den chinesischen Automobilmarkt umgesetzt. FICE in Suzhou gegründet (Investitionsbudget 600 Tsd. €) und Umsatz von 4,5 Mio. € in China, Indien und Korea verantwortet.",
         },
         {
           period: "2003 — 2012",
-          title: "GM- & Commercial-Rollen (Mentor, MBG, Eisbär)",
+          title: "Geschäftsführer- & Commercial-Rollen (Mentor, MBG, Eisbär)",
           location: "München & China",
           detail:
-            "Interims-GM- und Einkaufsmandate übernommen; Lieferantenbeziehungen aufgebaut und Projektpipelines in Konsumgütern und Elektronik entwickelt.",
+            "Interims-Geschäftsführung, Einkauf und kommerzielle Verantwortung. Aufbau von Lieferantenbeziehungen, Projektpipelines und internationalen Beschaffungsstrukturen.",
         },
       ],
 
-      executiveSummary: [
-        {
-          title: "Turnaround & Skalierung (CAPTRON North America)",
-          role: "CEO & President",
-          impact:
-            "Umsatz von 0,8 Mio. auf 13,5 Mio. USD skaliert, EBITDA >15% erreicht und OTIF durch lokalisierte Supply Chain auf 88% verbessert.",
-        },
-        {
-          title: "Prozesse & Steuerung professionalisiert",
-          role: "Konzeption & Umsetzung",
-          impact:
-            "Strukturen für Transparenz und Effizienz aufgebaut (z. B. CRM/ERP/Reporting) – passend zur Organisation und den realen Abläufen.",
-        },
-        {
-          title: "Internationales Distributionsnetzwerk",
-          role: "Business Development",
-          impact:
-            "Partner und Distributoren in NAFTA, MENA und APAC aufgebaut, Exportquote gesteigert und neue Umsatzströme erschlossen.",
-        },
-      ],
-
-      map: {
-        title: "Internationale Erfahrung",
+      cv: {
+        title: "Lebenslauf",
         subtitle:
-          "Länder, in denen ich gelebt und Teams geführt habe, sowie Märkte, die ich aufgebaut habe – über drei Kontinente hinweg.",
-        lived: "Gelebt & Teams geführt",
-        worked: "Märkte aufgebaut",
-        partner: "Partnernetzwerk",
-        missingToken:
-          "Füge NEXT_PUBLIC_MAPBOX_TOKEN hinzu, um die Karte anzuzeigen.",
-      },
-
-      languages: {
-        title: "Sprachen",
-        list: [
-          {code: "EN", name: "Englisch", level: "Fließend"},
-          {code: "DE", name: "Deutsch", level: "Fließend"},
-          {code: "ZH", name: "Chinesisch", level: "Grundkenntnisse"},
-        ],
-      },
-
-      backend: {
-        title: "Privater Backend-Bereich",
-        body: "Ein gesicherter Admin-Bereich ermöglicht die Pflege von Lebenslauf, Summary-Einträgen und Verfügbarkeit. Authentifizierung und Content-Editing folgen im nächsten Schritt.",
-        cta: "Backend-Umfang planen",
+          "Aktuelle PDF-Version mit Rollen, Ergebnissen und ausgewählten Highlights.",
+        download: "Lebenslauf herunterladen",
       },
 
       contact: {
-        title: "Lassen Sie uns effizient umsetzen",
+        title: "Lassen Sie uns ins Gespräch kommen",
         subtitle:
-          "Kontaktieren Sie mich direkt oder per Formular – für Strategie, Markteintritt oder operative Verbesserung. In der Regel antworte ich innerhalb eines Werktags.",
+          "Kontaktieren Sie mich direkt oder per Formular – für Strategie, Markteintritt und operative Verbesserungen. In der Regel antworte ich innerhalb eines Werktags.",
         directTitle: "Direkter Kontakt",
         directNote:
-          "Lieber kurz per Telefon oder E-Mail? Ich bin direkt erreichbar.",
+          "Am liebsten kurz per Telefon oder E-Mail – ich bin direkt erreichbar.",
         phoneLabel: "Telefon",
         emailLabel: "E-Mail",
         name: "Name",
@@ -408,46 +450,39 @@ export const resources = {
         message: "Wobei kann ich unterstützen?",
         placeholderName: "Max Mustermann",
         placeholderEmail: "du@email.de",
-        placeholderMessage: "Worum geht es genau…",
+        placeholderMessage: "Worum geht es konkret…",
         submit: "Nachricht senden",
         sending: "Wird gesendet…",
         success: "Danke! Ich melde mich zeitnah.",
+
         verifyPrompt:
-          "Wir haben einen 6-stelligen Code an {{email}} gesendet. Bitte eingeben, um die E-Mail zu bestätigen.",
+          "Ich habe Ihnen einen 6-stelligen Code an {{email}} gesendet. Bitte geben Sie ihn ein, um Ihre E-Mail zu bestätigen.",
         verifyCodeLabel: "Bestätigungscode",
         verifyCodePlaceholder: "123456",
         verifySubmit: "E-Mail bestätigen",
         verifyEdit: "Angaben bearbeiten",
         verifySent:
-          "Bitte prüfen Sie Ihre E-Mail und geben Sie den 6-stelligen Code ein.",
-        verifySuccess: "E-Mail bestätigt. Wir haben Ihre Nachricht erhalten.",
+          "Bitte prüfen Sie Ihre E-Mails und geben Sie den 6-stelligen Code ein.",
+        verifySuccess: "E-Mail bestätigt. Ich habe Ihre Nachricht erhalten.",
         sendAnother: "Weitere Nachricht senden",
         alreadyExists: "Wir stehen bereits in Kontakt.",
-        missingFields: "Bitte alle Pflichtfelder ausfüllen.",
+        missingFields: "Bitte füllen Sie alle Pflichtfelder aus.",
         invalidCode: "Ungültiger Bestätigungscode.",
         notFound: "Keine ausstehende Bestätigung für diese E-Mail gefunden.",
         sendFailed:
-          "Bestätigung erfolgreich, aber Versand fehlgeschlagen. Bitte erneut versuchen.",
+          "Bestätigung erfolgreich, aber Versand fehlgeschlagen. Bitte versuchen Sie es erneut.",
         mailNotConfigured: "E-Mail-Versand ist nicht konfiguriert.",
-        errorGeneric: "Etwas ist schiefgelaufen. Bitte erneut versuchen.",
+        errorGeneric:
+          "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+
         validation: {
-          name: "Name ist erforderlich",
-          email: "Bitte eine gültige E-Mail eingeben",
-          message: "Bitte etwas mehr Details hinzufügen",
-          code: "Bitte den 6-stelligen Code eingeben",
+          name: "Bitte geben Sie Ihren Namen ein.",
+          email: "Bitte geben Sie eine gültige E-Mail-Adresse ein.",
+          message: "Bitte fügen Sie etwas mehr Details hinzu.",
+          code: "Bitte geben Sie den 6-stelligen Code ein den Sie per Email erhalten haben.",
           codeRequired: "Bestätigungscode ist erforderlich",
         },
       },
-
-      cv: {
-        title: "Lebenslauf",
-        subtitle:
-          "Aktuelle PDF-Version mit Rollen, Ergebnissen und Highlights.",
-        download: "Lebenslauf herunterladen",
-      },
-
-      meeting: "Termin buchen",
-      linkedin: "LinkedIn",
     },
   },
 };
@@ -463,6 +498,7 @@ if (!i18n.isInitialized) {
 
   i18n.use(initReactI18next).init({
     resources,
+    lng: "en",
     fallbackLng: "en",
     supportedLngs: ["en", "de"],
     nonExplicitSupportedLngs: true,
