@@ -1,22 +1,40 @@
 import Image from "next/image";
 import Link from "next/link";
-import {useTranslation} from "react-i18next";
+import {Trans, useTranslation} from "react-i18next";
 
 import styles from "./fold-section.module.css";
 
 const FoldSection = () => {
-  const {t} = useTranslation();
-  const points = t("offer.points", {returnObjects: true});
+  const {t} = useTranslation(undefined, {
+    keyPrefix: "offer",
+  });
+  const {t: transButtons} = useTranslation(null, {
+    keyPrefix: "buttons",
+  });
+  const points = t("points", {returnObjects: true});
 
   return (
     <header className={styles.hero}>
       <div className={styles.copy}>
-        <p className={styles.eyebrow}>{t("offer.eyebrow")}</p>
-        <h2>{t("offer.title")}</h2>
-        <p className={styles.lead}>{t("offer.subtitle")}</p>
+        <p className={styles.eyebrow}>{t("eyebrow")}</p>
+        <h2>{t("title")}</h2>
+
+        <p className={styles.lead}>
+          <Trans i18nKey="offer.subtitle" components={{br: <br />}}>
+            {t("subtitle")}
+          </Trans>
+        </p>
+
         <ul className={styles.points}>
           {points.map((point) => (
-            <li key={point}>{point}</li>
+            <li key={point}>
+              <Trans
+                i18nKey={`offer.points.${point}`}
+                components={{br: <br />, strong: <strong />}}
+              >
+                {point}
+              </Trans>
+            </li>
           ))}
         </ul>
         <div className={styles.actions}>
@@ -26,7 +44,7 @@ const FoldSection = () => {
             target="_blank"
             rel="noreferrer"
           >
-            {t("offer.cta")}
+            {transButtons("booking")}
           </Link>
           <Link
             href="https://www.linkedin.com/in/mkrostewitz"
@@ -34,7 +52,7 @@ const FoldSection = () => {
             target="_blank"
             rel="noreferrer"
           >
-            {t("linkedin")}
+            {transButtons("linkedin")}
           </Link>
         </div>
       </div>

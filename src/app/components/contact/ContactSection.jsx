@@ -75,7 +75,7 @@ const ContactSection = () => {
               target="_blank"
               rel="noreferrer"
             >
-              {t("hero.booking")}
+              {t("buttons.booking")}
             </Link>
             <Link
               href="https://www.linkedin.com/in/mkrostewitz"
@@ -83,7 +83,7 @@ const ContactSection = () => {
               target="_blank"
               rel="noreferrer"
             >
-              {t("linkedin")}
+              {t("buttons.linkedin")}
             </Link>
           </div>
         </div>

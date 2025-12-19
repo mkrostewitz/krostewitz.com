@@ -61,6 +61,8 @@
   width: 100%;
   position: relative;
   transform-origin: left center;
+  transform: scaleX(0);
+  animation: none;
 }
 
 .skillFill::after {
@@ -138,6 +140,85 @@
   color: #9fb3d8;
   line-height: 1.5;
   font-size: 0.95rem;
+}
+
+@keyframes skills-fill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(var(--fill-scale, 1));
+  }
+}
+
+.skillFill[data-active="true"] {
+  animation: skills-fill 1.1s ease-out forwards;
+  animation-delay: var(--animation-delay, 0s);
+}
+
+.mapSection {
+  margin-top: 28px;
+  display: grid;
+  gap: 14px;
+}
+
+.mapSectionHeader {
+  display: grid;
+  gap: 6px;
+}
+
+.mapEyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #8af5e6;
+  font-weight: 700;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.mapShell {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+.map {
+  width: 100%;
+  height: 360px;
+}
+
+.mapLegend {
+  display: flex;
+  gap: 18px;
+  padding: 12px 14px;
+  background: rgba(0, 0, 0, 0.35);
+  color: #e5e7eb;
+  font-weight: 600;
+}
+
+.mapFallback {
+  padding: 24px;
+  color: #e2e8f0;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 14px;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 8px;
+}
+
+.dotLived {
+  background: #86ffb6;
+}
+
+.dotWorked {
+  background: #7dd2ff;
 }
 
 @media (max-width: 960px) {

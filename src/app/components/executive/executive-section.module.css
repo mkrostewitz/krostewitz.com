@@ -49,6 +49,11 @@
   background: linear-gradient(180deg, #7c5cff, #4fd1c5);
   border-radius: 12px;
   opacity: 0.9;
+  animation: none;
+  opacity: 0.4;
+}
+
+.sparklineVisible span {
   animation: growSpark 1s ease-out forwards;
   animation-delay: var(--bar-delay, 0ms);
 }

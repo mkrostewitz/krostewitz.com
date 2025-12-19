@@ -24,6 +24,11 @@
   align-items: start;
   position: relative;
   z-index: 1;
+  opacity: 0;
+  transform: translateY(22px) scale(0.98);
+  filter: blur(4px);
+  transition: opacity 0.5s ease, transform 0.5s ease, filter 0.5s ease;
+  transition-delay: var(--item-delay, 0ms);
 }
 
 .timelineItem::before {
@@ -83,6 +88,12 @@
   color: #8af5e6;
   font-weight: 700;
   margin-bottom: 6px;
+}
+
+.timelineItemVisible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  filter: blur(0);
 }
 
 @media (max-width: 960px) {

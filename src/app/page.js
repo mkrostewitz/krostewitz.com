@@ -5,7 +5,6 @@ import {useTranslation} from "react-i18next";
 
 import styles from "./page.module.css";
 import NavBar from "./components/nav/nav";
-import ExperienceMap from "./components/maps/ExpenrienceMap";
 import ContactSection from "./components/contact/ContactSection";
 import TimelineSection from "./components/timeline/TimelineSection";
 import AboutSection from "./components/about/AboutSection";
@@ -76,8 +75,6 @@ export default function Home() {
         <TimelineSection />
 
         {/* Experience Map */}
-        <ExperienceMap labels={t("map", {returnObjects: true})} />
-
         {/* CV Section */}
         <CvSection />
 
