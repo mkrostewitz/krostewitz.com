@@ -62,7 +62,7 @@ const ExecutiveSummary = ({skills = []}) => {
   return (
     <section
       id="executiveSummary"
-      className={pageStyles.section}
+      className={`${pageStyles.section} ${styles.section}`}
       ref={sectionRef}
     >
       <div className={pageStyles.sectionHeader}>
@@ -73,11 +73,11 @@ const ExecutiveSummary = ({skills = []}) => {
       <div className={styles.summaryCard}>
         {/* Stats Section */}
         <div className={styles.statColumn}>
-        <div className={styles.statLabel}>{t("stats.yearsLeadership")}</div>
-        <div className={styles.statValue}>
-          {leadershipYears}
-          <span className={styles.statSuffix}>+</span>
-        </div>
+          <div className={styles.statLabel}>{t("stats.yearsLeadership")}</div>
+          <div className={styles.statValue}>
+            {leadershipYears}
+            <span className={styles.statSuffix}>+</span>
+          </div>
           <div
             className={`${styles.sparkline} ${
               isInView ? styles.sparklineVisible : ""
@@ -99,7 +99,7 @@ const ExecutiveSummary = ({skills = []}) => {
         </div>
         <div
           className={styles.statGrid}
-          style={{display: "flex", flexDirection: "column", gap: "1rem"}}
+          style={{display: "flex", flexDirection: "column", gap: "rem"}}
         >
           {/* Stats Section */}
           <div
@@ -107,14 +107,14 @@ const ExecutiveSummary = ({skills = []}) => {
               display: "flex",
               flexDirection: "row",
               gap: "2rem",
-              justifyContent: "space-between",
+              justifyContent: "space-evenly",
             }}
           >
-            <div>
+            <div style={{flex: 0.5}}>
               <p>{t("stats.revenuePerHead")}</p>
               <strong>{revenue}M US$</strong>
             </div>
-            <div>
+            <div style={{flex: 0.5}}>
               <p>{t("stats.markets")}</p>
               <strong>{markets}</strong>
             </div>

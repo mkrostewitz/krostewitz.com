@@ -70,8 +70,8 @@ const labelFeatures = {
 const SkillsSection = ({skills}) => {
   const {t} = useTranslation(undefined, {keyPrefix: "skills"});
   const [sectionRef, isInView] = useInViewOnce({
-    threshold: 0.35,
-    rootMargin: "0px 0px -20% 0px",
+    threshold: 0.2,
+    rootMargin: "0px 0px -5% 0px",
   });
   const [mapRefObserver, mapInView] = useInViewOnce({
     threshold: 0.2,
@@ -224,6 +224,9 @@ const SkillsSection = ({skills}) => {
                   style={{
                     "--fill-scale": fillScale,
                     "--animation-delay": `${idx * 0.08}s`,
+                    transform: isInView
+                      ? `scaleX(${fillScale})`
+                      : "scaleX(0)",
                   }}
                 />
               </div>

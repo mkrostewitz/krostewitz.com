@@ -167,3 +167,46 @@
   padding: 16px;
   color: #dbeafe;
 }
+
+@media (max-width: 768px) {
+  .main {
+    padding: 20px 4vw 60px;
+  }
+
+  .section {
+    margin-top: 32px;
+    padding: 20px;
+    border-radius: 16px;
+  }
+
+  .section h2 {
+    font-size: 1.6rem;
+  }
+
+  .cards {
+    gap: 12px;
+  }
+
+  .card {
+    padding: 14px;
+    border-radius: 14px;
+  }
+
+  .backend {
+    padding: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .main {
+    padding: 16px 16px 48px;
+  }
+
+  .section {
+    padding: 16px;
+  }
+
+  .section h2 {
+    font-size: 1.45rem;
+  }
+}

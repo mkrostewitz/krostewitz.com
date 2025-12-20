@@ -149,11 +149,46 @@
 }
 
 @media (max-width: 960px) {
+  .section {
+    padding: 18px;
+  }
+
   .summaryCard {
     grid-template-columns: 1fr;
+    padding: 16px;
+    margin-bottom: 16px;
   }
 
   .statValue {
     font-size: 2.6rem;
+  }
+
+  .languagesGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .languageCard {
+    padding: 12px 14px;
+  }
+}
+
+@media (max-width: 640px) {
+  .section {
+    padding: 14px;
+  }
+
+  .summaryCard {
+    width: 100%;
+    padding: 14px;
+    gap: 12px;
+  }
+
+  .statGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .languageCard {
+    width: 100%;
+    padding: 12px;
   }
 }

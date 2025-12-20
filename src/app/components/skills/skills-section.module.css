@@ -63,6 +63,7 @@
   transform-origin: left center;
   transform: scaleX(0);
   animation: none;
+  transition: transform 0.8s ease-out;
 }
 
 .skillFill::after {
@@ -82,6 +83,8 @@
   font-weight: 700;
   font-size: 0.9rem;
   margin-top: 14px;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .flashcards {
@@ -232,6 +235,16 @@
   }
 
   .legend {
-    justify-content: space-between;
+    justify-content: flex-start;
+    font-size: 0.85rem;
+    gap: 8px 14px;
+  }
+
+  .legend span {
+    display: inline-block;
+  }
+
+  .legend {
+    display: none;
   }
 }
