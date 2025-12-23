@@ -11,7 +11,7 @@ import AboutSection from "./components/about/AboutSection";
 import SkillsSection from "./components/skills/SkillsSection";
 import FoldSection from "./components/fold/FoldSection";
 import ExecutiveSummary from "./components/executive/ExecutiveSection";
-import CvSection from "./components/contact/CvSection";
+import CvSection from "./components/cv/CvSection";
 
 export default function Home() {
   const {t} = useTranslation();
