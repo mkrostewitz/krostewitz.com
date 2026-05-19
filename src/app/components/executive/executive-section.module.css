@@ -1,13 +1,11 @@
 .summaryCard {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid #e5e5e5;
   border-radius: 18px;
   padding: 18px;
   display: grid;
   grid-template-columns: minmax(200px, 0.9fr) minmax(200px, 1fr);
   gap: 16px;
   margin-bottom: 20px;
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.2);
 }
 
 .statColumn {
@@ -17,20 +15,20 @@
 
 .statLabel {
   font-size: 0.95rem;
-  color: #cbd5f5;
+  color: #666;
 }
 
 .statValue {
   font-size: 3.2rem;
   font-weight: 800;
-  color: #86ffb6;
+  color: var(--foreground);
   display: flex;
   align-items: baseline;
 }
 
 .statSuffix {
   font-size: 1.3rem;
-  color: #9ae6b4;
+  color: #333;
   margin-left: 6px;
 }
 
@@ -46,7 +44,7 @@
   display: block;
   width: 8px;
   height: 0;
-  background: linear-gradient(180deg, #7c5cff, #4fd1c5);
+  background: var(--foreground);
   border-radius: 12px;
   opacity: 0.9;
   animation: none;
@@ -77,28 +75,27 @@
 }
 
 .statGrid p {
-  color: #cbd5f5;
+  color: #666;
   font-size: 0.95rem;
 }
 
 .statGrid strong {
   display: block;
   font-size: 1.3rem;
-  color: #f8fafc;
+  color: var(--foreground);
   margin-top: 4px;
 }
 
 .languages {
   grid-column: 1 / -1;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid #e5e5e5;
   border-radius: 14px;
   padding: 12px 14px;
 }
 
 .languagesLabel {
   margin: 0 0 8px;
-  color: #8af5e6;
+  color: #333;
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -118,8 +115,7 @@
   align-items: center;
   padding: 12px 14px;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid #e5e5e5;
   min-width: 0;
 }
 
@@ -129,8 +125,8 @@
   border-radius: 12px;
   display: grid;
   place-items: center;
-  background: linear-gradient(135deg, #7c5cff, #4fd1c5);
-  color: #0b1020;
+  background: var(--foreground);
+  color: var(--background);
   font-weight: 800;
   letter-spacing: 0.04em;
   flex-shrink: 0;
@@ -138,13 +134,13 @@
 
 .languageName {
   margin: 0;
-  color: #f8fafc;
+  color: var(--foreground);
   font-weight: 700;
 }
 
 .languageLevel {
   margin: 0;
-  color: #cbd5f5;
+  color: #666;
   font-size: 0.95rem;
 }
 

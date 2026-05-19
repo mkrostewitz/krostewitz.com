@@ -245,7 +245,7 @@ const ContactSection = () => {
           >
             {({isSubmitting, status}) => (
               <Form className={styles.form}>
-                <p>{t("contact.verifyPrompt", {email: pendingEmail})}</p>
+                <p>{t("contact.verifyPrompt", {name: pendingName, mail: pendingEmail})}</p>
                 <label>
                   {t("contact.verifyCodeLabel")}
                   <Field
@@ -309,6 +309,7 @@ const ContactSection = () => {
               className={pageStyles.primary}
               onClick={() => {
                 setPhase("form");
+                setPendingName("");
                 setPendingEmail("");
                 setPendingName("");
                 setApiMessage(null);

@@ -4,16 +4,15 @@
 }
 
 .skill {
-  background: rgba(255, 255, 255, 0.02);
   padding: 12px;
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid #e5e5e5;
 }
 
 .skillTop {
   display: flex;
   justify-content: space-between;
-  color: #d9e4ff;
+  color: var(--foreground);
   font-weight: 600;
   margin-bottom: 8px;
 }
@@ -24,21 +23,21 @@
 
 .detail {
   margin: 4px 0 0;
-  color: #9fb3d8;
+  color: #666;
   font-size: 0.92rem;
   font-weight: 500;
 }
 
 .level {
   font-size: 0.9rem;
-  color: #8af5e6;
+  color: #333;
   font-weight: 700;
   letter-spacing: 0.02em;
 }
 
 .skillBar {
   height: 8px;
-  background: rgba(255, 255, 255, 0.06);
+  background: #f0f0f0;
   border-radius: 999px;
   overflow: hidden;
   position: relative;
@@ -48,7 +47,7 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, #7c5cff, #4fd1c5);
+  background: var(--foreground);
   transform-origin: left center;
   transform: scaleX(1);
   opacity: 0.08;
@@ -56,7 +55,7 @@
 
 .skillFill {
   height: 100%;
-  background: linear-gradient(90deg, #7c5cff, #4fd1c5);
+  background: var(--foreground);
   border-radius: 999px;
   width: 100%;
   position: relative;
@@ -72,14 +71,14 @@
   right: 8px;
   top: -28px;
   font-size: 0.85rem;
-  color: #8af5e6;
+  color: #333;
   font-weight: 700;
 }
 
 .legend {
   display: flex;
   justify-content: space-between;
-  color: #8af5e6;
+  color: #333;
   font-weight: 700;
   font-size: 0.9rem;
   margin-top: 14px;
@@ -100,7 +99,7 @@
 }
 
 .flashcardsTitle {
-  color: #8af5e6;
+  color: #333;
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -109,17 +108,15 @@
 
 .flashcardsSubtitle {
   margin: 0;
-  color: #9fb3d8;
+  color: #666;
   font-size: 0.98rem;
 }
 
 .flashcard {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  border: 1px solid #e5e5e5;
   border-radius: 14px;
   padding: 12px 14px;
-  color: #dbeafe;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.2);
+  color: var(--foreground);
 }
 
 .flashcardHeader {
@@ -134,13 +131,13 @@
 
 .flashcard h4 {
   margin: 0 0 6px;
-  color: #f8fafc;
+  color: var(--foreground);
   font-size: 1rem;
 }
 
 .flashcard p {
   margin: 0;
-  color: #9fb3d8;
+  color: #666;
   line-height: 1.5;
   font-size: 0.95rem;
 }
@@ -173,15 +170,14 @@
 .mapEyebrow {
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: #8af5e6;
+  color: #666;
   font-weight: 700;
   font-size: 0.9rem;
   margin: 0;
 }
 
 .mapShell {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid #e5e5e5;
   border-radius: 18px;
   overflow: hidden;
 }
@@ -195,16 +191,15 @@
   display: flex;
   gap: 18px;
   padding: 12px 14px;
-  background: rgba(0, 0, 0, 0.35);
-  color: #e5e7eb;
+  background: #f0f0f0;
+  color: var(--foreground);
   font-weight: 600;
 }
 
 .mapFallback {
   padding: 24px;
-  color: #e2e8f0;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px dashed rgba(255, 255, 255, 0.2);
+  color: var(--foreground);
+  border: 1px dashed #ccc;
   border-radius: 14px;
 }
 
@@ -217,11 +212,11 @@
 }
 
 .dotLived {
-  background: #86ffb6;
+  background: #080;
 }
 
 .dotWorked {
-  background: #7dd2ff;
+  background: #00c;
 }
 
 @media (max-width: 960px) {

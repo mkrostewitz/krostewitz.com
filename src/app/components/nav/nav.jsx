@@ -23,16 +23,15 @@ const NavBar = () => {
     if (
       browserLang &&
       supported.includes(browserLang) &&
-      browserLang !== lang
+      browserLang !== i18n.language
     ) {
-      setLang(browserLang);
+      i18n.changeLanguage(browserLang);
     }
     autoDetected.current = true;
-  }, [lang, supported]);
+  }, [i18n, supported]);
 
   useEffect(() => {
     if (lang && lang !== i18n.language) {
-      console.log("Setting language to", lang);
       i18n.changeLanguage(lang);
     }
   }, [lang, i18n]);

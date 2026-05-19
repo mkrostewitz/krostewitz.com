@@ -12,8 +12,7 @@
   top: 0;
   bottom: 0;
   width: 2px;
-  background: linear-gradient(180deg, #7c5cff, rgba(124, 92, 255, 0.05));
-  opacity: 0.65;
+  background: #e5e5e5;
   z-index: -1;
 }
 
@@ -39,17 +38,10 @@
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: #0b1020;
-  box-shadow: 0 0 0 3px rgba(124, 92, 255, 0.55);
-  border: 2px solid #7c5cff;
+  background: var(--background);
+  box-shadow: 0 0 0 3px var(--foreground);
+  border: 2px solid var(--foreground);
   z-index: -1;
-
-  /* left: 75px;
-  top: 0;
-  bottom: -14px;
-  width: 2px;
-  background: linear-gradient(180deg, #7c5cff, transparent);
-  opacity: 0.6; */
 }
 
 .timelineItem:last-child::before {
@@ -57,9 +49,9 @@
 }
 
 .timelineBadge {
-  background: #0d1222;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #cbd5f5;
+  background: var(--background);
+  border: 1px solid #e5e5e5;
+  color: var(--foreground);
   padding: 10px 12px;
   border-radius: 12px;
   text-align: center;
@@ -69,23 +61,22 @@
 }
 
 .timelineBody {
-  background: #0d1222;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--background);
+  border: 1px solid #e5e5e5;
   padding: 14px;
   border-radius: 14px;
-  color: #d9e4ff;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  color: var(--foreground);
   position: relative;
   z-index: 2;
 }
 
 .timelineBody h3 {
-  color: #f8fafc;
+  color: var(--foreground);
   margin-bottom: 4px;
 }
 
 .location {
-  color: #8af5e6;
+  color: #666;
   font-weight: 700;
   margin-bottom: 6px;
 }

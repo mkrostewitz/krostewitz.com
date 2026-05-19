@@ -5,11 +5,10 @@
 }
 
 .contactCard {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid #e5e5e5;
   padding: 16px;
   border-radius: 16px;
-  color: #dbeafe;
+  color: var(--foreground);
 }
 
 .contactDetails {
@@ -23,15 +22,14 @@
   gap: 2px;
   padding: 10px 12px;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #f8fafc;
+  border: 1px solid #e5e5e5;
+  color: var(--foreground);
   text-decoration: none;
 }
 
 .contactLink span {
   font-size: 0.9rem;
-  color: #cbd5e1;
+  color: #666;
 }
 
 .contactLink strong {
@@ -46,8 +44,7 @@
 .form {
   display: grid;
   gap: 12px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid #e5e5e5;
   padding: 16px;
   border-radius: 16px;
 }
@@ -55,36 +52,36 @@
 .form label {
   display: grid;
   gap: 6px;
-  color: #e2e8f0;
+  color: var(--foreground);
   font-weight: 600;
 }
 
 .form p {
-  color: #e2e8f0;
+  color: var(--foreground);
 }
 
 .form input,
 .form textarea {
   padding: 10px 12px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  background: rgba(0, 0, 0, 0.35);
-  color: #f8fafc;
+  border: 1px solid #e5e5e5;
+  background: var(--background);
+  color: var(--foreground);
 }
 
 .form input:focus,
 .form textarea:focus {
-  outline: 2px solid rgba(124, 92, 255, 0.8);
+  outline: 2px solid #333;
 }
 
 .error {
-  color: #f6c344;
+  color: #c00;
   font-weight: 700;
   font-size: 0.9rem;
 }
 
 .success {
-  color: #86ffb6;
+  color: #080;
   font-weight: 700;
 }
 

@@ -1,10 +1,10 @@
-@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
 @import "mapbox-gl/dist/mapbox-gl.css";
 
 :root {
-  --background: #0b1224;
-  --foreground: #f8fafc;
-  --font-body: "Space Grotesk", "Helvetica Neue", system-ui, sans-serif;
+  --background: #ffffff;
+  --foreground: #1a1a1a;
+  --font-body: "Inter", "Helvetica Neue", system-ui, sans-serif;
 }
 
 * {
