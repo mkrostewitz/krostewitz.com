@@ -1,0 +1,162 @@
+.headerRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
+}
+
+.headerRow :global(.secondary) {
+  flex: 0 0 auto;
+  margin-top: 4px;
+}
+
+.projectsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+.projectCard,
+.skeletonCard,
+.message {
+  border: 1px solid #e5e5e5;
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.projectCard {
+  display: grid;
+  gap: 14px;
+  color: var(--foreground);
+}
+
+.projectTop {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.repoName {
+  color: #666;
+  font-size: 0.84rem;
+  font-weight: 700;
+  margin: 0 0 4px;
+  overflow-wrap: anywhere;
+}
+
+.projectCard h3 {
+  font-size: 1.15rem;
+  line-height: 1.25;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.projectCard h3 a:hover,
+.projectLinks a:hover {
+  text-decoration: underline;
+}
+
+.repoButton {
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  color: var(--foreground);
+  flex: 0 0 auto;
+  font-size: 0.86rem;
+  font-weight: 800;
+  padding: 8px 10px;
+}
+
+.repoButton:hover {
+  border-color: #333;
+}
+
+.description {
+  color: #444;
+  line-height: 1.55;
+  min-height: 50px;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tags span {
+  background: #f0f0f0;
+  border: 1px solid #e5e5e5;
+  border-radius: 999px;
+  color: #333;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 6px 9px;
+}
+
+.projectMeta {
+  border-top: 1px solid #e5e5e5;
+  color: #666;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  padding-top: 12px;
+}
+
+.projectLinks {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-weight: 800;
+}
+
+.message {
+  color: var(--foreground);
+}
+
+.skeletonCard {
+  display: grid;
+  gap: 12px;
+}
+
+.skeletonCard span {
+  background: linear-gradient(90deg, #eeeeee, #f8f8f8, #eeeeee);
+  background-size: 200% 100%;
+  border-radius: 8px;
+  height: 14px;
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+.skeletonCard span:first-child {
+  width: 70%;
+  height: 18px;
+}
+
+.skeletonCard span:nth-child(2) {
+  width: 100%;
+}
+
+.skeletonCard span:nth-child(3) {
+  width: 52%;
+}
+
+@keyframes pulse {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@media (max-width: 720px) {
+  .headerRow {
+    display: grid;
+  }
+
+  .headerRow :global(.secondary) {
+    justify-self: flex-start;
+  }
+}
