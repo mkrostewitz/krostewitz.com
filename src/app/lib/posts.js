@@ -1,0 +1,361 @@
+import "server-only";
+
+import {ObjectId} from "mongodb";
+import sanitizeHtml from "sanitize-html";
+
+import {getDb} from "./mongo";
+
+const POSTS_COLLECTION = "posts";
+
+export const POST_STATUSES = ["draft", "published", "archived"];
+
+const RICH_TEXT_TAGS = [
+  "p",
+  "br",
+  "strong",
+  "b",
+  "em",
+  "i",
+  "u",
+  "s",
+  "h2",
+  "h3",
+  "h4",
+  "ul",
+  "ol",
+  "li",
+  "blockquote",
+  "a",
+  "code",
+  "pre",
+  "hr",
+  "div",
+  "span",
+];
+
+let indexPromise = null;
+
+export class PostValidationError extends Error {
+  constructor(message, status = 400) {
+    super(message);
+    this.name = "PostValidationError";
+    this.status = status;
+  }
+}
+
+function getPostsCollection(db) {
+  return db.collection(POSTS_COLLECTION);
+}
+
+async function ensurePostIndexes(db) {
+  if (!indexPromise) {
+    const posts = getPostsCollection(db);
+    indexPromise = Promise.all([
+      posts.createIndex({slug: 1}, {unique: true}),
+      posts.createIndex({status: 1, publishedAt: -1}),
+      posts.createIndex({updatedAt: -1}),
+    ]).catch((error) => {
+      indexPromise = null;
+      throw error;
+    });
+  }
+
+  await indexPromise;
+}
+
+function isPostObjectId(value) {
+  return /^[0-9a-f]{24}$/i.test(String(value || ""));
+}
+
+function toObjectId(value) {
+  if (!isPostObjectId(value)) {
+    throw new PostValidationError("Invalid post id.");
+  }
+
+  return new ObjectId(String(value));
+}
+
+function toIsoDate(value) {
+  if (!value) return null;
+  return value instanceof Date ? value.toISOString() : new Date(value).toISOString();
+}
+
+function cleanText(value, maxLength = 220) {
+  return sanitizeHtml(String(value || ""), {
+    allowedTags: [],
+    allowedAttributes: {},
+  })
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, maxLength);
+}
+
+export function sanitizePostHtml(value) {
+  return sanitizeHtml(String(value || ""), {
+    allowedTags: RICH_TEXT_TAGS,
+    allowedAttributes: {
+      a: ["href", "name", "target", "rel"],
+    },
+    allowedSchemes: ["http", "https", "mailto", "tel"],
+    transformTags: {
+      a(tagName, attribs) {
+        const href = String(attribs.href || "").trim();
+
+        if (!href) {
+          return {
+            tagName: "span",
+            attribs: {},
+          };
+        }
+
+        return {
+          tagName,
+          attribs: {
+            href,
+            target: "_blank",
+            rel: "noopener noreferrer",
+          },
+        };
+      },
+      b: "strong",
+      i: "em",
+    },
+  }).trim();
+}
+
+function slugify(value) {
+  const slug = String(value || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+
+  return slug || "post";
+}
+
+async function generateUniqueSlug(db, title, excludeId = null) {
+  const posts = getPostsCollection(db);
+  const baseSlug = slugify(title);
+  let candidate = baseSlug;
+  let suffix = 2;
+
+  while (true) {
+    const query = excludeId
+      ? {slug: candidate, _id: {$ne: excludeId}}
+      : {slug: candidate};
+    const existing = await posts.findOne(query, {projection: {_id: 1}});
+
+    if (!existing) return candidate;
+
+    candidate = `${baseSlug}-${suffix}`;
+    suffix += 1;
+  }
+}
+
+function normalizeStatus(value) {
+  const status = String(value || "draft").toLowerCase();
+
+  if (!POST_STATUSES.includes(status)) {
+    throw new PostValidationError("Invalid post status.");
+  }
+
+  return status;
+}
+
+function normalizeMedia(value) {
+  if (!value) return null;
+
+  if (typeof value !== "object" || Array.isArray(value)) {
+    throw new PostValidationError("Media must be an object.");
+  }
+
+  const type = String(value.type || "").toLowerCase();
+  const url = String(value.url || "").trim();
+
+  if (!url || !["image", "video"].includes(type)) {
+    throw new PostValidationError("Media must include an image or video URL.");
+  }
+
+  return {
+    type,
+    url,
+    key: value.key ? String(value.key) : null,
+    mimeType: value.mimeType ? String(value.mimeType) : null,
+    fileName: value.fileName ? String(value.fileName) : null,
+    size: Number.isFinite(Number(value.size)) ? Number(value.size) : null,
+  };
+}
+
+function normalizePostInput(input = {}) {
+  const title = cleanText(input.title, 140);
+
+  if (title.length < 2) {
+    throw new PostValidationError("Post title is required.");
+  }
+
+  const status = normalizeStatus(input.status);
+  const contentHtml = sanitizePostHtml(input.contentHtml);
+  const contentText = cleanText(contentHtml, 100000);
+
+  if (status === "published" && contentText.length < 10) {
+    throw new PostValidationError("Published posts need post content.");
+  }
+
+  return {
+    title,
+    status,
+    summary: cleanText(input.summary || contentText, 260),
+    contentHtml,
+    media: normalizeMedia(input.media),
+  };
+}
+
+export function serializePost(document, options = {}) {
+  if (!document) return null;
+
+  const includeContent = options.includeContent !== false;
+  const post = {
+    id: String(document._id),
+    title: document.title || "",
+    slug: document.slug || "",
+    summary: document.summary || "",
+    status: document.status || "draft",
+    media: document.media || null,
+    createdAt: toIsoDate(document.createdAt),
+    updatedAt: toIsoDate(document.updatedAt),
+    publishedAt: toIsoDate(document.publishedAt),
+  };
+
+  if (includeContent) {
+    post.contentHtml = document.contentHtml || "";
+  }
+
+  if (options.includeAdmin) {
+    post.authorEmail = document.authorEmail || null;
+    post.updatedBy = document.updatedBy || null;
+  }
+
+  return post;
+}
+
+export async function getAdminPosts(filters = {}) {
+  const db = await getDb();
+  await ensurePostIndexes(db);
+
+  const query = {};
+  if (filters.status && POST_STATUSES.includes(filters.status)) {
+    query.status = filters.status;
+  }
+
+  const posts = await getPostsCollection(db)
+    .find(query)
+    .sort({updatedAt: -1})
+    .toArray();
+
+  return posts.map((post) =>
+    serializePost(post, {includeContent: true, includeAdmin: true})
+  );
+}
+
+export async function getAdminPostById(postId) {
+  const db = await getDb();
+  await ensurePostIndexes(db);
+
+  const post = await getPostsCollection(db).findOne({_id: toObjectId(postId)});
+  return serializePost(post, {includeContent: true, includeAdmin: true});
+}
+
+export async function createPost(input, user) {
+  const db = await getDb();
+  await ensurePostIndexes(db);
+
+  const posts = getPostsCollection(db);
+  const normalized = normalizePostInput(input);
+  const now = new Date();
+  const slug = await generateUniqueSlug(db, normalized.title);
+  const document = {
+    ...normalized,
+    slug,
+    authorEmail: user?.email || null,
+    updatedBy: user?.email || null,
+    createdAt: now,
+    updatedAt: now,
+    publishedAt: normalized.status === "published" ? now : null,
+  };
+
+  const result = await posts.insertOne(document);
+  const post = await posts.findOne({_id: result.insertedId});
+
+  return serializePost(post, {includeContent: true, includeAdmin: true});
+}
+
+export async function updatePost(postId, input, user) {
+  const db = await getDb();
+  await ensurePostIndexes(db);
+
+  const posts = getPostsCollection(db);
+  const _id = toObjectId(postId);
+  const existing = await posts.findOne({_id});
+
+  if (!existing) {
+    throw new PostValidationError("Post not found.", 404);
+  }
+
+  const normalized = normalizePostInput(input);
+  const now = new Date();
+  const update = {
+    ...normalized,
+    updatedAt: now,
+    updatedBy: user?.email || null,
+  };
+
+  if (normalized.status === "published" && existing.status !== "published") {
+    update.publishedAt = now;
+  } else if (normalized.status !== "published" && !existing.publishedAt) {
+    update.publishedAt = null;
+  }
+
+  const result = await posts.findOneAndUpdate(
+    {_id},
+    {$set: update},
+    {returnDocument: "after"}
+  );
+  const post = result?.value || result;
+
+  return serializePost(post, {includeContent: true, includeAdmin: true});
+}
+
+export async function getPublishedPosts() {
+  const db = await getDb();
+  await ensurePostIndexes(db);
+
+  const posts = await getPostsCollection(db)
+    .find(
+      {status: "published"},
+      {
+        projection: {
+          contentHtml: 0,
+          authorEmail: 0,
+          updatedBy: 0,
+        },
+      }
+    )
+    .sort({publishedAt: -1, updatedAt: -1})
+    .toArray();
+
+  return posts.map((post) => serializePost(post, {includeContent: false}));
+}
+
+export async function getPublishedPostBySlug(slug) {
+  const db = await getDb();
+  await ensurePostIndexes(db);
+
+  const post = await getPostsCollection(db).findOne({
+    slug: String(slug || ""),
+    status: "published",
+  });
+
+  return serializePost(post, {includeContent: true});
+}
