@@ -55,7 +55,7 @@ function clampText(value, maxLength = 60000) {
 function getOpenAiConfig() {
   const apiKey = process.env.OPENAI_API_KEY;
   const model =
-    process.env.OPENAI_POSTS_MODEL || process.env.OPENAI_MODEL || "gpt-5.4-mini";
+    process.env.OPENAI_POSTS_MODEL || process.env.OPENAI_MODEL || "gpt-5.5";
 
   if (!apiKey) {
     throw new Error("OPENAI_API_KEY is not configured.");
