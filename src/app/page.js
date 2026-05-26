@@ -1,8 +1,9 @@
 "use client";
 
-import {useMemo} from "react";
+import {useEffect, useMemo} from "react";
 import {useTranslation} from "react-i18next";
 
+import {loadRuntimeTranslations} from "../lib/i18n";
 import styles from "./page.module.css";
 import NavBar from "./components/nav/nav";
 import ContactSection from "./components/contact/ContactSection";
@@ -12,9 +13,15 @@ import SkillsSection from "./components/skills/SkillsSection";
 import FoldSection from "./components/fold/FoldSection";
 import ExecutiveSummary from "./components/executive/ExecutiveSection";
 import CvSection from "./components/cv/CvSection";
+import BlogSection from "./components/blog/BlogSection";
+import PortfolioSection from "./components/portfolio/PortfolioSection";
 
 export default function Home() {
   const {t} = useTranslation();
+
+  useEffect(() => {
+    void loadRuntimeTranslations();
+  }, []);
 
   const skills = useMemo(
     () => [
@@ -49,7 +56,7 @@ export default function Home() {
         score: 4,
       },
     ],
-    [t]
+    [t],
   );
 
   return (
@@ -77,6 +84,12 @@ export default function Home() {
         {/* Experience Map */}
         {/* CV Section */}
         <CvSection />
+
+        {/* Blog */}
+        <BlogSection />
+
+        {/* Portfolio */}
+        <PortfolioSection />
 
         {/* Contact Me */}
         <ContactSection />
