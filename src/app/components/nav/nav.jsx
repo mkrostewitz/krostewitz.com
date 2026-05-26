@@ -1,48 +1,157 @@
+"use client";
+
 import Image from "next/image";
+import Link from "next/link";
 import {useTranslation} from "react-i18next";
 import {resources} from "../../../lib/i18n";
-import {useEffect, useRef, useState} from "react";
+import {
+  FALLBACK_LANGUAGE,
+  MANUAL_LANGUAGE_STORAGE_KEY,
+  normalizeLanguage,
+} from "../../../lib/languageDetection";
+import {useEffect, useState} from "react";
 import "./nav.component.css";
+
+const navLinks = [
+  {href: "/#executiveSummary", labelKey: "nav.executiveSummary"},
+  {href: "/#about", labelKey: "nav.about"},
+  {href: "/#skills", labelKey: "nav.impact"},
+  {href: "/#timeline", labelKey: "nav.timeline"},
+  {href: "/#cv", labelKey: "nav.cv"},
+  {href: "/#blog", labelKey: "nav.blog"},
+  {href: "/#portfolio", labelKey: "nav.portfolio"},
+  {href: "/#contact", labelKey: "nav.contact"},
+];
+
+const supportedLanguages = Object.keys(resources);
+
+function getSupportedLanguage(language) {
+  const normalizedLanguage = normalizeLanguage(language);
+  return supportedLanguages.includes(normalizedLanguage)
+    ? normalizedLanguage
+    : null;
+}
+
+function getStoredLanguage() {
+  if (typeof window === "undefined") return null;
+
+  try {
+    return getSupportedLanguage(
+      window.localStorage.getItem(MANUAL_LANGUAGE_STORAGE_KEY),
+    );
+  } catch {
+    return null;
+  }
+}
+
+function getQueryLanguage() {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const searchParams = new URLSearchParams(window.location.search);
+    return getSupportedLanguage(
+      searchParams.get("lng") || searchParams.get("language"),
+    );
+  } catch {
+    return null;
+  }
+}
+
+function storeLanguage(language) {
+  if (typeof window === "undefined") return;
+
+  try {
+    window.localStorage.setItem(MANUAL_LANGUAGE_STORAGE_KEY, language);
+  } catch {
+    // Ignore unavailable storage and still switch for the current session.
+  }
+}
 
 const NavBar = () => {
   const {t, i18n} = useTranslation();
 
   const [menuOpen, setMenuOpen] = useState(false);
 
-  // Track currently selected language (defaults to what i18n resolved, else English)
   const [lang, setLang] = useState(
-    () => i18n.resolvedLanguage || i18n.language || "en"
+    () =>
+      getSupportedLanguage(i18n.resolvedLanguage || i18n.language) ||
+      FALLBACK_LANGUAGE,
   );
-  const supported = Object.keys(resources);
-  const autoDetected = useRef(false);
-
-  // After hydration, detect browser language once; don't override manual choice
-  useEffect(() => {
-    if (autoDetected.current || typeof navigator === "undefined") return;
-    const browserLang = navigator.language?.split("-")[0];
-    if (
-      browserLang &&
-      supported.includes(browserLang) &&
-      browserLang !== i18n.language
-    ) {
-      i18n.changeLanguage(browserLang);
-    }
-    autoDetected.current = true;
-  }, [i18n, supported]);
 
   useEffect(() => {
-    if (lang && lang !== i18n.language) {
-      i18n.changeLanguage(lang);
+    const syncLanguage = (language) => {
+      const nextLanguage = getSupportedLanguage(language) || FALLBACK_LANGUAGE;
+      setLang(nextLanguage);
+
+      if (typeof document !== "undefined") {
+        document.documentElement.lang = nextLanguage;
+      }
+    };
+
+    syncLanguage(i18n.resolvedLanguage || i18n.language);
+    i18n.on("languageChanged", syncLanguage);
+
+    return () => {
+      i18n.off("languageChanged", syncLanguage);
+    };
+  }, [i18n]);
+
+  useEffect(() => {
+    const preferredLanguage = getQueryLanguage() || getStoredLanguage();
+    if (preferredLanguage) {
+      if (preferredLanguage !== getSupportedLanguage(i18n.language)) {
+        void i18n.changeLanguage(preferredLanguage);
+      }
+      return undefined;
     }
-  }, [lang, i18n]);
+
+    const controller = new AbortController();
+
+    async function detectLanguage() {
+      try {
+        const response = await fetch("/api/language", {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+
+        if (!response.ok || getStoredLanguage()) return;
+
+        const data = await response.json();
+        const detectedLanguage = getSupportedLanguage(data?.language);
+
+        if (
+          detectedLanguage &&
+          detectedLanguage !== getSupportedLanguage(i18n.language)
+        ) {
+          void i18n.changeLanguage(detectedLanguage);
+        }
+      } catch (error) {
+        if (error?.name !== "AbortError") {
+          console.warn("Unable to auto-detect language", error);
+        }
+      }
+    }
+
+    void detectLanguage();
+
+    return () => {
+      controller.abort();
+    };
+  }, [i18n]);
 
   const closeMenu = () => setMenuOpen(false);
+
+  const selectLanguage = (language) => {
+    storeLanguage(language);
+    setLang(language);
+    void i18n.changeLanguage(language);
+  };
 
   return (
     <div className="topBar">
       {/* Logo / back-to-top anchor */}
       <div className="kicker">
-        <a href="#top" onClick={closeMenu} aria-label="Back to top">
+        <Link href="/#top" onClick={closeMenu} aria-label="Back to top">
           <Image
             src="/logo.svg"
             alt="MK logo"
@@ -51,7 +160,7 @@ const NavBar = () => {
             className="logo"
             priority
           />
-        </a>
+        </Link>
       </div>
 
       {/* Hamburger Button (Mobile Menu) */}
@@ -68,32 +177,18 @@ const NavBar = () => {
 
       {/* Primary nav links */}
       <nav className={`nav ${menuOpen ? "navOpen" : ""}`}>
-        <a href="#executiveSummary" onClick={closeMenu}>
-          {t("nav.executiveSummary")}
-        </a>
-        <a href="#about" onClick={closeMenu}>
-          {t("nav.about")}
-        </a>
-        <a href="#skills" onClick={closeMenu}>
-          {t("nav.impact")}
-        </a>
-
-        <a href="#timeline" onClick={closeMenu}>
-          {t("nav.timeline")}
-        </a>
-        <a href="#cv" onClick={closeMenu}>
-          {t("nav.cv")}
-        </a>
-        <a href="#contact" onClick={closeMenu}>
-          {t("nav.contact")}
-        </a>
+        {navLinks.map(({href, labelKey}) => (
+          <Link key={href} href={href} onClick={closeMenu}>
+            {t(labelKey)}
+          </Link>
+        ))}
         {/* Language switcher inside mobile menu */}
         <div className="navLangSwitch">
-          {Object.keys(resources).map((code) => (
+          {supportedLanguages.map((code) => (
             <button
               key={code}
               onClick={() => {
-                setLang(code);
+                selectLanguage(code);
                 closeMenu();
               }}
               className={`langButton ${lang === code ? "langActive" : ""}`}
@@ -105,10 +200,10 @@ const NavBar = () => {
       </nav>
       {/* Language switcher on desktop */}
       <div className="langSwitch">
-        {Object.keys(resources).map((code) => (
+        {supportedLanguages.map((code) => (
           <button
             key={code}
-            onClick={() => setLang(code)}
+            onClick={() => selectLanguage(code)}
             className={`langButton ${lang === code ? "langActive" : ""}`}
           >
             {code.toUpperCase()}
