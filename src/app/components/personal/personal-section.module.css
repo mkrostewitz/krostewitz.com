@@ -1,0 +1,900 @@
+.section {
+  display: grid;
+  gap: 22px;
+}
+
+.hobbyList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.hobbyList span {
+  border: 1px solid #d8dedc;
+  border-radius: 999px;
+  color: var(--foreground);
+  font-size: 0.92rem;
+  font-weight: 700;
+  padding: 8px 12px;
+}
+
+.sailingPanel,
+.webcamPanel {
+  border: 1px solid #e5e5e5;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.sailingPanel {
+  --wind-map-bg: #0b0f19;
+  --wind-map-panel: #111827;
+  --wind-map-panel-soft: #151f2e;
+  --wind-map-border: rgba(247, 248, 250, 0.14);
+  --wind-map-text: #f7f8fa;
+  --wind-map-muted: #aab7c0;
+  --wind-map-green: #86ffb6;
+  --wind-map-cyan: #7dd2ff;
+  --wind-map-red: #ff8a75;
+}
+
+.sailingHeader {
+  align-items: start;
+  background: #fafafa;
+  border-bottom: 1px solid #e5e5e5;
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+  padding: 18px;
+}
+
+.sailingHeader h3,
+.webcamCopy h3 {
+  color: var(--foreground);
+  font-size: 1.25rem;
+  line-height: 1.25;
+  margin: 4px 0 6px;
+}
+
+.sailingHeader p,
+.webcamCopy h3 {
+  max-width: 720px;
+}
+
+.sailingHeader p,
+.webcamCopy p {
+  color: #56625f;
+  line-height: 1.55;
+}
+
+.panelEyebrow {
+  color: #45625f;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.dataStatus {
+  background: #ffffff;
+  border: 1px solid #e5e5e5;
+  border-radius: 999px;
+  color: #41534f;
+  flex-shrink: 0;
+  font-size: 0.82rem;
+  font-weight: 800;
+  padding: 8px 12px;
+  white-space: nowrap;
+}
+
+.dataStatus[data-state="error"] {
+  border-color: #dcb8ae;
+  color: #944a38;
+}
+
+.windLayout {
+  display: grid;
+  gap: 0;
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
+  min-height: 420px;
+}
+
+.windMap {
+  background: var(--wind-map-bg);
+  min-height: 420px;
+  overflow: hidden;
+  position: relative;
+}
+
+.windMap::before {
+  background:
+    linear-gradient(90deg, rgba(7, 17, 31, 0.2), rgba(7, 17, 31, 0.04) 45%, rgba(7, 17, 31, 0.38)),
+    linear-gradient(180deg, rgba(11, 15, 25, 0.38), rgba(11, 15, 25, 0.1) 48%, rgba(11, 15, 25, 0.52)),
+    rgba(11, 15, 25, 0.18);
+  content: "";
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: 1;
+}
+
+.windMapBackground {
+  background: var(--wind-map-bg);
+  filter: saturate(0.9) contrast(1.08);
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: 0;
+}
+
+.windMapBackground :global(.mapboxgl-canvas) {
+  outline: none;
+}
+
+.windMapBackground :global(.mapboxgl-ctrl-logo),
+.windMapBackground :global(.mapboxgl-ctrl-attrib) {
+  opacity: 0.62;
+}
+
+.windMap canvas {
+  cursor: grab;
+  display: block;
+  height: 100%;
+  inset: 0;
+  min-height: 420px;
+  position: absolute;
+  touch-action: none;
+  width: 100%;
+  z-index: 2;
+}
+
+.windMap canvas:active {
+  cursor: grabbing;
+}
+
+.weatherOverlay {
+  display: flex;
+  gap: 10px;
+  left: 14px;
+  pointer-events: none;
+  position: absolute;
+  right: 14px;
+  z-index: 3;
+}
+
+.weatherOverlayTop {
+  justify-content: space-between;
+  top: 14px;
+}
+
+.weatherOverlayBottom {
+  bottom: 34px;
+  justify-content: center;
+}
+
+.weatherBox {
+  background: rgba(11, 15, 25, 0.78);
+  border: 1px solid rgba(247, 248, 250, 0.16);
+  border-radius: 8px;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.26);
+  color: var(--wind-map-text);
+  display: grid;
+  gap: 3px;
+  min-width: 138px;
+  padding: 9px 10px;
+}
+
+.weatherBox > span {
+  color: var(--wind-map-muted);
+  font-size: 0.62rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.weatherBox strong {
+  color: var(--wind-map-text);
+  font-size: 1rem;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.weatherBox small {
+  color: rgba(170, 183, 192, 0.86);
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.weatherBoxWide {
+  max-width: min(380px, 100%);
+  min-width: 250px;
+}
+
+.weatherValueRow {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+}
+
+.weatherCloudText {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.weatherCloudText strong {
+  font-size: 0.98rem;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.weatherCloudText small {
+  font-size: 0.68rem;
+}
+
+.weatherIcon {
+  display: block;
+  flex: 0 0 auto;
+  height: 24px;
+  position: relative;
+  width: 32px;
+}
+
+.weatherIcon span {
+  display: block;
+  position: absolute;
+}
+
+.weatherIconSun::before,
+.weatherIconPartly::before {
+  background: #ffb15f;
+  border-radius: 50%;
+  box-shadow: 0 0 14px rgba(255, 177, 95, 0.48);
+  content: "";
+  height: 14px;
+  left: 3px;
+  position: absolute;
+  top: 3px;
+  width: 14px;
+}
+
+.weatherIconSun::after {
+  border: 0;
+  border-radius: 50%;
+  box-shadow:
+    0 -9px 0 -6px rgba(255, 177, 95, 0.9),
+    0 9px 0 -6px rgba(255, 177, 95, 0.9),
+    9px 0 0 -6px rgba(255, 177, 95, 0.9),
+    -9px 0 0 -6px rgba(255, 177, 95, 0.9);
+  content: "";
+  height: 14px;
+  left: 3px;
+  position: absolute;
+  top: 3px;
+  width: 14px;
+}
+
+.weatherIconCloud span:nth-child(1),
+.weatherIconPartly span:nth-child(1),
+.weatherIconRain span:nth-child(1) {
+  background: #aab7c0;
+  border-radius: 999px;
+  bottom: 5px;
+  height: 10px;
+  left: 7px;
+  width: 21px;
+  z-index: 2;
+}
+
+.weatherIconCloud span:nth-child(2),
+.weatherIconPartly span:nth-child(2),
+.weatherIconRain span:nth-child(2) {
+  background: #c9d5dc;
+  border-radius: 50%;
+  bottom: 9px;
+  height: 12px;
+  left: 11px;
+  width: 12px;
+  z-index: 2;
+}
+
+.weatherIconCloud span:nth-child(3),
+.weatherIconPartly span:nth-child(3),
+.weatherIconRain span:nth-child(3) {
+  background: #8ca1ad;
+  border-radius: 50%;
+  bottom: 6px;
+  height: 9px;
+  left: 4px;
+  width: 9px;
+  z-index: 2;
+}
+
+.weatherIconPartly span {
+  filter: drop-shadow(0 0 6px rgba(170, 183, 192, 0.28));
+}
+
+.weatherIconRain::before,
+.weatherIconRain::after {
+  background: var(--wind-map-cyan);
+  border-radius: 999px;
+  box-shadow: 9px 3px 0 rgba(125, 210, 255, 0.76);
+  content: "";
+  height: 8px;
+  position: absolute;
+  top: 15px;
+  transform: rotate(18deg);
+  width: 2px;
+  z-index: 2;
+}
+
+.weatherIconRain::before {
+  left: 9px;
+}
+
+.weatherIconRain::after {
+  left: 18px;
+}
+
+.windMapTooltip {
+  background: rgba(11, 15, 25, 0.94);
+  border: 1px solid rgba(247, 248, 250, 0.18);
+  border-radius: 10px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+  color: var(--wind-map-muted);
+  display: grid;
+  font-size: 0.78rem;
+  gap: 4px;
+  left: 0;
+  line-height: 1.35;
+  min-width: 156px;
+  padding: 10px 12px;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  transform: translateY(-100%);
+  z-index: 4;
+}
+
+.windMapTooltip strong {
+  color: var(--wind-map-text);
+  font-size: 0.82rem;
+}
+
+.instrumentGrid {
+  background:
+    linear-gradient(180deg, rgba(125, 210, 255, 0.06), transparent 42%),
+    var(--wind-map-bg);
+  border-left: 1px solid rgba(247, 248, 250, 0.12);
+  display: grid;
+  gap: 14px;
+  grid-template-rows: 1fr 1fr;
+  padding: 16px;
+}
+
+.instrument {
+  align-items: center;
+  background:
+    linear-gradient(180deg, rgba(247, 248, 250, 0.06), rgba(247, 248, 250, 0.02)),
+    var(--wind-map-panel);
+  border: 1px solid var(--wind-map-border);
+  border-radius: 14px;
+  box-shadow: inset 0 1px 0 rgba(247, 248, 250, 0.06);
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+  min-height: 180px;
+  padding: 16px 14px;
+}
+
+.instrumentReadout {
+  display: grid;
+  gap: 3px;
+  justify-items: center;
+  min-height: 34px;
+  text-align: center;
+}
+
+.instrumentReadout span {
+  color: var(--wind-map-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.instrumentReadout small {
+  color: rgba(170, 183, 192, 0.78);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.gaugeDial {
+  --gauge-angle: -150deg;
+  aspect-ratio: 1;
+  background:
+    radial-gradient(circle at center, var(--wind-map-panel) 0 57%, transparent 58%),
+    var(--wind-map-panel-soft);
+  border: 1px solid rgba(247, 248, 250, 0.16);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(247, 248, 250, 0.08);
+  display: grid;
+  height: 154px;
+  place-items: center;
+  position: relative;
+}
+
+.forecastTooltip {
+  background: rgba(11, 15, 25, 0.92);
+  border: 1px solid rgba(247, 248, 250, 0.2);
+  border-radius: 16px;
+  box-sizing: border-box;
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.34);
+  color: var(--wind-map-text);
+  display: grid;
+  gap: 8px;
+  inline-size: min(300px, calc(100vw - 40px));
+  left: 50%;
+  opacity: 0;
+  overflow: hidden;
+  padding: 12px;
+  pointer-events: none;
+  position: absolute;
+  text-align: left;
+  top: 50%;
+  transform: translate(-50%, -50%) scale(0.96);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  z-index: 5;
+}
+
+.forecastTooltip strong {
+  color: var(--wind-map-text);
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.forecastTable {
+  align-items: center;
+  display: grid;
+  font-size: 0.72rem;
+  gap: 5px 10px;
+  grid-template-columns: 48px minmax(0, 1fr) minmax(0, 1fr);
+  line-height: 1.2;
+  width: 100%;
+}
+
+.forecastTable > span:not(.forecastRow) {
+  color: rgba(170, 183, 192, 0.82);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.forecastRow {
+  display: contents;
+}
+
+.forecastRow span {
+  color: var(--wind-map-text);
+  font-weight: 800;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.forecastRow span:first-child {
+  color: var(--wind-map-muted);
+}
+
+.forecastEmpty {
+  color: var(--wind-map-muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.gaugeDial:hover .forecastTooltip,
+.gaugeDial:focus-visible .forecastTooltip,
+.compassDial:hover .forecastTooltip,
+.compassDial:focus-visible .forecastTooltip {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.gaugeDial:focus-visible,
+.compassDial:focus-visible {
+  outline: 2px solid rgba(125, 210, 255, 0.65);
+  outline-offset: 4px;
+}
+
+.gaugeDial::before {
+  border: 1px solid rgba(247, 248, 250, 0.1);
+  border-radius: 50%;
+  content: "";
+  inset: 18px;
+  position: absolute;
+  z-index: 1;
+}
+
+.speedTick {
+  --tick-angle: 0deg;
+  background: rgba(134, 255, 182, 0.48);
+  border-radius: 999px;
+  height: 8px;
+  left: 50%;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%) rotate(var(--tick-angle)) translateY(-59px);
+  transform-origin: center;
+  width: 1.5px;
+  z-index: 2;
+}
+
+.speedTickMajor {
+  background: rgba(247, 248, 250, 0.78);
+  height: 13px;
+  transform: translate(-50%, -50%) rotate(var(--tick-angle)) translateY(-57px);
+  width: 2.5px;
+}
+
+.speedMark {
+  --mark-angle: 0deg;
+  --mark-counter-angle: 0deg;
+  color: rgba(247, 248, 250, 0.78);
+  font-size: 0.66rem;
+  font-weight: 800;
+  left: 50%;
+  line-height: 1;
+  pointer-events: none;
+  position: absolute;
+  text-shadow: 0 1px 6px var(--wind-map-bg);
+  top: 50%;
+  transform:
+    translate(-50%, -50%)
+    rotate(var(--mark-angle))
+    translateY(-43px)
+    rotate(var(--mark-counter-angle));
+  z-index: 3;
+}
+
+.gaugeNeedle {
+  background: linear-gradient(180deg, var(--wind-map-text), var(--wind-map-green));
+  border-radius: 999px;
+  bottom: 50%;
+  filter: drop-shadow(0 0 8px rgba(134, 255, 182, 0.25));
+  height: 54px;
+  left: calc(50% - 1.5px);
+  position: absolute;
+  transform: rotate(var(--gauge-angle));
+  transform-origin: 50% 100%;
+  transition: opacity 0.18s ease, transform 0.5s ease;
+  width: 3px;
+  z-index: 2;
+}
+
+.gaugeDial:hover .gaugeNeedle,
+.gaugeDial:focus-visible .gaugeNeedle {
+  opacity: 0.18;
+}
+
+.gaugeNeedle::after {
+  background: var(--wind-map-bg);
+  border: 2px solid var(--wind-map-green);
+  border-radius: 50%;
+  bottom: -10px;
+  box-shadow: 0 0 18px rgba(134, 255, 182, 0.16);
+  content: "";
+  height: 20px;
+  left: -8.5px;
+  position: absolute;
+  width: 20px;
+}
+
+.compassDial {
+  --direction: 0deg;
+  aspect-ratio: 1;
+  background:
+    radial-gradient(circle at center, var(--wind-map-panel) 0 57%, transparent 58%),
+    var(--wind-map-panel-soft);
+  border: 1px solid rgba(247, 248, 250, 0.16);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(247, 248, 250, 0.06);
+  height: 154px;
+  position: relative;
+}
+
+.compassDial::before {
+  border: 1px solid rgba(247, 248, 250, 0.1);
+  border-radius: 50%;
+  content: "";
+  inset: 18px;
+  position: absolute;
+  z-index: 1;
+}
+
+.compassTick {
+  --tick-angle: 0deg;
+  background: rgba(125, 210, 255, 0.48);
+  border-radius: 999px;
+  height: 8px;
+  left: 50%;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%) rotate(var(--tick-angle)) translateY(-59px);
+  transform-origin: center;
+  width: 1.5px;
+  z-index: 2;
+}
+
+.compassTickMajor {
+  background: rgba(247, 248, 250, 0.78);
+  height: 13px;
+  transform: translate(-50%, -50%) rotate(var(--tick-angle)) translateY(-57px);
+  width: 2.5px;
+}
+
+.compassLabel {
+  color: var(--wind-map-text);
+  font-size: 0.72rem;
+  font-weight: 900;
+  position: absolute;
+  text-shadow: 0 1px 6px var(--wind-map-bg);
+  z-index: 3;
+}
+
+.north {
+  left: 50%;
+  top: 27px;
+  transform: translateX(-50%);
+}
+
+.east {
+  right: 30px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.south {
+  bottom: 27px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.west {
+  left: 30px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.compassNeedle {
+  background: linear-gradient(180deg, var(--wind-map-text), var(--wind-map-red));
+  border-radius: 999px;
+  bottom: 50%;
+  height: 54px;
+  left: calc(50% - 1.5px);
+  position: absolute;
+  transform: rotate(var(--direction));
+  transform-origin: 50% 100%;
+  transition: opacity 0.3s ease, transform 0.5s ease;
+  width: 3px;
+  filter: drop-shadow(0 0 8px rgba(255, 138, 117, 0.3));
+  z-index: 2;
+}
+
+.compassNeedle::before {
+  content: none;
+}
+
+.compassNeedle::after {
+  background: var(--wind-map-bg);
+  border: 2px solid var(--wind-map-red);
+  border-radius: 50%;
+  bottom: -10px;
+  box-shadow: 0 0 18px rgba(255, 138, 117, 0.18);
+  content: "";
+  height: 20px;
+  left: -8.5px;
+  position: absolute;
+  width: 20px;
+}
+
+.compassNeedle[data-empty="true"] {
+  opacity: 0.25;
+}
+
+.compassDial:hover .compassNeedle,
+.compassDial:focus-visible .compassNeedle {
+  opacity: 0.18;
+}
+
+.instrumentMeta {
+  color: var(--wind-map-muted);
+  font-size: 0.92rem;
+  line-height: 1.45;
+  min-height: 22px;
+  text-align: center;
+}
+
+.instrumentMeta strong {
+  color: var(--wind-map-text);
+  white-space: nowrap;
+}
+
+.windMeta {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  justify-content: center;
+}
+
+.windMeta span {
+  white-space: nowrap;
+}
+
+.sourceRow {
+  align-items: center;
+  background: #fafafa;
+  border-top: 1px solid #e5e5e5;
+  display: flex;
+  justify-content: flex-end;
+  padding: 10px 14px;
+}
+
+.sourceRow a,
+.webcamLinks a,
+.webcamFallback a {
+  color: #315f8f;
+  font-weight: 800;
+}
+
+.sourceRow a:hover,
+.webcamLinks a:hover,
+.webcamFallback a:hover {
+  text-decoration: underline;
+}
+
+.webcamPanel {
+  align-items: stretch;
+  display: grid;
+  grid-template-columns: minmax(220px, 0.45fr) minmax(0, 1fr);
+}
+
+.webcamCopy {
+  background: #f7faf9;
+  border-right: 1px solid #dfe6e4;
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+}
+
+.webcamLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.webcamFrame {
+  aspect-ratio: 16 / 9;
+  background: #eef3f1;
+  min-height: 260px;
+  overflow: hidden;
+  position: relative;
+}
+
+.webcamImage {
+  display: block;
+  object-fit: cover;
+}
+
+.webcamFallback {
+  align-content: center;
+  color: #56625f;
+  display: grid;
+  gap: 10px;
+  height: 100%;
+  justify-items: center;
+  padding: 24px;
+  text-align: center;
+}
+
+@media (max-width: 980px) {
+  .sailingHeader,
+  .webcamPanel {
+    grid-template-columns: 1fr;
+  }
+
+  .sailingHeader {
+    display: grid;
+  }
+
+  .dataStatus {
+    justify-self: start;
+    white-space: normal;
+  }
+
+  .windLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .instrumentGrid {
+    border-left: 0;
+    border-top: 1px solid rgba(247, 248, 250, 0.12);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: auto;
+  }
+
+  .webcamCopy {
+    border-bottom: 1px solid #dfe6e4;
+    border-right: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .sailingHeader,
+  .webcamCopy {
+    padding: 14px;
+  }
+
+  .windMap,
+  .windMap canvas {
+    min-height: 320px;
+  }
+
+  .weatherOverlay {
+    gap: 8px;
+    left: 10px;
+    right: 10px;
+  }
+
+  .weatherOverlayBottom {
+    bottom: 28px;
+  }
+
+  .weatherBox {
+    min-width: 0;
+    padding: 8px;
+  }
+
+  .weatherBox strong {
+    font-size: 0.92rem;
+  }
+
+  .weatherBoxWide {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .instrumentGrid {
+    grid-template-columns: 1fr;
+    padding: 12px;
+  }
+
+  .instrument {
+    min-height: 168px;
+  }
+
+  .gaugeDial {
+    height: 144px;
+  }
+
+  .compassDial {
+    height: 144px;
+  }
+
+  .webcamFrame {
+    min-height: 190px;
+  }
+}
