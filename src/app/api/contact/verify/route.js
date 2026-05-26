@@ -27,7 +27,7 @@ export async function POST(request) {
   const transporter = getTransport();
   if (!transporter) {
     return NextResponse.json(
-      {errorCode: "contact.mailNotConfigured"},
+      {errorCode: "contact.form.mailNotConfigured"},
       {status: 500}
     );
   }
@@ -36,7 +36,7 @@ export async function POST(request) {
 
   if (!email || !code) {
     return NextResponse.json(
-      {errorCode: "contact.missingFields"},
+      {errorCode: "contact.form.missingFields"},
       {status: 400}
     );
   }
@@ -51,11 +51,17 @@ export async function POST(request) {
   });
 
   if (!existing) {
-    return NextResponse.json({errorCode: "contact.notFound"}, {status: 404});
+    return NextResponse.json(
+      {errorCode: "contact.form.notFound"},
+      {status: 404}
+    );
   }
 
   if (existing.verificationCode !== code) {
-    return NextResponse.json({errorCode: "contact.invalidCode"}, {status: 400});
+    return NextResponse.json(
+      {errorCode: "contact.form.invalidCode"},
+      {status: 400}
+    );
   }
 
   await contacts.updateOne(
@@ -84,6 +90,9 @@ export async function POST(request) {
     return NextResponse.json({ok: true});
   } catch (error) {
     console.error("Contact final send error", error);
-    return NextResponse.json({errorCode: "contact.sendFailed"}, {status: 500});
+    return NextResponse.json(
+      {errorCode: "contact.form.sendFailed"},
+      {status: 500}
+    );
   }
 }

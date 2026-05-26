@@ -2,6 +2,7 @@
   display: grid;
   grid-template-columns: minmax(260px, 0.75fr) minmax(320px, 1.25fr);
   gap: 18px;
+  align-items: stretch;
 }
 
 .contactCard {
@@ -9,6 +10,8 @@
   padding: 16px;
   border-radius: 16px;
   color: var(--foreground);
+  display: flex;
+  flex-direction: column;
 }
 
 .contactDetails {
@@ -39,14 +42,23 @@
 .contactActions {
   display: grid;
   gap: 10px;
+  margin-top: auto;
+  padding-top: 16px;
 }
 
 .form {
-  display: grid;
-  gap: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
   border: 1px solid #e5e5e5;
   padding: 16px;
   border-radius: 16px;
+  min-height: 100%;
+}
+
+.fields {
+  display: grid;
+  gap: 14px;
 }
 
 .form label {
@@ -67,6 +79,19 @@
   border: 1px solid #e5e5e5;
   background: var(--background);
   color: var(--foreground);
+}
+
+.formFooter {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 12px;
+}
+
+.submitButton {
+  min-width: 200px;
 }
 
 .form input:focus,
@@ -104,5 +129,16 @@
 @media (max-width: 960px) {
   .contactGrid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .formFooter {
+    display: grid;
+  }
+
+  .submitButton {
+    width: 100%;
+    min-width: 0;
   }
 }

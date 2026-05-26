@@ -1,5 +1,3 @@
-"use client";
-
 import {ErrorMessage, Field, Form, Formik} from "formik";
 import Link from "next/link";
 import {useMemo, useState} from "react";
@@ -7,6 +5,7 @@ import {useTranslation} from "react-i18next";
 import * as Yup from "yup";
 
 import pageStyles from "../../page.module.css";
+import "../../buttons.css";
 import styles from "./contact-section.module.css";
 
 const ContactSection = () => {
@@ -22,55 +21,61 @@ const ContactSection = () => {
   const contactSchema = useMemo(
     () =>
       Yup.object({
-        name: Yup.string().required(t("contact.validation.name")),
+        name: Yup.string().required(t("contact.form.validation.name")),
         email: Yup.string()
-          .email(t("contact.validation.email"))
-          .required(t("contact.validation.email")),
+          .email(t("contact.form.validation.email"))
+          .required(t("contact.form.validation.email")),
         message: Yup.string()
-          .min(10, t("contact.validation.message"))
-          .required(t("contact.validation.message")),
+          .min(10, t("contact.form.validation.message"))
+          .required(t("contact.form.validation.message")),
       }),
-    [t]
+    [t],
   );
 
   const verifySchema = useMemo(
     () =>
       Yup.object({
         code: Yup.string()
-          .matches(/^[0-9]{6}$/, t("contact.validation.code"))
-          .required(t("contact.validation.codeRequired")),
+          .matches(/^[0-9]{6}$/, t("contact.form.validation.code"))
+          .required(t("contact.form.validation.codeRequired")),
       }),
-    [t]
+    [t],
   );
 
   return (
-    <section id="contact" className={pageStyles.section}>
+    <section id="contact" className={`${pageStyles.section} ${styles.section}`}>
       <div className={pageStyles.sectionHeader}>
-        <p className={pageStyles.eyebrow}>{t("nav.contact")}</p>
+        <p className={pageStyles.eyebrow}>{t("contact.eyebrow")}</p>
         <h2>{t("contact.title")}</h2>
-        <p className={pageStyles.lead}>{t("contact.subtitle")}</p>
+        <p className={pageStyles.lead}>{t("contact.intro")}</p>
       </div>
 
       <div className={styles.contactGrid}>
-        <div className={styles.contactCard}>
-          <h3>{t("contact.directTitle")}</h3>
-          <p>{t("contact.directNote")}</p>
-          <div className={styles.contactDetails}>
-            <a className={styles.contactLink} href="tel:+16505615752">
-              <span>{t("contact.phoneLabel")}</span>
-              <strong>+1 (650) 561 5752</strong>
-            </a>
-            <a
-              className={styles.contactLink}
-              href="mailto:mathias@krostewitz.com"
-            >
-              <span>{t("contact.emailLabel")}</span>
-              <strong>mathias@krostewitz.com</strong>
-            </a>
+        <aside className={styles.contactCard}>
+          <div className={styles.cardIntro}>
+            <h3>{t("contact.directTitle")}</h3>
+            <p>{t("contact.directNote")}</p>
           </div>
+
+          <div className={styles.contactStack}>
+            <div className={styles.contactDetails}>
+              <a className={styles.contactLink} href="tel:+16505615752">
+                <span>{t("contact.phoneLabel")}</span>
+                <strong>{t("contact.phoneNumber")}</strong>
+              </a>
+              <a
+                className={styles.contactLink}
+                href="mailto:mathias@krostewitz.com"
+              >
+                <span>{t("contact.emailLabel")}</span>
+                <strong>mathias@krostewitz.com</strong>
+              </a>
+            </div>
+          </div>
+
           <div className={styles.contactActions}>
             <Link
-              className={pageStyles.primary}
+              className={`primary ${styles.actionButton}`}
               href="https://koalendar.com/e/meet-with-mathias-krostewitz"
               target="_blank"
               rel="noreferrer"
@@ -79,14 +84,14 @@ const ContactSection = () => {
             </Link>
             <Link
               href="https://www.linkedin.com/in/mkrostewitz"
-              className={pageStyles.secondary}
+              className={`secondary ${styles.actionButton}`}
               target="_blank"
               rel="noreferrer"
             >
               {t("buttons.linkedin")}
             </Link>
           </div>
-        </div>
+        </aside>
 
         {phase === "form" && (
           <Formik
@@ -108,7 +113,7 @@ const ContactSection = () => {
                   const message =
                     (data.errorCode && t(data.errorCode)) ||
                     data.error ||
-                    t("contact.errorGeneric");
+                    t("contact.form.errorGeneric");
 
                   if (res.status === 409 || res.status === 400) {
                     setStatus({state: "error", message});
@@ -122,7 +127,7 @@ const ContactSection = () => {
                   setPendingEmail(values.email);
                   setPendingName(values.name);
                   setPhase("verify");
-                  setApiMessage(t("contact.verifySent"));
+                  setApiMessage(t("contact.form.verifySent"));
                   return;
                 }
 
@@ -132,8 +137,7 @@ const ContactSection = () => {
                 console.error("Contact submit error", err);
                 setStatus({
                   state: "error",
-                  message:
-                    err.message || "Something went wrong. Please try again.",
+                  message: err.message || t("contact.form.errorGeneric"),
                 });
               } finally {
                 setSubmitting(false);
@@ -141,58 +145,69 @@ const ContactSection = () => {
             }}
           >
             {({isSubmitting, status}) => (
-              <Form className={styles.form}>
-                <label>
-                  {t("contact.name")}
-                  <Field name="name" placeholder="Jane Doe" />
-                  <ErrorMessage
-                    name="name"
-                    component="span"
-                    className={styles.error}
-                  />
-                </label>
-                <label>
-                  {t("contact.email")}
-                  <Field
-                    name="email"
-                    type="email"
-                    placeholder="you@email.com"
-                  />
-                  <ErrorMessage
-                    name="email"
-                    component="span"
-                    className={styles.error}
-                  />
-                </label>
-                <label>
-                  {t("contact.message")}
-                  <Field
-                    as="textarea"
-                    rows="4"
-                    name="message"
-                    placeholder="Tell me about the challenge..."
-                  />
-                  <ErrorMessage
-                    name="message"
-                    component="span"
-                    className={styles.error}
-                  />
-                </label>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className={pageStyles.primary}
-                  style={{width: "200px"}}
-                >
-                  {isSubmitting ? "Sending..." : t("contact.submit")}
-                </button>
-                {status?.state === "sent" && (
-                  <p className={styles.success}>{t("contact.success")}</p>
-                )}
-                {status?.state === "error" && (
-                  <p className={styles.error}>{status.message}</p>
-                )}
-                {apiMessage && <p className={styles.success}>{apiMessage}</p>}
+              <Form className={`${styles.formPanel} ${styles.form}`}>
+                <div className={styles.fields}>
+                  <label className={styles.field}>
+                    {t("contact.form.name")}
+                    <Field
+                      name="name"
+                      placeholder={t("contact.form.placeholderName")}
+                    />
+                    <ErrorMessage
+                      name="name"
+                      component="span"
+                      className={styles.error}
+                    />
+                  </label>
+                  <label className={styles.field}>
+                    {t("contact.form.email")}
+                    <Field
+                      name="email"
+                      type="email"
+                      placeholder={t("contact.form.placeholderEmail")}
+                    />
+                    <ErrorMessage
+                      name="email"
+                      component="span"
+                      className={styles.error}
+                    />
+                  </label>
+                  <label className={styles.field}>
+                    {t("contact.form.message")}
+                    <Field
+                      as="textarea"
+                      rows="5"
+                      name="message"
+                      placeholder={t("contact.form.placeholderMessage")}
+                    />
+                    <ErrorMessage
+                      name="message"
+                      component="span"
+                      className={styles.error}
+                    />
+                  </label>
+                </div>
+
+                <div className={styles.formFooter}>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className={`primary ${styles.submitButton}`}
+                  >
+                    {isSubmitting
+                      ? t("contact.form.sending")
+                      : t("contact.form.submit")}
+                  </button>
+                  {status?.state === "sent" && (
+                    <p className={styles.success}>
+                      {t("contact.form.success")}
+                    </p>
+                  )}
+                  {status?.state === "error" && (
+                    <p className={styles.error}>{status.message}</p>
+                  )}
+                  {apiMessage && <p className={styles.success}>{apiMessage}</p>}
+                </div>
               </Form>
             )}
           </Formik>
@@ -221,7 +236,7 @@ const ContactSection = () => {
                   const message =
                     (data.errorCode && t(data.errorCode)) ||
                     data.error ||
-                    t("contact.errorGeneric");
+                    t("contact.form.errorGeneric");
                   if (res.status === 400 || res.status === 404) {
                     setStatus({state: "error", message});
                     return;
@@ -230,13 +245,13 @@ const ContactSection = () => {
                 }
 
                 setPhase("success");
-                setApiMessage(t("contact.verifySuccess"));
+                setApiMessage(t("contact.form.verifySuccess"));
               } catch (err) {
                 console.error("Contact verify error", err);
                 setStatus({
                   state: "error",
                   message:
-                    err.message || "Something went wrong. Please try again.",
+                    err.message || t("contact.form.errorGeneric"),
                 });
               } finally {
                 setSubmitting(false);
@@ -244,13 +259,24 @@ const ContactSection = () => {
             }}
           >
             {({isSubmitting, status}) => (
-              <Form className={styles.form}>
-                <p>{t("contact.verifyPrompt", {name: pendingName, mail: pendingEmail})}</p>
-                <label>
-                  {t("contact.verifyCodeLabel")}
+              <Form className={`${styles.formPanel} ${styles.form}`}>
+                <div className={styles.formHeader}>
+                  <p className={styles.kicker}>
+                    {t("contact.form.verifyEyebrow")}
+                  </p>
+                  <h3>{t("contact.form.verifyTitle")}</h3>
+                  <p>
+                    {t("contact.form.verifyPrompt", {
+                      name: pendingName,
+                      email: pendingEmail,
+                    })}
+                  </p>
+                </div>
+                <label className={styles.field}>
+                  {t("contact.form.verifyCodeLabel")}
                   <Field
                     name="code"
-                    placeholder={t("contact.verifyCodePlaceholder")}
+                    placeholder={t("contact.form.verifyCodePlaceholder")}
                     maxLength="6"
                   />
                   <ErrorMessage
@@ -263,23 +289,19 @@ const ContactSection = () => {
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className={pageStyles.primary}
-                    style={{width: "150px"}}
+                    className={`primary ${styles.submitButton}`}
                   >
-                    {isSubmitting
-                      ? t("contact.verifySubmit")
-                      : t("contact.verifySubmit")}
+                    {t("contact.form.verifySubmit")}
                   </button>
                   <button
                     type="button"
-                    className={pageStyles.secondary}
-                    style={{width: "150px"}}
+                    className={`secondary ${styles.submitButton}`}
                     onClick={() => {
                       setPhase("form");
                       setApiMessage(null);
                     }}
                   >
-                    {t("contact.verifyEdit")}
+                    {t("contact.form.verifyEdit")}
                   </button>
                 </div>
                 {status?.state === "error" && (
@@ -292,21 +314,13 @@ const ContactSection = () => {
         )}
 
         {phase === "success" && (
-          <div
-            // className={`${styles.form} ${styles.successBlock}`}
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              textAlign: "center",
-              gap: "1rem",
-            }}
-          >
-            <p className={styles.success}>{t("contact.verifySuccess")}</p>
+          <div className={`${styles.formPanel} ${styles.successBlock}`}>
+            <p className={styles.kicker}>{t("contact.form.successEyebrow")}</p>
+            <h3>{t("contact.form.successTitle")}</h3>
+            <p className={styles.success}>{t("contact.form.verifySuccess")}</p>
             <button
               type="button"
-              className={pageStyles.primary}
+              className={`primary ${styles.submitButton}`}
               onClick={() => {
                 setPhase("form");
                 setPendingName("");
@@ -315,7 +329,7 @@ const ContactSection = () => {
                 setApiMessage(null);
               }}
             >
-              {t("contact.sendAnother")}
+              {t("contact.form.sendAnother")}
             </button>
           </div>
         )}

@@ -28,7 +28,7 @@ export async function POST(request) {
   const transporter = getTransport();
   if (!transporter) {
     return NextResponse.json(
-      {errorCode: "contact.mailNotConfigured"},
+      {errorCode: "contact.form.mailNotConfigured"},
       {status: 500}
     );
   }
@@ -37,7 +37,7 @@ export async function POST(request) {
 
   if (!name || !email || !message) {
     return NextResponse.json(
-      {errorCode: "contact.missingFields"},
+      {errorCode: "contact.form.missingFields"},
       {status: 400}
     );
   }
@@ -49,7 +49,7 @@ export async function POST(request) {
   const existing = await contacts.findOne({email: normalizedEmail});
   if (existing && existing.status === "verified") {
     return NextResponse.json(
-      {errorCode: "contact.alreadyExists"},
+      {errorCode: "contact.form.alreadyExists"},
       {status: 409}
     );
   }
@@ -85,6 +85,9 @@ export async function POST(request) {
     return NextResponse.json({status: "verify_required"});
   } catch (error) {
     console.error("Contact verification send error", error);
-    return NextResponse.json({errorCode: "contact.sendFailed"}, {status: 500});
+    return NextResponse.json(
+      {errorCode: "contact.form.sendFailed"},
+      {status: 500}
+    );
   }
 }
