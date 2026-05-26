@@ -2,7 +2,9 @@ import Image from "next/image";
 import Link from "next/link";
 import {Trans, useTranslation} from "react-i18next";
 
+import pageStyles from "../../page.module.css";
 import styles from "./fold-section.module.css";
+import "../../buttons.css";
 
 const FoldSection = () => {
   const {t} = useTranslation(undefined, {
@@ -16,8 +18,8 @@ const FoldSection = () => {
   return (
     <header className={styles.hero}>
       <div className={styles.copy}>
-        <p className={styles.eyebrow}>{t("eyebrow")}</p>
-        <h2>{t("title")}</h2>
+        <p className={pageStyles.eyebrow}>{t("eyebrow")}</p>
+        <h2 dangerouslySetInnerHTML={{__html: t("title")}} />
 
         <p className={styles.lead}>
           <Trans i18nKey="offer.subtitle" components={{br: <br />}}>
@@ -26,10 +28,10 @@ const FoldSection = () => {
         </p>
 
         <ul className={styles.points}>
-          {points.map((point) => (
+          {points.map((point, index) => (
             <li key={point}>
               <Trans
-                i18nKey={`offer.points.${point}`}
+                i18nKey={`offer.points.${index}`}
                 components={{br: <br />, strong: <strong />}}
               >
                 {point}
@@ -40,7 +42,7 @@ const FoldSection = () => {
         <div className={styles.actions}>
           <Link
             href="https://koalendar.com/e/meet-with-mathias-krostewitz"
-            className={styles.primary}
+            className="primary"
             target="_blank"
             rel="noreferrer"
           >
@@ -48,7 +50,7 @@ const FoldSection = () => {
           </Link>
           <Link
             href="https://www.linkedin.com/in/mkrostewitz"
-            className={styles.secondary}
+            className="secondary"
             target="_blank"
             rel="noreferrer"
           >
@@ -59,7 +61,7 @@ const FoldSection = () => {
       <div className={styles.portraitShell}>
         <Image
           src="/mk.png"
-          alt={t("offer.alt")}
+          alt={t("alt")}
           fill
           sizes="(max-width: 960px) 100vw, 38vw"
           className={styles.portrait}
