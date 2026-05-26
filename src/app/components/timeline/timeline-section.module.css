@@ -1,6 +1,11 @@
 .timeline {
+  --date-column: 172px;
+  --rail-center: 20px;
+  --rail-column: 40px;
+  --timeline-column-gap: 14px;
+
   display: grid;
-  gap: 14px;
+  gap: 18px;
   position: relative;
   z-index: 0;
 }
@@ -8,7 +13,9 @@
 .timeline::before {
   content: "";
   position: absolute;
-  left: 75px;
+  left: calc(
+    var(--date-column) + var(--timeline-column-gap) + var(--rail-center)
+  );
   top: 0;
   bottom: 0;
   width: 2px;
@@ -18,9 +25,10 @@
 
 .timelineItem {
   display: grid;
-  grid-template-columns: 160px 1fr;
-  gap: 16px;
+  grid-template-columns: var(--date-column) var(--rail-column) minmax(0, 1fr);
+  column-gap: var(--timeline-column-gap);
   align-items: start;
+  cursor: pointer;
   position: relative;
   z-index: 1;
   opacity: 0;
@@ -30,49 +38,103 @@
   transition-delay: var(--item-delay, 0ms);
 }
 
-.timelineItem::before {
-  content: "";
-  position: absolute;
-  left: 68px;
-  top: 24px;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
+.timelineMarker {
+  align-self: start;
   background: var(--background);
-  box-shadow: 0 0 0 3px var(--foreground);
-  border: 2px solid var(--foreground);
-  z-index: -1;
+  border: 1px solid #d8d8d8;
+  border-radius: 50%;
+  box-shadow: 0 0 0 6px var(--background);
+  display: grid;
+  grid-column: 2;
+  height: 40px;
+  justify-self: center;
+  margin-top: 10px;
+  place-items: center;
+  position: relative;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease,
+    transform 0.18s ease;
+  width: 40px;
+  z-index: 3;
 }
 
-.timelineItem:last-child::before {
-  display: none;
+.timelineMarker::before {
+  background: var(--foreground);
+  border-radius: 50%;
+  content: "";
+  height: 14px;
+  transition: transform 0.18s ease;
+  width: 14px;
+}
+
+.timelineItem:hover .timelineMarker,
+.timelineItem:focus-visible .timelineMarker {
+  border-color: var(--foreground);
+  box-shadow: 0 0 0 6px var(--background), 0 0 0 10px rgba(26, 26, 26, 0.1);
+  transform: scale(1.04);
+}
+
+.timelineItem:hover .timelineMarker::before,
+.timelineItem:focus-visible .timelineMarker::before {
+  transform: scale(1.18);
+}
+
+.timelineItem:focus-visible {
+  outline: none;
+}
+
+.closeButton:focus-visible {
+  outline: 2px solid var(--foreground);
+  outline-offset: 3px;
 }
 
 .timelineBadge {
+  align-items: center;
   background: var(--background);
   border: 1px solid #e5e5e5;
-  color: var(--foreground);
-  padding: 10px 12px;
   border-radius: 12px;
-  text-align: center;
+  color: var(--foreground);
+  display: flex;
+  font-size: 0.96rem;
   font-weight: 700;
+  justify-content: center;
+  line-height: 1.25;
+  min-height: 60px;
+  padding: 10px 12px;
   position: relative;
+  text-align: center;
   z-index: 2;
 }
 
 .timelineBody {
   background: var(--background);
   border: 1px solid #e5e5e5;
-  padding: 14px;
   border-radius: 14px;
   color: var(--foreground);
+  font: inherit;
+  padding: 14px;
   position: relative;
+  text-align: left;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease,
+    transform 0.18s ease;
+  width: 100%;
   z-index: 2;
+}
+
+.timelineItem:hover .timelineBody,
+.timelineItem:focus-visible .timelineBody {
+  border-color: #bcbcbc;
+  box-shadow: 0 12px 28px rgba(26, 26, 26, 0.08);
+  transform: translateY(-1px);
 }
 
 .timelineBody h3 {
   color: var(--foreground);
+  line-height: 1.25;
   margin-bottom: 4px;
+}
+
+.timelineBody p {
+  overflow-wrap: anywhere;
 }
 
 .location {
@@ -81,34 +143,212 @@
   margin-bottom: 6px;
 }
 
+.timelineAction {
+  align-items: center;
+  background: #fafafa;
+  border: 1px solid #d8d8d8;
+  border-radius: 999px;
+  color: #555;
+  display: inline-flex;
+  font-size: 0.82rem;
+  font-weight: 700;
+  gap: 8px;
+  letter-spacing: 0.08em;
+  margin-top: 12px;
+  padding: 6px 10px;
+  text-transform: uppercase;
+  transition: background 0.18s ease, border-color 0.18s ease,
+    color 0.18s ease;
+}
+
+.timelineAction::after {
+  border: solid currentColor;
+  border-width: 0 2px 2px 0;
+  content: "";
+  height: 6px;
+  transform: rotate(-45deg);
+  width: 6px;
+}
+
+.timelineItem:hover .timelineAction,
+.timelineItem:focus-visible .timelineAction {
+  background: var(--foreground);
+  border-color: var(--foreground);
+  color: var(--background);
+}
+
 .timelineItemVisible {
   opacity: 1;
   transform: translateY(0) scale(1);
   filter: blur(0);
 }
 
+.modalBackdrop {
+  align-items: center;
+  background: rgba(26, 26, 26, 0.52);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: 24px;
+  position: fixed;
+  z-index: 1000;
+}
+
+.modal {
+  background: var(--background);
+  border: 1px solid #e5e5e5;
+  border-radius: 16px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.22);
+  color: var(--foreground);
+  display: grid;
+  gap: 18px;
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  padding: 24px;
+  width: min(640px, 100%);
+}
+
+.modalHeader {
+  align-items: flex-start;
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+}
+
+.modalHeader h3 {
+  font-size: 1.35rem;
+  line-height: 1.25;
+}
+
+.modalPeriod {
+  color: #555;
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.modalLocation {
+  color: #666;
+  font-weight: 700;
+  margin-top: 6px;
+}
+
+.closeButton {
+  background: var(--background);
+  border: 1px solid #d8d8d8;
+  border-radius: 8px;
+  color: var(--foreground);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  padding: 8px 12px;
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+
+.closeButton:hover {
+  background: #f6f6f6;
+  border-color: #bcbcbc;
+}
+
+.modalSummary {
+  color: #333;
+  line-height: 1.65;
+}
+
+.modalHighlights {
+  display: grid;
+  gap: 10px;
+}
+
+.modalHighlights h4 {
+  font-size: 1rem;
+}
+
+.modalHighlights ul {
+  display: grid;
+  gap: 8px;
+  list-style: none;
+}
+
+.modalHighlights li {
+  color: #333;
+  line-height: 1.55;
+  padding-left: 18px;
+  position: relative;
+}
+
+.modalHighlights li::before {
+  background: var(--foreground);
+  border-radius: 50%;
+  content: "";
+  height: 6px;
+  left: 0;
+  position: absolute;
+  top: 0.7em;
+  width: 6px;
+}
+
 @media (max-width: 960px) {
   .timeline {
+    --date-column: 0px;
+    --rail-center: 16px;
+    --rail-column: 32px;
+    --timeline-column-gap: 12px;
+
     gap: 12px;
     padding: 0;
   }
 
-  .timeline::before {
-    display: none;
-  }
-
   .timelineItem {
-    grid-template-columns: 1fr;
-    gap: 10px;
+    grid-template-columns: var(--rail-column) minmax(0, 1fr);
+    gap: 10px 12px;
   }
 
-  .timelineItem::before {
-    display: none;
+  .timelineMarker {
+    grid-column: 1;
+    grid-row: 1;
+    height: 32px;
+    margin-top: 4px;
+    width: 32px;
+  }
+
+  .timelineMarker::before {
+    height: 12px;
+    width: 12px;
   }
 
   .timelineBadge {
+    grid-column: 2;
+    grid-row: 1;
     width: fit-content;
     justify-self: start;
     padding: 10px 14px;
+  }
+
+  .timelineBody {
+    grid-column: 2;
+  }
+}
+
+@media (max-width: 520px) {
+  .modalBackdrop {
+    align-items: flex-end;
+    padding: 12px;
+  }
+
+  .modal {
+    border-radius: 14px;
+    max-height: calc(100vh - 24px);
+    padding: 18px;
+  }
+
+  .modalHeader {
+    display: grid;
+  }
+
+  .closeButton {
+    justify-self: start;
   }
 }
