@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import {useEffect, useMemo, useState} from "react";
 import {useTranslation} from "react-i18next";
 import {resources} from "../../../lib/i18n";
 import {
@@ -9,16 +10,16 @@ import {
   MANUAL_LANGUAGE_STORAGE_KEY,
   normalizeLanguage,
 } from "../../../lib/languageDetection";
-import {useEffect, useState} from "react";
 import "./nav.component.css";
 
 const navLinks = [
   {href: "/#executiveSummary", labelKey: "nav.executiveSummary"},
   {href: "/#about", labelKey: "nav.about"},
+  {href: "/#personal", labelKey: "nav.personal"},
   {href: "/#skills", labelKey: "nav.impact"},
   {href: "/#timeline", labelKey: "nav.timeline"},
   {href: "/#cv", labelKey: "nav.cv"},
-  {href: "/#blog", labelKey: "nav.blog"},
+  {href: "/#blog", labelKey: "nav.blog", section: "blog"},
   {href: "/#portfolio", labelKey: "nav.portfolio"},
   {href: "/#contact", labelKey: "nav.contact"},
 ];
@@ -71,6 +72,7 @@ const NavBar = () => {
   const {t, i18n} = useTranslation();
 
   const [menuOpen, setMenuOpen] = useState(false);
+  const [blogEnabled, setBlogEnabled] = useState(null);
 
   const [lang, setLang] = useState(
     () =>
@@ -139,7 +141,42 @@ const NavBar = () => {
     };
   }, [i18n]);
 
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function loadPublicSettings() {
+      try {
+        const response = await fetch("/api/content/profile", {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error("Unable to load public settings.");
+        }
+
+        setBlogEnabled(data.profile?.blogEnabled !== false);
+      } catch (error) {
+        if (error?.name === "AbortError") return;
+        setBlogEnabled(true);
+      }
+    }
+
+    void loadPublicSettings();
+
+    return () => {
+      controller.abort();
+    };
+  }, []);
+
   const closeMenu = () => setMenuOpen(false);
+
+  const visibleNavLinks = useMemo(
+    () =>
+      navLinks.filter((link) => link.section !== "blog" || blogEnabled === true),
+    [blogEnabled],
+  );
 
   const selectLanguage = (language) => {
     storeLanguage(language);
@@ -177,7 +214,7 @@ const NavBar = () => {
 
       {/* Primary nav links */}
       <nav className={`nav ${menuOpen ? "navOpen" : ""}`}>
-        {navLinks.map(({href, labelKey}) => (
+        {visibleNavLinks.map(({href, labelKey}) => (
           <Link key={href} href={href} onClick={closeMenu}>
             {t(labelKey)}
           </Link>
