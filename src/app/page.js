@@ -9,6 +9,7 @@ import NavBar from "./components/nav/nav";
 import ContactSection from "./components/contact/ContactSection";
 import TimelineSection from "./components/timeline/TimelineSection";
 import AboutSection from "./components/about/AboutSection";
+import PersonalSection from "./components/personal/PersonalSection";
 import SkillsSection from "./components/skills/SkillsSection";
 import FoldSection from "./components/fold/FoldSection";
 import ExecutiveSummary from "./components/executive/ExecutiveSection";
@@ -90,6 +91,9 @@ export default function Home() {
 
         {/* Portfolio */}
         <PortfolioSection />
+
+        {/* Personal */}
+        <PersonalSection />
 
         {/* Contact Me */}
         <ContactSection />

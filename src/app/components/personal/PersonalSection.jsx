@@ -3,6 +3,7 @@
 import Image from "next/image";
 import {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {useTranslation} from "react-i18next";
+import {ChevronDown} from "lucide-react";
 import mapboxgl from "mapbox-gl";
 
 import pageStyles from "../../page.module.css";
@@ -31,12 +32,14 @@ const COMPASS_TICKS = Array.from({length: 24}, (_, index) => {
     major: angle % 90 === 0,
   };
 });
-const WIND_REFRESH_MS = 15 * 60 * 1000;
+const WIND_REFRESH_MS = 5 * 60 * 1000;
 const WEBCAM_REFRESH_MS = 3 * 60 * 1000;
 const KNOT_TO_METERS_PER_SECOND = 0.514444;
 const WIND_FLOW_TIME_SCALE = 10 * 60;
 const HOVER_FORECAST_HOURS = 4;
-const FORECAST_REQUEST_HOURS = HOVER_FORECAST_HOURS + 2;
+const CLOUD_FORECAST_HOURS = 24;
+const CLOUD_PATTERN_POINTS = 12;
+const FORECAST_REQUEST_HOURS = CLOUD_FORECAST_HOURS + 2;
 const WIND_STATION_ID = "cyc-prien";
 const WEBCAM_IMAGE_URL = "https://www.cyc-prien.de/_data/webcam.jpg";
 const CYC_WEBCAM_URL = "https://www.cyc-prien.de/wetter/webcam/";
@@ -539,7 +542,25 @@ function readHourlyForecast(entry, currentTime) {
       weatherCode: readNumber(hourly?.weather_code?.[index]),
     }))
     .filter((forecast) => !currentTime || forecast.time > currentTime)
-    .slice(0, HOVER_FORECAST_HOURS);
+    .slice(0, CLOUD_FORECAST_HOURS);
+}
+
+function compactForecastSeries(forecasts, maxPoints) {
+  if (forecasts.length <= maxPoints) return forecasts;
+
+  const step = (forecasts.length - 1) / (maxPoints - 1);
+  const compacted = [];
+  const seenTimes = new Set();
+
+  for (let index = 0; index < maxPoints; index += 1) {
+    const forecast = forecasts[Math.round(index * step)];
+    if (!forecast || seenTimes.has(forecast.time)) continue;
+
+    compacted.push(forecast);
+    seenTimes.add(forecast.time);
+  }
+
+  return compacted;
 }
 
 function getWeatherIconType(weatherCode, cloudCover) {
@@ -649,6 +670,7 @@ const PersonalSection = () => {
   const [webcamTick, setWebcamTick] = useState(Date.now());
   const [webcamAvailable, setWebcamAvailable] = useState(true);
   const [windMapHover, setWindMapHover] = useState(null);
+  const [cloudPatternOpen, setCloudPatternOpen] = useState(false);
   const [windReport, setWindReport] = useState({
     error: null,
     points: [],
@@ -697,25 +719,29 @@ const PersonalSection = () => {
   const stationForecast = station?.forecast ?? [];
   const forecastLabel = t("sailing.forecast");
   const noForecastLabel = t("sailing.noForecast");
-  const forecastRows = stationForecast.map((forecast) => {
-    const hour = formatForecastHour(forecast.time, i18n.language);
-    const speedText = forecast.speed == null ? "--" : `${forecast.speed.toFixed(1)} kn`;
-    const gustText = forecast.gusts == null ? "--" : `${forecast.gusts.toFixed(1)} kn`;
-    const directionText =
-      forecast.direction == null
-        ? "--"
-        : `${Math.round(forecast.direction)}° ${degreesToCompass(
-            forecast.direction,
-            i18n.language,
-          )}`;
+  const forecastRows = stationForecast
+    .slice(0, HOVER_FORECAST_HOURS)
+    .map((forecast) => {
+      const hour = formatForecastHour(forecast.time, i18n.language);
+      const speedText =
+        forecast.speed == null ? "--" : `${forecast.speed.toFixed(1)} kn`;
+      const gustText =
+        forecast.gusts == null ? "--" : `${forecast.gusts.toFixed(1)} kn`;
+      const directionText =
+        forecast.direction == null
+          ? "--"
+          : `${Math.round(forecast.direction)}° ${degreesToCompass(
+              forecast.direction,
+              i18n.language,
+            )}`;
 
-    return {
-      direction: directionText,
-      gusts: gustText,
-      speed: speedText,
-      time: hour,
-    };
-  });
+      return {
+        direction: directionText,
+        gusts: gustText,
+        speed: speedText,
+        time: hour,
+      };
+    });
   const windSpeedForecast = forecastRows
     .map((forecast) => `${forecast.time}: ${forecast.speed} / ${forecast.gusts}`)
     .join(" · ");
@@ -747,6 +773,38 @@ const PersonalSection = () => {
       ? t("sailing.cloudTrendRising", {change, time: cloudTrendTime})
       : t("sailing.cloudTrendClearing", {change, time: cloudTrendTime});
   })();
+  const currentCloudForecast =
+    station?.time && cloudCover != null
+      ? {
+          cloudCover,
+          time: station.time,
+          weatherCode,
+        }
+      : null;
+  const cloudForecastSeries = [
+    ...(currentCloudForecast ? [currentCloudForecast] : []),
+    ...stationForecast.filter((forecast) => forecast.cloudCover != null),
+  ].slice(0, CLOUD_FORECAST_HOURS);
+  const cloudPatternRows = compactForecastSeries(
+    cloudForecastSeries,
+    CLOUD_PATTERN_POINTS,
+  ).map((forecast, index) => {
+    const cloudValue = Math.round(clamp(forecast.cloudCover ?? 0, 0, 100));
+
+    return {
+      cloudCover: `${cloudValue}%`,
+      height: `${10 + cloudValue * 0.34}px`,
+      key: `${forecast.time}-${index}`,
+      time:
+        index === 0 && currentCloudForecast
+          ? t("sailing.now")
+          : formatForecastHour(forecast.time, i18n.language),
+      tint: (0.32 + cloudValue * 0.0048).toFixed(2),
+    };
+  });
+  const cloudPatternToggleLabel = cloudPatternOpen
+    ? t("sailing.hideCloudPattern")
+    : t("sailing.showCloudPattern");
   const windSpeedTooltip = forecastRows.length
     ? `${forecastLabel} ${t("sailing.windSpeed")}/${t(
         "sailing.windGusts",
@@ -1206,7 +1264,7 @@ const PersonalSection = () => {
           <div>
             <p className={styles.panelEyebrow}>{t("sailing.eyebrow")}</p>
             <h3>{t("sailing.title")}</h3>
-            <p>{t("sailing.subtitle")}</p>
+            <p>{t("sailing.subtitle", {location: stationName})}</p>
           </div>
           <div className={styles.dataStatus} data-state={windReport.status}>
             {windReport.status === "loading" && t("sailing.loading")}
@@ -1247,9 +1305,20 @@ const PersonalSection = () => {
               </div>
             </div>
             <div className={`${styles.weatherOverlay} ${styles.weatherOverlayBottom}`}>
-              <div className={`${styles.weatherBox} ${styles.weatherBoxWide}`}>
-                <span>{t("sailing.cloudDevelopment")}</span>
-                <div className={styles.weatherValueRow}>
+              <button
+                type="button"
+                className={`${styles.weatherBox} ${styles.weatherBoxWide} ${styles.cloudForecastToggle}`}
+                aria-controls="cloud-forecast-pattern"
+                aria-expanded={cloudPatternOpen}
+                aria-label={cloudPatternToggleLabel}
+                title={cloudPatternToggleLabel}
+                onClick={() => setCloudPatternOpen((open) => !open)}
+              >
+                <span className={styles.weatherBoxHeader}>
+                  <span>{t("sailing.cloudDevelopment")}</span>
+                  <ChevronDown className={styles.cloudToggleIcon} aria-hidden size={15} />
+                </span>
+                <span className={styles.weatherValueRow}>
                   <span
                     className={`${styles.weatherIcon} ${weatherIconClass}`}
                     aria-hidden
@@ -1264,9 +1333,36 @@ const PersonalSection = () => {
                       {cloudCoverValue} {t("sailing.cloudCover")}
                     </small>
                   </span>
-                </div>
+                </span>
                 <small>{cloudTrendText}</small>
-              </div>
+                {cloudPatternOpen && (
+                  <span id="cloud-forecast-pattern" className={styles.cloudPattern}>
+                    <span className={styles.cloudPatternTitle}>
+                      {t("sailing.cloudPatternTitle")}
+                    </span>
+                    {cloudPatternRows.length ? (
+                      <span className={styles.cloudPatternBars}>
+                        {cloudPatternRows.map((forecast) => (
+                          <span key={forecast.key} className={styles.cloudPatternPoint}>
+                            <span
+                              className={styles.cloudPatternBar}
+                              aria-hidden
+                              style={{
+                                "--cloud-alpha": forecast.tint,
+                                "--cloud-height": forecast.height,
+                              }}
+                            />
+                            <span>{forecast.time}</span>
+                            <small>{forecast.cloudCover}</small>
+                          </span>
+                        ))}
+                      </span>
+                    ) : (
+                      <span className={styles.cloudPatternEmpty}>{noForecastLabel}</span>
+                    )}
+                  </span>
+                )}
+              </button>
             </div>
             {windMapHover && (
               <div
