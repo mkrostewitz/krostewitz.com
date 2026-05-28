@@ -1,22 +1,35 @@
 import {ErrorMessage, Field, Form, Formik} from "formik";
 import Link from "next/link";
-import {useMemo, useState} from "react";
+import {useEffect, useMemo, useState} from "react";
 import {useTranslation} from "react-i18next";
 import * as Yup from "yup";
 
+import AddressMap from "../address-map/AddressMap";
 import pageStyles from "../../page.module.css";
 import "../../buttons.css";
 import styles from "./contact-section.module.css";
 
 const ContactSection = () => {
-  const {t} = useTranslation();
+  const {i18n, t} = useTranslation();
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [phase, setPhase] = useState("form"); // form | verify | success
   const [pendingEmail, setPendingEmail] = useState("");
   const [pendingName, setPendingName] = useState("");
   const [apiMessage, setApiMessage] = useState(null);
+  const [profile, setProfile] = useState({address: null});
   const logApiError = (endpoint, res, data) => {
     console.warn("Contact API error", {endpoint, status: res.status, data});
   };
+  const address = profile.address?.label ? profile.address : null;
+  const addressLabelDefault = i18n.language?.toLowerCase().startsWith("de")
+    ? "Adresse"
+    : "Address";
+  const addressMapLabelDefault = i18n.language?.toLowerCase().startsWith("de")
+    ? "Karte der Adresse"
+    : "Address map";
+  const closeLabelDefault = i18n.language?.toLowerCase().startsWith("de")
+    ? "Schließen"
+    : "Close";
 
   const contactSchema = useMemo(
     () =>
@@ -31,6 +44,56 @@ const ContactSection = () => {
       }),
     [t],
   );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadProfile() {
+      try {
+        const response = await fetch("/api/content/profile", {cache: "no-store"});
+        const data = await response.json().catch(() => ({}));
+
+        if (!cancelled && response.ok) {
+          setProfile(data.profile || {address: null});
+        }
+      } catch (error) {
+        console.warn("Unable to load contact profile", error);
+      }
+    }
+
+    loadProfile();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isModalOpen) return undefined;
+
+    function handleKeyDown(event) {
+      if (event.key === "Escape") {
+        setIsModalOpen(false);
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [isModalOpen]);
+
+  function openContactModal() {
+    setPhase("form");
+    setPendingName("");
+    setPendingEmail("");
+    setApiMessage(null);
+    setIsModalOpen(true);
+  }
 
   const verifySchema = useMemo(
     () =>
@@ -70,6 +133,16 @@ const ContactSection = () => {
                 <span>{t("contact.emailLabel")}</span>
                 <strong>mathias@krostewitz.com</strong>
               </a>
+              {address && (
+                <address className={styles.contactAddress}>
+                  <span>
+                    {t("contact.addressLabel", {
+                      defaultValue: addressLabelDefault,
+                    })}
+                  </span>
+                  <strong>{address.label}</strong>
+                </address>
+              )}
             </div>
           </div>
 
@@ -82,18 +155,69 @@ const ContactSection = () => {
             >
               {t("buttons.booking")}
             </Link>
-            <Link
-              href="https://www.linkedin.com/in/mkrostewitz"
+            <button
+              type="button"
               className={`secondary ${styles.actionButton}`}
+              onClick={openContactModal}
+            >
+              {t("contact.form.submit")}
+            </button>
+            <Link
+              aria-label={t("buttons.linkedin")}
+              className={styles.linkedinIcon}
+              href="https://www.linkedin.com/in/mkrostewitz"
               target="_blank"
               rel="noreferrer"
+              title={t("buttons.linkedin")}
             >
-              {t("buttons.linkedin")}
+              in
             </Link>
           </div>
         </aside>
 
-        {phase === "form" && (
+        {address && (
+          <AddressMap
+            address={address}
+            className={styles.contactMap}
+            label={t("contact.addressMapLabel", {
+              defaultValue: addressMapLabelDefault,
+            })}
+            markerScale={0.72}
+            zoom={12.9}
+          />
+        )}
+      </div>
+
+      {isModalOpen && (
+        <div
+          className={styles.modalOverlay}
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setIsModalOpen(false);
+            }
+          }}
+        >
+          <div
+            aria-labelledby="contact-modal-title"
+            aria-modal="true"
+            className={styles.modalPanel}
+            role="dialog"
+          >
+            <div className={styles.modalHeader}>
+              <div>
+                <p className={styles.kicker}>{t("contact.eyebrow")}</p>
+                <h3 id="contact-modal-title">{t("contact.form.submit")}</h3>
+              </div>
+              <button
+                type="button"
+                className={styles.modalClose}
+                onClick={() => setIsModalOpen(false)}
+              >
+                {t("contact.form.close", {defaultValue: closeLabelDefault})}
+              </button>
+            </div>
+
+            {phase === "form" && (
           <Formik
             initialValues={{name: "", email: "", message: ""}}
             validationSchema={contactSchema}
@@ -145,7 +269,7 @@ const ContactSection = () => {
             }}
           >
             {({isSubmitting, status}) => (
-              <Form className={`${styles.formPanel} ${styles.form}`}>
+              <Form className={`${styles.formPanel} ${styles.form} ${styles.modalForm}`}>
                 <div className={styles.fields}>
                   <label className={styles.field}>
                     {t("contact.form.name")}
@@ -211,9 +335,9 @@ const ContactSection = () => {
               </Form>
             )}
           </Formik>
-        )}
+            )}
 
-        {phase === "verify" && (
+            {phase === "verify" && (
           <Formik
             initialValues={{code: ""}}
             validationSchema={verifySchema}
@@ -259,7 +383,7 @@ const ContactSection = () => {
             }}
           >
             {({isSubmitting, status}) => (
-              <Form className={`${styles.formPanel} ${styles.form}`}>
+              <Form className={`${styles.formPanel} ${styles.form} ${styles.modalForm}`}>
                 <div className={styles.formHeader}>
                   <p className={styles.kicker}>
                     {t("contact.form.verifyEyebrow")}
@@ -311,10 +435,10 @@ const ContactSection = () => {
               </Form>
             )}
           </Formik>
-        )}
+            )}
 
-        {phase === "success" && (
-          <div className={`${styles.formPanel} ${styles.successBlock}`}>
+            {phase === "success" && (
+          <div className={`${styles.formPanel} ${styles.successBlock} ${styles.modalForm}`}>
             <p className={styles.kicker}>{t("contact.form.successEyebrow")}</p>
             <h3>{t("contact.form.successTitle")}</h3>
             <p className={styles.success}>{t("contact.form.verifySuccess")}</p>
@@ -332,8 +456,10 @@ const ContactSection = () => {
               {t("contact.form.sendAnother")}
             </button>
           </div>
-        )}
-      </div>
+            )}
+          </div>
+        </div>
+      )}
     </section>
   );
 };

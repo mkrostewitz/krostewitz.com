@@ -2,25 +2,33 @@
   display: grid;
   grid-template-columns: minmax(260px, 0.75fr) minmax(320px, 1.25fr);
   gap: 18px;
-  align-items: stretch;
+  align-items: start;
 }
 
 .contactCard {
+  grid-column: 1 / -1;
   border: 1px solid #e5e5e5;
   padding: 16px;
   border-radius: 16px;
   color: var(--foreground);
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px 18px;
+  align-items: start;
 }
 
 .contactDetails {
   display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
-  margin: 12px 0;
 }
 
-.contactLink {
+.contactStack {
+  grid-column: 1 / -1;
+}
+
+.contactLink,
+.contactAddress {
   display: grid;
   gap: 2px;
   padding: 10px 12px;
@@ -30,20 +38,63 @@
   text-decoration: none;
 }
 
-.contactLink span {
+.contactAddress {
+  font-style: normal;
+}
+
+.contactLink span,
+.contactAddress span {
   font-size: 0.9rem;
   color: #666;
 }
 
-.contactLink strong {
+.contactLink strong,
+.contactAddress strong {
   font-size: 1.05rem;
+  overflow-wrap: anywhere;
 }
 
 .contactActions {
-  display: grid;
+  grid-column: 2;
+  grid-row: 1;
+  display: flex;
+  flex-wrap: wrap;
   gap: 10px;
-  margin-top: auto;
-  padding-top: 16px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.actionButton {
+  min-width: 190px;
+}
+
+.linkedinIcon {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #d8d8d8;
+  border-radius: 999px;
+  color: #666;
+  font-size: 0.82rem;
+  font-weight: 900;
+  line-height: 1;
+  text-decoration: none;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.linkedinIcon:hover {
+  border-color: #5773ff;
+  background: rgba(87, 115, 255, 0.08);
+  color: #4962e6;
+}
+
+.contactMap {
+  grid-column: 1 / -1;
+  height: clamp(210px, 22vw, 320px);
+  min-height: 0;
+  border-radius: 16px;
 }
 
 .form {
@@ -53,7 +104,13 @@
   border: 1px solid #e5e5e5;
   padding: 16px;
   border-radius: 16px;
-  min-height: 100%;
+  min-height: 0;
+}
+
+.modalForm {
+  border: 0;
+  padding: 0;
+  border-radius: 0;
 }
 
 .fields {
@@ -126,8 +183,79 @@
   align-items: center;
 }
 
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(17, 17, 17, 0.48);
+}
+
+.modalPanel {
+  width: min(100%, 720px);
+  max-height: min(86vh, 760px);
+  overflow: auto;
+  display: grid;
+  gap: 18px;
+  border: 1px solid #e5e5e5;
+  border-radius: 16px;
+  padding: 18px;
+  background: var(--background);
+  color: var(--foreground);
+  box-shadow: 0 22px 70px rgba(0, 0, 0, 0.22);
+}
+
+.modalHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.modalHeader h3 {
+  margin: 0;
+  font-size: 1.35rem;
+  letter-spacing: 0;
+}
+
+.kicker {
+  margin: 0 0 4px;
+  color: #666;
+  font-size: 0.84rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.modalClose {
+  min-height: 36px;
+  border: 1px solid #d8d8d8;
+  border-radius: 999px;
+  padding: 7px 12px;
+  background: #ffffff;
+  color: var(--foreground);
+  cursor: pointer;
+  font-weight: 700;
+}
+
 @media (max-width: 960px) {
   .contactGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .contactCard {
+    grid-template-columns: 1fr;
+  }
+
+  .contactActions {
+    grid-column: 1;
+    grid-row: auto;
+    justify-content: flex-start;
+  }
+
+  .contactDetails {
     grid-template-columns: 1fr;
   }
 }
@@ -140,5 +268,19 @@
   .submitButton {
     width: 100%;
     min-width: 0;
+  }
+
+  .contactActions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .actionButton {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .actionButton:first-child {
+    grid-column: 1 / -1;
   }
 }

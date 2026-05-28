@@ -1,5 +1,14 @@
 import {redirect} from "next/navigation";
 
-export default async function AdminGithubPortfolioRedirectPage() {
-  redirect("/admin/github-portfolio");
+import {getCurrentAdminUser} from "../../lib/adminAuth";
+import ProfileSettings from "./ProfileSettings";
+
+export default async function AdminProfilePage() {
+  const user = await getCurrentAdminUser();
+
+  if (!user) {
+    redirect("/admin/login");
+  }
+
+  return <ProfileSettings user={user} />;
 }

@@ -1,0 +1,28 @@
+.mapRoot {
+  position: relative;
+  min-height: 180px;
+  overflow: hidden;
+  border: 1px solid #e1e1e1;
+  border-radius: 8px;
+  background: #eef1f4;
+}
+
+.mapCanvas {
+  position: absolute;
+  inset: 0;
+}
+
+.placeholder {
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  color: #666666;
+  font-size: 0.92rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.mapRoot :global(.mapboxgl-ctrl-bottom-left),
+.mapRoot :global(.mapboxgl-ctrl-bottom-right) {
+  z-index: 2;
+}
