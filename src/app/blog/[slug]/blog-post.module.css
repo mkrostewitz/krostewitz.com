@@ -38,6 +38,23 @@
   font-weight: 800;
 }
 
+.categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.categories span {
+  border: 1px solid #d8ddd6;
+  border-radius: 999px;
+  background: #f7f8f5;
+  color: #2f3a31;
+  font-size: 0.84rem;
+  font-weight: 800;
+  line-height: 1;
+  padding: 7px 9px;
+}
+
 .header h1 {
   max-width: 820px;
   color: var(--foreground);
@@ -152,13 +169,32 @@
 
 .content ul,
 .content ol {
-  padding-left: 24px;
+  padding-left: 28px;
+}
+
+.content li {
+  padding-left: 4px;
+}
+
+.content li + li {
+  margin-top: 0.38em;
+}
+
+.content li > ul,
+.content li > ol {
+  margin-top: 0.38em;
 }
 
 .content blockquote {
   border-left: 4px solid var(--post-accent);
   padding-left: 16px;
   color: #444444;
+}
+
+.content hr {
+  height: 1px;
+  border: 0;
+  background: #e2e2e2;
 }
 
 .content a {

@@ -6,6 +6,8 @@ import {
   isSameOriginRequest,
   unauthorizedResponse,
 } from "../../../../lib/adminAuth";
+import {getAiSettings} from "../../../../lib/aiSettings";
+import {getCvDownloads} from "../../../../lib/cvFiles";
 import {sanitizePostHtml} from "../../../../lib/posts";
 
 export const runtime = "nodejs";
@@ -54,14 +56,12 @@ function clampText(value, maxLength = 60000) {
 
 function getOpenAiConfig() {
   const apiKey = process.env.OPENAI_API_KEY;
-  const model =
-    process.env.OPENAI_POSTS_MODEL || process.env.OPENAI_MODEL || "gpt-5.5";
 
   if (!apiKey) {
     throw new Error("OPENAI_API_KEY is not configured.");
   }
 
-  return {apiKey, model};
+  return {apiKey};
 }
 
 function getResponseText(data) {
@@ -94,10 +94,61 @@ function normalizeLanguage(value) {
   return SUPPORTED_LANGUAGES[language] ? language : "en";
 }
 
-function buildInstruction(mode, targetLanguage) {
+function getRequestOrigin(request) {
+  return (
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env.AUTH_BASE_URL ||
+    new URL(request.url).origin
+  ).replace(/\/+$/, "");
+}
+
+function getAbsoluteUrl(url, origin) {
+  const value = String(url || "").trim();
+  if (!value) return "";
+
+  try {
+    return new URL(value, origin).toString();
+  } catch {
+    return "";
+  }
+}
+
+function isOpenAiFetchableUrl(url) {
+  try {
+    const parsed = new URL(url);
+    return (
+      ["http:", "https:"].includes(parsed.protocol) &&
+      !["localhost", "127.0.0.1", "0.0.0.0"].includes(parsed.hostname)
+    );
+  } catch {
+    return false;
+  }
+}
+
+async function getCvFileInputs(request) {
+  const origin = getRequestOrigin(request);
+  const downloads = await getCvDownloads();
+
+  return Object.values(downloads)
+    .map((asset) => ({
+      type: "input_file",
+      file_url: getAbsoluteUrl(asset.url, origin),
+    }))
+    .filter((asset) => isOpenAiFetchableUrl(asset.file_url));
+}
+
+function buildInstruction(mode, targetLanguage, agentInstructions) {
   const languageName = SUPPORTED_LANGUAGES[targetLanguage];
-  const base =
-    "You are an editorial assistant for Mathias Krostewitz, an operator and builder writing about growth, industrial technology, operations, and systems. Preserve factual claims and numbers unless the user explicitly asks to change them. Do not invent companies, metrics, dates, or outcomes. Return only JSON that matches the requested schema.";
+  const base = [
+    "You are the content assistant configured by this site's saved AI settings.",
+    "Follow the saved agent instructions as the source of truth for brand voice, audience, topics, and style.",
+    "Preserve factual claims and numbers unless the user explicitly asks to change them.",
+    "Use any attached CV files only as author/context grounding; do not quote from them unless relevant.",
+    "Do not invent companies, metrics, dates, or outcomes.",
+    "Return semantic article HTML only. Do not include inline styles, CSS, color attributes, emojis, markdown, or decorative formatting.",
+    "Return only JSON that matches the requested schema.",
+    agentInstructions,
+  ].join(" ");
 
   if (mode === "create") {
     return `${base} Create a polished portfolio blog post in ${languageName}. Use clear executive language, concrete structure, and safe HTML.`;
@@ -110,60 +161,86 @@ function buildInstruction(mode, targetLanguage) {
   return `${base} Improve the supplied post in ${languageName}. Apply the user's instructions while preserving the author's voice, safe HTML, and article structure.`;
 }
 
-async function runOpenAiPostEdit({mode, targetLanguage, prompt, post}) {
-  const {apiKey, model} = getOpenAiConfig();
+async function createOpenAiResponse(apiKey, requestBody) {
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      model,
-      input: [
-        {
-          role: "system",
-          content: [
-            {
-              type: "input_text",
-              text: buildInstruction(mode, targetLanguage),
-            },
-          ],
-        },
-        {
-          role: "user",
-          content: [
-            {
-              type: "input_text",
-              text: JSON.stringify({
-                mode,
-                targetLanguage,
-                targetLanguageName: SUPPORTED_LANGUAGES[targetLanguage],
-                userInstructions: prompt,
-                post,
-                outputRules: [
-                  "title and summary must be plain text.",
-                  "contentHtml must be valid article HTML.",
-                  "Allowed contentHtml tags: p, br, strong, em, u, s, h2, h3, h4, ul, ol, li, blockquote, a, code, pre, hr, div, span.",
-                  "Do not include scripts, inline event handlers, markdown, or code fences.",
-                ],
-              }),
-            },
-          ],
-        },
-      ],
-      text: {
-        format: {
-          type: "json_schema",
-          name: "post_content",
-          strict: true,
-          schema: OUTPUT_SCHEMA,
-        },
-      },
-      max_output_tokens: 3000,
-    }),
+    body: JSON.stringify(requestBody),
   });
   const data = await response.json().catch(() => ({}));
+
+  return {response, data};
+}
+
+async function runOpenAiPostEdit({
+  mode,
+  targetLanguage,
+  prompt,
+  post,
+  model,
+  temperature,
+  agentInstructions,
+  cvFileInputs,
+}) {
+  const {apiKey} = getOpenAiConfig();
+  const userContent = [
+    {
+      type: "input_text",
+      text: JSON.stringify({
+        mode,
+        targetLanguage,
+        targetLanguageName: SUPPORTED_LANGUAGES[targetLanguage],
+        userInstructions: prompt,
+        hasCvContext: cvFileInputs.length > 0,
+        post,
+        outputRules: [
+          "title and summary must be plain text.",
+          "contentHtml must be valid article HTML.",
+          "Allowed contentHtml tags: p, br, strong, em, u, s, h2, h3, h4, ul, ol, li, blockquote, a, code, pre, hr, div, span.",
+          "Do not include scripts, inline event handlers, markdown, or code fences.",
+        ],
+      }),
+    },
+    ...cvFileInputs,
+  ];
+  const requestBody = {
+    model,
+    instructions: buildInstruction(mode, targetLanguage, agentInstructions),
+    input: [
+      {
+        role: "user",
+        content: userContent,
+      },
+    ],
+    text: {
+      format: {
+        type: "json_schema",
+        name: "post_content",
+        strict: true,
+        schema: OUTPUT_SCHEMA,
+      },
+    },
+    max_output_tokens: 3000,
+  };
+
+  if (temperature !== null && temperature !== undefined) {
+    requestBody.temperature = temperature;
+  }
+
+  let {response, data} = await createOpenAiResponse(apiKey, requestBody);
+
+  if (
+    !response.ok &&
+    requestBody.temperature !== undefined &&
+    String(data?.error?.message || "").toLowerCase().includes("temperature")
+  ) {
+    const retryBody = {...requestBody};
+    delete retryBody.temperature;
+    ({response, data} = await createOpenAiResponse(apiKey, retryBody));
+  }
 
   if (!response.ok) {
     const message =
@@ -217,10 +294,18 @@ export async function POST(request) {
       );
     }
 
+    const aiSettings = await getAiSettings();
+    const cvFileInputs = aiSettings.includeCvContext
+      ? await getCvFileInputs(request)
+      : [];
     const post = await runOpenAiPostEdit({
       mode,
       targetLanguage,
       prompt,
+      model: aiSettings.model,
+      temperature: aiSettings.temperature,
+      agentInstructions: aiSettings.agentInstructions,
+      cvFileInputs,
       post: {
         title: cleanText(body.title, 140),
         summary: cleanText(body.summary, 260),

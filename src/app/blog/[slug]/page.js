@@ -5,6 +5,7 @@ import {notFound} from "next/navigation";
 
 import NavBar from "../../components/nav/nav";
 import {getPublishedPostBySlug} from "../../lib/posts";
+import {isBlogEnabled} from "../../lib/siteProfile";
 import styles from "./blog-post.module.css";
 import ShareButtons from "./ShareButtons";
 
@@ -29,6 +30,14 @@ function getSiteUrl() {
 }
 
 export async function generateMetadata({params}) {
+  const blogEnabled = await isBlogEnabled();
+
+  if (!blogEnabled) {
+    return {
+      title: "Post not found - Mathias Krostewitz",
+    };
+  }
+
   const {slug} = await params;
   const post = await getPublishedPostBySlug(slug);
 
@@ -43,10 +52,14 @@ export async function generateMetadata({params}) {
   const url = `${getSiteUrl()}/blog/${post.slug}`;
   const image =
     post.media?.type === "image" && post.media.url ? post.media.url : undefined;
+  const keywords = Array.isArray(post.categories)
+    ? post.categories.map((category) => category.label).filter(Boolean)
+    : [];
 
   return {
     title,
     description,
+    keywords: keywords.length > 0 ? keywords : undefined,
     alternates: {
       canonical: url,
     },
@@ -68,6 +81,12 @@ export async function generateMetadata({params}) {
 }
 
 export default async function BlogPostPage({params}) {
+  const blogEnabled = await isBlogEnabled();
+
+  if (!blogEnabled) {
+    notFound();
+  }
+
   const {slug} = await params;
   const post = await getPublishedPostBySlug(slug);
 
@@ -91,6 +110,13 @@ export default async function BlogPostPage({params}) {
             <span className={styles.date}>
               {formatDate(post.publishedAt || post.updatedAt)}
             </span>
+            {Array.isArray(post.categories) && post.categories.length > 0 && (
+              <div className={styles.categories}>
+                {post.categories.map((category) => (
+                  <span key={category.slug}>{category.label}</span>
+                ))}
+              </div>
+            )}
             <h1>{post.title}</h1>
             {post.summary && <p>{post.summary}</p>}
             <ShareButtons

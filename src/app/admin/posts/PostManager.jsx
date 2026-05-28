@@ -2,6 +2,31 @@
 
 /* eslint-disable @next/next/no-img-element */
 
+import {EditorContent, useEditor} from "@tiptap/react";
+import LinkExtension from "@tiptap/extension-link";
+import StarterKit from "@tiptap/starter-kit";
+import UnderlineExtension from "@tiptap/extension-underline";
+import {
+  Bold,
+  Eraser,
+  Heading2,
+  Heading3,
+  Heading4,
+  IndentDecrease,
+  IndentIncrease,
+  Italic,
+  Link as LinkIcon,
+  List,
+  ListOrdered,
+  Minus,
+  Pilcrow,
+  Quote,
+  Redo2,
+  Strikethrough,
+  Underline,
+  Undo2,
+  Unlink,
+} from "lucide-react";
 import Link from "next/link";
 import {useEffect, useMemo, useRef, useState} from "react";
 
@@ -14,6 +39,7 @@ const EMPTY_FORM = {
   slug: "",
   status: "draft",
   summary: "",
+  categories: [],
   contentHtml: "",
   media: null,
 };
@@ -33,6 +59,15 @@ const AI_MODES = {
 const POST_LANGUAGES = [
   {code: "en", label: "English"},
   {code: "de", label: "German"},
+];
+
+const SUGGESTED_CATEGORIES = [
+  "Market data",
+  "Marketing",
+  "Operations",
+  "Systems",
+  "Cooking",
+  "Sailing",
 ];
 
 function sortPosts(posts) {
@@ -56,9 +91,49 @@ function getPostListMeta(post) {
   return `${STATUS_LABELS[post.status] || post.status} · ${formatDate(date)}`;
 }
 
+function cleanCategoryLabel(value) {
+  return String(value || "")
+    .replace(/<[^>]*>/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 50);
+}
+
+function slugCategoryLabel(value) {
+  return cleanCategoryLabel(value)
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function getCategoryKey(category) {
+  const label = cleanCategoryLabel(category?.label || "");
+  return category?.slug || slugCategoryLabel(label) || label.toLowerCase();
+}
+
+function normalizeFormCategories(value) {
+  const categories = [];
+  const seen = new Set();
+
+  for (const item of Array.isArray(value) ? value : []) {
+    const label = cleanCategoryLabel(item?.label || item?.name || item);
+    const slug = slugCategoryLabel(item?.slug || label);
+    const key = slug || label.toLowerCase();
+
+    if (!label || seen.has(key)) continue;
+
+    categories.push({label, slug});
+    seen.add(key);
+  }
+
+  return categories;
+}
+
 function getAiPromptPlaceholder(mode) {
   if (mode === "create") {
-    return "Describe the post you want to create: topic, audience, key points, tone, and any facts that must be included.";
+    return "Describe the post you want to create: professional topic, sailing note, cooking idea, audience, key points, tone, and any facts that must be included.";
   }
 
   if (mode === "translate") {
@@ -68,11 +143,159 @@ function getAiPromptPlaceholder(mode) {
   return "Describe what should change: make it sharper, shorter, more executive, more technical, more conversational, etc.";
 }
 
+function escapeHtml(value) {
+  return String(value || "").replace(/[&<>"']/g, (character) => {
+    const entities = {
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;",
+    };
+
+    return entities[character];
+  });
+}
+
+function getPlainTextGroups(value) {
+  const normalized = String(value || "")
+    .replace(/\r\n?/g, "\n")
+    .replace(/[ \t]+$/gm, "")
+    .trim();
+
+  if (!normalized) return [];
+
+  return normalized
+    .split(/\n{2,}/)
+    .map((group) =>
+      group
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean)
+    )
+    .filter((group) => group.length > 0);
+}
+
+function isLikelyHeadingGroup(group) {
+  if (!Array.isArray(group) || group.length !== 1) return false;
+
+  const text = group[0];
+  return text.length <= 90 && /[a-z0-9]/i.test(text) && !/[.!?,:;]$/.test(text);
+}
+
+function isNumberedHeadingGroup(group) {
+  return (
+    Array.isArray(group) &&
+    group.length === 1 &&
+    group[0].length <= 110 &&
+    /^\d+[.)]\s+\S/.test(group[0])
+  );
+}
+
+function getUnorderedListItem(line) {
+  const match = String(line || "").match(/^([-*+]|\u2022)\s+(.+)$/);
+  return match ? match[2] : null;
+}
+
+function getOrderedListItem(line) {
+  const match = String(line || "").match(/^\d+[.)]\s+(.+)$/);
+  return match ? match[1] : null;
+}
+
+function renderList(tagName, items) {
+  return `<${tagName}>${items
+    .map((item) => `<li>${escapeHtml(item)}</li>`)
+    .join("")}</${tagName}>`;
+}
+
+function renderParagraph(lines) {
+  return `<p>${lines.map(escapeHtml).join("<br>")}</p>`;
+}
+
+function textGroupEndsWithColon(group) {
+  return String(group?.join(" ") || "").trim().endsWith(":");
+}
+
+function isImplicitListGroup(group, previousGroup) {
+  return (
+    Array.isArray(group) &&
+    group.length >= 2 &&
+    textGroupEndsWithColon(previousGroup) &&
+    group.every((line) => line.length <= 160)
+  );
+}
+
+function plainTextToArticleHtml(value, options = {}) {
+  const groups = getPlainTextGroups(value);
+  if (groups.length === 0) return {html: "", title: ""};
+
+  let startIndex = 0;
+  let title = "";
+
+  if (options.extractTitle && isLikelyHeadingGroup(groups[0])) {
+    title = groups[0][0];
+    startIndex = 1;
+  }
+
+  const blocks = [];
+  let previousGroup = null;
+
+  for (let index = startIndex; index < groups.length; index += 1) {
+    const group = groups[index];
+    const unorderedItems = group.map(getUnorderedListItem);
+    const orderedItems = group.map(getOrderedListItem);
+
+    if (unorderedItems.every(Boolean)) {
+      blocks.push(renderList("ul", unorderedItems));
+    } else if (group.length > 1 && orderedItems.every(Boolean)) {
+      blocks.push(renderList("ol", orderedItems));
+    } else if (isImplicitListGroup(group, previousGroup)) {
+      blocks.push(renderList("ul", group));
+    } else if (isNumberedHeadingGroup(group)) {
+      blocks.push(`<h3>${escapeHtml(group[0])}</h3>`);
+    } else if (isLikelyHeadingGroup(group)) {
+      blocks.push(`<h2>${escapeHtml(group[0])}</h2>`);
+    } else {
+      blocks.push(renderParagraph(group));
+    }
+
+    previousGroup = group;
+  }
+
+  return {html: blocks.join(""), title};
+}
+
+function ToolbarButton({
+  active = false,
+  children,
+  disabled = false,
+  icon: Icon,
+  label,
+  onClick,
+}) {
+  return (
+    <button
+      aria-label={label}
+      aria-pressed={active || undefined}
+      className={[styles.richTextButton, active ? styles.richTextButtonActive : ""]
+        .filter(Boolean)
+        .join(" ")}
+      disabled={disabled}
+      title={label}
+      type="button"
+      onClick={onClick}
+    >
+      {Icon && <Icon aria-hidden="true" size={18} strokeWidth={2.2} />}
+      {children}
+    </button>
+  );
+}
+
 export default function PostManager({user}) {
-  const editorRef = useRef(null);
+  const titleRef = useRef("");
   const [posts, setPosts] = useState([]);
   const [form, setForm] = useState(EMPTY_FORM);
-  const [editorKey, setEditorKey] = useState(0);
+  const [categoryDraft, setCategoryDraft] = useState("");
   const [status, setStatus] = useState({type: "message", text: "Loading posts..."});
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -82,6 +305,65 @@ export default function PostManager({user}) {
     mode: "tweak",
     targetLanguage: "en",
     prompt: "",
+  });
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure({
+        link: false,
+      }),
+      UnderlineExtension,
+      LinkExtension.configure({
+        autolink: true,
+        defaultProtocol: "https",
+        openOnClick: false,
+        HTMLAttributes: {
+          rel: "noopener noreferrer",
+          target: "_blank",
+        },
+      }),
+    ],
+    content: form.contentHtml || "",
+    editorProps: {
+      handlePaste: (view, event) => {
+        const clipboard = event.clipboardData;
+        const text = clipboard?.getData("text/plain");
+        const html = clipboard?.getData("text/html");
+        const editorIsEmpty = !editor?.getText().trim();
+        const hasStructuredPlainText = getPlainTextGroups(text).length >= 3;
+        const shouldFormatPlainText =
+          !html || event.shiftKey || (editorIsEmpty && hasStructuredPlainText);
+
+        if (!text || clipboard?.files?.length > 0 || !shouldFormatPlainText) {
+          return false;
+        }
+
+        const parsed = plainTextToArticleHtml(text, {
+          extractTitle: !titleRef.current.trim() && editorIsEmpty,
+        });
+
+        if (!parsed.html) return false;
+
+        event.preventDefault();
+
+        if (parsed.title) {
+          setForm((current) =>
+            current.title.trim() ? current : {...current, title: parsed.title}
+          );
+        }
+
+        editor?.chain().focus().insertContent(parsed.html).run();
+        return true;
+      },
+    },
+    immediatelyRender: false,
+    onUpdate: ({editor: activeEditor}) => {
+      const contentHtml = activeEditor.isEmpty ? "" : activeEditor.getHTML();
+      setForm((current) =>
+        current.contentHtml === contentHtml
+          ? current
+          : {...current, contentHtml}
+      );
+    },
   });
 
   const counts = useMemo(
@@ -130,6 +412,21 @@ export default function PostManager({user}) {
     };
   }, []);
 
+  useEffect(() => {
+    titleRef.current = form.title;
+  }, [form.title]);
+
+  useEffect(() => {
+    if (!editor) return;
+
+    const editorHtml = editor.isEmpty ? "" : editor.getHTML();
+    const formHtml = form.contentHtml || "";
+
+    if (editorHtml !== formHtml) {
+      editor.commands.setContent(formHtml, {emitUpdate: false});
+    }
+  }, [editor, form.contentHtml]);
+
   function loadForm(post) {
     setForm({
       id: post.id || null,
@@ -137,16 +434,17 @@ export default function PostManager({user}) {
       slug: post.slug || "",
       status: post.status || "draft",
       summary: post.summary || "",
+      categories: normalizeFormCategories(post.categories),
       contentHtml: post.contentHtml || "",
       media: post.media || null,
     });
-    setEditorKey((key) => key + 1);
+    setCategoryDraft("");
     setStatus(null);
   }
 
   function newPost() {
     setForm(EMPTY_FORM);
-    setEditorKey((key) => key + 1);
+    setCategoryDraft("");
     setStatus(null);
   }
 
@@ -157,6 +455,43 @@ export default function PostManager({user}) {
     }));
   }
 
+  function addCategory(value = categoryDraft) {
+    const label = cleanCategoryLabel(value);
+    const key = slugCategoryLabel(label) || label.toLowerCase();
+
+    if (!label) return;
+
+    setForm((current) => {
+      const categories = normalizeFormCategories(current.categories);
+
+      if (categories.some((category) => getCategoryKey(category) === key)) {
+        return current;
+      }
+
+      return {
+        ...current,
+        categories: [...categories, {label, slug: ""}],
+      };
+    });
+    setCategoryDraft("");
+  }
+
+  function removeCategory(key) {
+    setForm((current) => ({
+      ...current,
+      categories: normalizeFormCategories(current.categories).filter(
+        (category) => getCategoryKey(category) !== key
+      ),
+    }));
+  }
+
+  function handleCategoryKeyDown(event) {
+    if (event.key !== "Enter" && event.key !== ",") return;
+
+    event.preventDefault();
+    addCategory();
+  }
+
   function updateAiField(name, value) {
     setAiForm((current) => ({
       ...current,
@@ -165,7 +500,8 @@ export default function PostManager({user}) {
   }
 
   function readEditorContent() {
-    return editorRef.current?.innerHTML || "";
+    if (!editor) return form.contentHtml || "";
+    return editor.isEmpty ? "" : editor.getHTML();
   }
 
   function applyGeneratedPost(post) {
@@ -175,19 +511,22 @@ export default function PostManager({user}) {
       summary: post.summary || current.summary,
       contentHtml: post.contentHtml || current.contentHtml,
     }));
-    setEditorKey((key) => key + 1);
   }
 
-  function runEditorCommand(command, value = null) {
-    editorRef.current?.focus();
-    document.execCommand(command, false, value);
-  }
+  function setEditorLink() {
+    if (!editor) return;
 
-  function insertLink() {
-    const url = window.prompt("Link URL");
-    if (!url) return;
+    const previousUrl = editor.getAttributes("link").href || "";
+    const url = window.prompt("Link URL", previousUrl);
 
-    runEditorCommand("createLink", url);
+    if (url === null) return;
+
+    if (!url.trim()) {
+      editor.chain().focus().extendMarkRange("link").unsetLink().run();
+      return;
+    }
+
+    editor.chain().focus().extendMarkRange("link").setLink({href: url}).run();
   }
 
   async function uploadFile(event) {
@@ -268,6 +607,7 @@ export default function PostManager({user}) {
         title: form.title,
         status: form.status,
         summary: form.summary,
+        categories: form.categories,
         contentHtml,
         media: form.media,
       };
@@ -300,6 +640,8 @@ export default function PostManager({user}) {
     }
   }
 
+  const formCategories = normalizeFormCategories(form.categories);
+
   return (
     <div className={styles.shell}>
       <AdminHeader active="posts" user={user} />
@@ -309,7 +651,7 @@ export default function PostManager({user}) {
           <div className={styles.titleBlock}>
             <h1>Posts</h1>
             <p className={styles.muted}>
-              Create portfolio posts with rich text and hosted media.
+              Create blog posts with rich text and hosted media.
             </p>
           </div>
         </div>
@@ -324,7 +666,11 @@ export default function PostManager({user}) {
                   {counts.archived} archived
                 </p>
               </div>
-              <button className={styles.button} type="button" onClick={newPost}>
+              <button
+                className={styles.secondaryButton}
+                type="button"
+                onClick={newPost}
+              >
                 New post
               </button>
             </div>
@@ -409,16 +755,87 @@ export default function PostManager({user}) {
               />
             </label>
 
+            <div className={styles.field}>
+              <label htmlFor="post-categories">Categories</label>
+              <div className={styles.categoryEditor}>
+                <div className={styles.categoryInputRow}>
+                  <input
+                    id="post-categories"
+                    placeholder="Add a category, for example Market data"
+                    value={categoryDraft}
+                    onChange={(event) => setCategoryDraft(event.target.value)}
+                    onKeyDown={handleCategoryKeyDown}
+                  />
+                  <button
+                    className={styles.secondaryButton}
+                    type="button"
+                    onClick={() => addCategory()}
+                  >
+                    Add category
+                  </button>
+                </div>
+
+                <div
+                  className={styles.categorySuggestions}
+                  aria-label="Suggested categories"
+                >
+                  {SUGGESTED_CATEGORIES.map((category) => {
+                    const isSelected = formCategories.some(
+                      (item) => getCategoryKey(item) === slugCategoryLabel(category)
+                    );
+
+                    return (
+                      <button
+                        className={styles.categorySuggestion}
+                        disabled={isSelected}
+                        key={category}
+                        type="button"
+                        onClick={() => addCategory(category)}
+                      >
+                        {category}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {formCategories.length > 0 && (
+                  <div className={styles.categoryChips}>
+                    {formCategories.map((category) => (
+                      <span
+                        className={styles.categoryChip}
+                        key={getCategoryKey(category)}
+                      >
+                        {category.label}
+                        <button
+                          aria-label={`Remove ${category.label}`}
+                          type="button"
+                          onClick={() => removeCategory(getCategoryKey(category))}
+                        >
+                          x
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                <p className={styles.muted}>
+                  Use categories for public filtering, for example market data,
+                  marketing, cooking, or sailing.
+                </p>
+              </div>
+            </div>
+
             <section className={styles.aiPanel}>
               <div className={styles.editorTitleRow}>
                 <div className={styles.titleBlock}>
                   <h2>AI assistant</h2>
                   <p className={styles.muted}>
-                    Create, improve, or translate the current post draft.
+                    Create, improve, or translate the current post draft using{" "}
+                    <Link href="/admin/ai-settings">AI settings</Link>.
                   </p>
                 </div>
                 <button
-                  className={styles.button}
+                  className={styles.secondaryButton}
                   disabled={isAiWorking}
                   type="button"
                   onClick={runAiAction}
@@ -514,50 +931,170 @@ export default function PostManager({user}) {
             </section>
 
             <section className={styles.richTextPanel}>
-              <div className={styles.richTextToolbar} aria-label="Rich text toolbar">
-                <button type="button" onClick={() => runEditorCommand("bold")}>
-                  B
-                </button>
-                <button type="button" onClick={() => runEditorCommand("italic")}>
-                  I
-                </button>
-                <button type="button" onClick={() => runEditorCommand("underline")}>
-                  U
-                </button>
-                <button type="button" onClick={() => runEditorCommand("formatBlock", "h2")}>
-                  H2
-                </button>
-                <button type="button" onClick={() => runEditorCommand("formatBlock", "p")}>
-                  P
-                </button>
-                <button
-                  type="button"
-                  onClick={() => runEditorCommand("insertUnorderedList")}
-                >
-                  List
-                </button>
-                <button
-                  type="button"
-                  onClick={() => runEditorCommand("insertOrderedList")}
-                >
-                  1.
-                </button>
-                <button type="button" onClick={insertLink}>
-                  Link
-                </button>
+              <div className={styles.editorTitleRow}>
+                <div className={styles.titleBlock}>
+                  <h2>Content</h2>
+                  <p className={styles.muted}>Write and format the post body.</p>
+                </div>
               </div>
 
-              <div
+              <div className={styles.richTextToolbar} aria-label="Rich text toolbar">
+                <div className={styles.richTextToolbarGroup}>
+                  <ToolbarButton
+                    disabled={!editor}
+                    icon={Undo2}
+                    label="Undo"
+                    onClick={() => editor?.chain().focus().undo().run()}
+                  />
+                  <ToolbarButton
+                    disabled={!editor}
+                    icon={Redo2}
+                    label="Redo"
+                    onClick={() => editor?.chain().focus().redo().run()}
+                  />
+                </div>
+
+                <div className={styles.richTextToolbarGroup}>
+                  <ToolbarButton
+                    active={editor?.isActive("paragraph")}
+                    disabled={!editor}
+                    icon={Pilcrow}
+                    label="Paragraph"
+                    onClick={() => editor?.chain().focus().setParagraph().run()}
+                  />
+                  <ToolbarButton
+                    active={editor?.isActive("heading", {level: 2})}
+                    disabled={!editor}
+                    icon={Heading2}
+                    label="Heading 2"
+                    onClick={() =>
+                      editor?.chain().focus().toggleHeading({level: 2}).run()
+                    }
+                  />
+                  <ToolbarButton
+                    active={editor?.isActive("heading", {level: 3})}
+                    disabled={!editor}
+                    icon={Heading3}
+                    label="Heading 3"
+                    onClick={() =>
+                      editor?.chain().focus().toggleHeading({level: 3}).run()
+                    }
+                  />
+                  <ToolbarButton
+                    active={editor?.isActive("heading", {level: 4})}
+                    disabled={!editor}
+                    icon={Heading4}
+                    label="Heading 4"
+                    onClick={() =>
+                      editor?.chain().focus().toggleHeading({level: 4}).run()
+                    }
+                  />
+                  <ToolbarButton
+                    active={editor?.isActive("blockquote")}
+                    disabled={!editor}
+                    icon={Quote}
+                    label="Quote"
+                    onClick={() => editor?.chain().focus().toggleBlockquote().run()}
+                  />
+                </div>
+
+                <div className={styles.richTextToolbarGroup}>
+                  <ToolbarButton
+                    active={editor?.isActive("bold")}
+                    disabled={!editor}
+                    icon={Bold}
+                    label="Bold"
+                    onClick={() => editor?.chain().focus().toggleBold().run()}
+                  />
+                  <ToolbarButton
+                    active={editor?.isActive("italic")}
+                    disabled={!editor}
+                    icon={Italic}
+                    label="Italic"
+                    onClick={() => editor?.chain().focus().toggleItalic().run()}
+                  />
+                  <ToolbarButton
+                    active={editor?.isActive("underline")}
+                    disabled={!editor}
+                    icon={Underline}
+                    label="Underline"
+                    onClick={() => editor?.chain().focus().toggleUnderline().run()}
+                  />
+                  <ToolbarButton
+                    active={editor?.isActive("strike")}
+                    disabled={!editor}
+                    icon={Strikethrough}
+                    label="Strikethrough"
+                    onClick={() => editor?.chain().focus().toggleStrike().run()}
+                  />
+                </div>
+
+                <div className={styles.richTextToolbarGroup}>
+                  <ToolbarButton
+                    active={editor?.isActive("bulletList")}
+                    disabled={!editor}
+                    icon={List}
+                    label="Bulleted list"
+                    onClick={() => editor?.chain().focus().toggleBulletList().run()}
+                  />
+                  <ToolbarButton
+                    active={editor?.isActive("orderedList")}
+                    disabled={!editor}
+                    icon={ListOrdered}
+                    label="Numbered list"
+                    onClick={() => editor?.chain().focus().toggleOrderedList().run()}
+                  />
+                  <ToolbarButton
+                    disabled={!editor}
+                    icon={IndentDecrease}
+                    label="Outdent list item"
+                    onClick={() => editor?.chain().focus().liftListItem("listItem").run()}
+                  />
+                  <ToolbarButton
+                    disabled={!editor}
+                    icon={IndentIncrease}
+                    label="Indent list item"
+                    onClick={() => editor?.chain().focus().sinkListItem("listItem").run()}
+                  />
+                </div>
+
+                <div className={styles.richTextToolbarGroup}>
+                  <ToolbarButton
+                    active={editor?.isActive("link")}
+                    disabled={!editor}
+                    icon={LinkIcon}
+                    label="Add or edit link"
+                    onClick={setEditorLink}
+                  />
+                  <ToolbarButton
+                    disabled={!editor}
+                    icon={Unlink}
+                    label="Remove link"
+                    onClick={() =>
+                      editor?.chain().focus().extendMarkRange("link").unsetLink().run()
+                    }
+                  />
+                  <ToolbarButton
+                    disabled={!editor}
+                    icon={Minus}
+                    label="Horizontal rule"
+                    onClick={() => editor?.chain().focus().setHorizontalRule().run()}
+                  />
+                  <ToolbarButton
+                    disabled={!editor}
+                    icon={Eraser}
+                    label="Clear formatting"
+                    onClick={() =>
+                      editor?.chain().focus().unsetAllMarks().clearNodes().run()
+                    }
+                  />
+                </div>
+              </div>
+
+              <EditorContent
                 aria-label="Post content"
                 className={styles.richEditor}
-                contentEditable
-                dangerouslySetInnerHTML={{__html: form.contentHtml}}
-                dir="ltr"
-                key={editorKey}
-                ref={editorRef}
-                role="textbox"
-                spellCheck="true"
-                suppressContentEditableWarning
+                editor={editor}
               />
             </section>
 

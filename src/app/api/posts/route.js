@@ -1,15 +1,36 @@
 import {NextResponse} from "next/server";
 
-import {getPublishedPosts} from "../../lib/posts";
+import {isBlogEnabled} from "../../lib/siteProfile";
+import {getPublishedPostCategories, getPublishedPosts} from "../../lib/posts";
 
 export const runtime = "nodejs";
 
-export async function GET() {
+export async function GET(request) {
   try {
-    const posts = await getPublishedPosts();
-    return NextResponse.json({posts});
+    const blogEnabled = await isBlogEnabled();
+
+    if (!blogEnabled) {
+      return NextResponse.json({
+        blogEnabled: false,
+        categories: [],
+        posts: [],
+      });
+    }
+
+    const {searchParams} = new URL(request.url);
+    const [posts, categories] = await Promise.all([
+      getPublishedPosts({
+        category: searchParams.get("category") || searchParams.get("tag") || "",
+      }),
+      getPublishedPostCategories(),
+    ]);
+
+    return NextResponse.json({blogEnabled: true, posts, categories});
   } catch (error) {
     console.error("Public posts API error", error);
-    return NextResponse.json({posts: []}, {status: 200});
+    return NextResponse.json(
+      {blogEnabled: false, posts: [], categories: []},
+      {status: 200}
+    );
   }
 }
