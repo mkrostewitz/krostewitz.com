@@ -1,9 +1,9 @@
 .summaryCard {
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--border);
   border-radius: 18px;
   padding: 18px;
   display: grid;
-  grid-template-columns: minmax(200px, 0.9fr) minmax(200px, 1fr);
+  grid-template-columns: minmax(260px, 0.5fr) minmax(0, 1.5fr);
   gap: 16px;
   margin-bottom: 20px;
 }
@@ -11,11 +11,12 @@
 .statColumn {
   display: grid;
   gap: 10px;
+  min-width: 0;
 }
 
 .statLabel {
   font-size: 0.95rem;
-  color: #666;
+  color: var(--text-muted);
 }
 
 .statValue {
@@ -28,7 +29,7 @@
 
 .statSuffix {
   font-size: 1.3rem;
-  color: #333;
+  color: var(--text-secondary);
   margin-left: 6px;
 }
 
@@ -68,15 +69,27 @@
 }
 
 .statGrid {
-  display: grid;
-  gap: 12px;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
   align-content: center;
+  min-width: 0;
+}
+
+.outcomeGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2rem;
+}
+
+.outcome {
+  min-width: 0;
 }
 
 .statGrid p {
-  color: #666;
+  color: var(--text-muted);
   font-size: 0.95rem;
+  line-height: 1.25;
 }
 
 .statGrid strong {
@@ -88,14 +101,14 @@
 
 .languages {
   grid-column: 1 / -1;
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--border);
   border-radius: 14px;
   padding: 12px 14px;
 }
 
 .languagesLabel {
   margin: 0 0 8px;
-  color: #333;
+  color: var(--text-secondary);
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -105,8 +118,15 @@
 .languagesGrid {
   display: grid;
   gap: 12px;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
   align-items: stretch;
+  min-width: 0;
+}
+
+.languagesGroup {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
 }
 
 .languageCard {
@@ -115,7 +135,7 @@
   align-items: center;
   padding: 12px 14px;
   border-radius: 14px;
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--border);
   min-width: 0;
 }
 
@@ -132,16 +152,24 @@
   flex-shrink: 0;
 }
 
+.languageText {
+  min-width: 0;
+}
+
 .languageName {
   margin: 0;
   color: var(--foreground);
   font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 
 .languageLevel {
   margin: 0;
-  color: #666;
+  color: var(--text-muted);
   font-size: 0.95rem;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 
 @media (max-width: 960px) {
@@ -180,7 +208,12 @@
   }
 
   .statGrid {
+    gap: 14px;
+  }
+
+  .outcomeGrid {
     grid-template-columns: 1fr;
+    gap: 12px;
   }
 
   .languageCard {

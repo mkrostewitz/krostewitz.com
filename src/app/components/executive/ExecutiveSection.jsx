@@ -97,46 +97,32 @@ const ExecutiveSummary = ({skills = []}) => {
             ))}
           </div>
         </div>
-        <div
-          className={styles.statGrid}
-          style={{display: "flex", flexDirection: "column", gap: "rem"}}
-        >
+        <div className={styles.statGrid}>
           {/* Stats Section */}
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              gap: "2rem",
-              justifyContent: "space-evenly",
-            }}
-          >
-            <div style={{flex: 0.5}}>
+          <div className={styles.outcomeGrid}>
+            <div className={styles.outcome}>
               <p>{t("stats.revenuePerHead")}</p>
               <strong>{revenue}M US$</strong>
             </div>
-            <div style={{flex: 0.5}}>
+            <div className={styles.outcome}>
               <p>{t("stats.markets")}</p>
               <strong>{markets}</strong>
             </div>
           </div>
 
           {/* Languages Section */}
-          <div>
-            <div
-              style={{display: "flex", flexDirection: "column", gap: "0.5rem"}}
-            >
-              <p>{t("languages.title")}</p>
-              <div className={styles.languagesGrid}>
-                {languageList.map((lang) => (
-                  <div key={lang.code} className={styles.languageCard}>
-                    <div className={styles.languageIcon}>{lang.code}</div>
-                    <div>
-                      <p className={styles.languageName}>{lang.name}</p>
-                      <p className={styles.languageLevel}>{lang.level}</p>
-                    </div>
+          <div className={styles.languagesGroup}>
+            <p>{t("languages.title")}</p>
+            <div className={styles.languagesGrid}>
+              {languageList.map((lang) => (
+                <div key={lang.code} className={styles.languageCard}>
+                  <div className={styles.languageIcon}>{lang.code}</div>
+                  <div className={styles.languageText}>
+                    <p className={styles.languageName}>{lang.name}</p>
+                    <p className={styles.languageLevel}>{lang.level}</p>
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
