@@ -1,0 +1,356 @@
+{
+  "buttons": {
+    "booking": "Gespräch vereinbaren",
+    "linkedin": "Auf LinkedIn verbinden"
+  },
+  "nav": {
+    "about": "Über mich",
+    "personal": "Persönlich",
+    "timeline": "Erfahrung",
+    "executiveSummary": "Auf einen Blick",
+    "map": "Ländererfahrung",
+    "cv": "Lebenslauf",
+    "impact": "Wirkung",
+    "portfolio": "Portfolio",
+    "blog": "Blog",
+    "contact": "Kontakt"
+  },
+  "offer": {
+    "eyebrow": "B2B-Digitalisierung · Vertrieb · Operations",
+    "title": "Nachhaltiges Wachstum braucht digitale Strukturen.",
+    "subtitle": "Ich unterstütze mittelständische Industrie- und Technologieunternehmen, die neue Märkte erschließen, Vertriebsprozesse digitalisieren und operative Abläufe skalierbar machen wollen und biete über 15 Jahren Erfahrung im Aufbau, Skalierung und Neuausrichtung.",
+    "points": [
+      "<strong>Markteintritt & Internationalisierung</strong>. Go-to-Market, Partner, Distribution und Vertrieb, auch für späte Markteintritte in Asien und Amerika.",
+      "<strong>Digitaler B2B-Vertrieb & E-Commerce</strong>. Effiziente Tools und Prozesse für moderne Angebots-, Bestell- und Kundenanforderungen.",
+      "<strong>Prozessautomatisierung & Operations</strong>. Schlanke Strukturen, klare Verantwortlichkeiten und skalierbare Abläufe für wachsende Auftragsvolumina."
+    ],
+    "cta": "Gespräch vereinbaren",
+    "alt": "Portrait von Mathias Krostewitz"
+  },
+  "executiveSummary": {
+    "eyebrow": "Kurzprofil",
+    "title": "Auf einen Blick",
+    "languages": {
+      "title": "Sprachen",
+      "list": [
+        {
+          "code": "EN",
+          "name": "Englisch",
+          "level": "Verhandlungssicher"
+        },
+        {
+          "code": "DE",
+          "name": "Deutsch",
+          "level": "Muttersprache"
+        },
+        {
+          "code": "ZH",
+          "name": "Chinesisch",
+          "level": "Grundkenntnisse"
+        }
+      ]
+    },
+    "stats": {
+      "yearsLeadership": "Jahre internationale Führungserfahrung",
+      "revenuePerHead": "Verantworteter Umsatz",
+      "markets": "Aufgebaute internationale Märkte"
+    }
+  },
+  "about": {
+    "headline": "Neue Wege finden, wo es keine Blaupause gibt.",
+    "body": "In den letzten 15+ Jahren habe ich Industrieunternehmen in Nordamerika und Asien aufgebaut, weiterentwickelt und neu ausgerichtet. Selten gab es dafür eine fertige Blaupause. Meist ging es darum, mit begrenzten Ressourcen neue Märkte zu erschließen, lokale Strukturen aufzubauen und Wachstum überhaupt erst tragfähig zu machen.<br/><br/>Der Unterschied lag für mich nie nur in sauberer Umsetzung. Entscheidend war oft, ein Unternehmen anders zu lesen: Wofür steht es wirklich? Welche Stärken zählen im jeweiligen Markt? Und wo können Produkte oder Technologien außerhalb des bisherigen Fokus Wert schaffen?<br/><br/>Während andere noch nach der perfekten Lösung suchen, teste ich lieber früh, lerne schnell und entwickle den nächsten Ansatz. So entstehen neue USPs, Anwendungen, Kundengruppen und Go-to-Market-Modelle, die nicht nur gut klingen, sondern im Markt funktionieren.",
+    "highlights": [
+      "Neue Märkte in Nordamerika und Asien aufgebaut, oft ohne Blaupause und mit begrenzten Ressourcen",
+      "Unternehmen, Produkte und Märkte neu bewertet, um echte Stärken und relevante USPs sichtbar zu machen",
+      "Neue Anwendungen, Kundengruppen und Branchenzugänge entwickelt, die zusätzliches Wachstum ermöglicht haben",
+      "Go-to-Market-Ansätze früh im Markt getestet, verbessert und in skalierbare Vertriebsmodelle übersetzt",
+      "Digitale Tools und Prozesse geschaffen, mit denen kleine Teams hohe Auftrags- und Umsatzvolumina steuern können"
+    ]
+  },
+  "personal": {
+    "eyebrow": "Persönlich",
+    "title": "Abseits des Schreibtischs zieht es mich nach draußen.",
+    "intro": "Skifahren, Radfahren und Wandern halten mich in Bewegung, aber zum Segeln komme ich am liebsten zurück. Auf dem Wasser zählen Vorbereitung, ein klarer Kurs und die Fähigkeit, Bedingungen schnell neu zu lesen.",
+    "hobbyLabel": "Hobbys",
+    "hobbies": [
+      "Segeln",
+      "Skifahren",
+      "Radfahren",
+      "Wandern"
+    ],
+    "sailing": {
+      "eyebrow": "Segelbedingungen am Chiemsee",
+      "title": "Chiemsee-Wind",
+      "subtitle": "Aktueller Wind in 10 m Höhe rund um {{location}}, aus Open-Meteo-Daten in Knoten dargestellt.",
+      "windSpeed": "Windstärke",
+      "windGusts": "Böen",
+      "windDirection": "Windrichtung",
+      "temperature": "Temperatur",
+      "airPressure": "Luftdruck",
+      "cloudDevelopment": "Wolkenentwicklung",
+      "cloudCover": "Bewölkung",
+      "cloudTrendRising": "bis {{time}} zunehmend ({{change}})",
+      "cloudTrendClearing": "bis {{time}} auflockernd ({{change}})",
+      "cloudTrendStable": "bis {{time}} stabil",
+      "cloudTrendUnknown": "keine Tendenz verfügbar",
+      "cloudPatternTitle": "Tagesverlauf",
+      "showCloudPattern": "Wolkenverlauf anzeigen",
+      "hideCloudPattern": "Wolkenverlauf ausblenden",
+      "now": "Jetzt",
+      "weatherState": {
+        "sun": "Klar",
+        "partly": "Heiter",
+        "cloud": "Bewölkt",
+        "rain": "Regen"
+      },
+      "forecast": "Vorhersage",
+      "forecastTime": "Zeit",
+      "noForecast": "Keine Vorhersage verfügbar",
+      "updated": "Aktualisiert {{time}}",
+      "loading": "Winddaten werden geladen",
+      "error": "Winddaten sind gerade nicht verfügbar.",
+      "source": "Open-Meteo",
+      "windMapAlt": "Animierte Karte der aktuellen Windmuster rund um den Chiemsee",
+      "webcamTitle": "CYC Prien Webcam",
+      "webcamSubtitle": "Nahezu Live-Blick vom Steg des Chiemsee Yacht Clubs.",
+      "webcamSource": "CYC-Webcam",
+      "liveSource": "wetter.com Live-Webcam",
+      "webcamUnavailable": "Das Webcam-Bild konnte gerade nicht eingebettet werden.",
+      "openWebcam": "Webcam öffnen"
+    }
+  },
+  "skills": {
+    "title": "Wirkungsfelder",
+    "headline": "Wo ich Verantwortung übernehme",
+    "description": "Ich verbinde unternehmerische Führung mit pragmatischer Umsetzung, um Wachstum voranzubringen, Komplexität zu reduzieren und nachhaltige Profitabilität zu sichern.",
+    "industriesTitle": "Branchenfokus",
+    "industriesSubtitle": "Branchen, in denen ich Unternehmen aufgebaut, skaliert und operativ verantwortet habe.",
+    "industries": [
+      {
+        "icon": "🏭",
+        "title": "Industrielle Fertigung",
+        "detail": "Fabrik- / diskrete Fertigungsumgebungen"
+      },
+      {
+        "icon": "⚙️",
+        "title": "Automation & Steuerung",
+        "detail": "Industriekomponenten- und Systemlieferanten"
+      },
+      {
+        "icon": "📦",
+        "title": "Großhandel / Distribution",
+        "detail": "B2B-Technik- und Industriedistribution"
+      },
+      {
+        "icon": "🚉",
+        "title": "Transport & Infrastruktur",
+        "detail": "Verkehrs- / ÖPNV-Technik und verwandte Systeme"
+      },
+      {
+        "icon": "🚗",
+        "title": "Automotive",
+        "detail": "OEMs und Tier-Zulieferer, China-Erfahrung"
+      },
+      {
+        "icon": "🔌",
+        "title": "Elektronikfertigung",
+        "detail": "Industrielle Elektronik- / EMS-Umfelder"
+      },
+      {
+        "icon": "📦",
+        "title": "Intralogistik / Lager",
+        "detail": "Supply-Chain-Execution und Logistikautomation"
+      }
+    ],
+    "salesLabel": "Vertrieb",
+    "salesDetail": "Markteinführung, Vertriebskanäle und strategische Schlüsselkunden",
+    "marketingLabel": "Marketing",
+    "marketingDetail": "Positionierung, Marktbearbeitung und vertriebsunterstützendes Marketing",
+    "opsLabel": "Operations & Lieferkette",
+    "opsDetail": "Lieferfähigkeit (OTIF), Lokalisierung und verlässliche operative Umsetzung",
+    "financeLabel": "Finanzen & Administration",
+    "financeDetail": "Liquiditätsplanung, Forecasting und Führung über Kennzahlen",
+    "productLabel": "Produkt & Entwicklung",
+    "productDetail": "Übersetzung von Marktanforderungen in klare Produkt- und Entwicklungsplanung",
+    "productionLabel": "Produktion & Fertigung",
+    "productionDetail": "Durchsatz, Qualität und Kapazitätssteuerung im Einklang mit der Nachfrage",
+    "levels": {
+      "support": "Mitwirkung",
+      "lead": "Federführende Verantwortung",
+      "own": "Gesamtverantwortung"
+    },
+    "map": {
+      "eyebrow": "Internationale Wirkung",
+      "title": "Internationale Führungs- und Markterfahrung",
+      "subtitle": "Märkte in denen ich gewirkt habe.",
+      "lived": "Gelebt & Teams geführt",
+      "worked": "Märkte aufgebaut",
+      "partner": "Partnernetzwerke",
+      "missingToken": "Bitte NEXT_PUBLIC_MAPBOX_TOKEN setzen, um die Karte anzuzeigen."
+    }
+  },
+  "timeline": [
+    {
+      "period": "Aug 2022 — heute",
+      "title": "Gründer & CEO, INTUTEC LLC",
+      "location": "Palo Alto, USA",
+      "detail": "Aufbau einer Distributionsplattform für Automatisierungskomponenten. Verantwortung für Vision, Produkt, Datenmodell, UI sowie Go-to-Market und Hersteller-Onboarding.",
+      "highlights": [
+        "Fragmentierte Produktdaten für industrielle Komponenten in ein strukturiertes Marketplace-Modell übersetzt.",
+        "Produktarchitektur, Hersteller-Onboarding und kommerzielle Positionierung definiert.",
+        "Operativen Stack aus Produkt, Daten, Vertriebsprozess und Herstellerbeziehungen aufgebaut."
+      ]
+    },
+    {
+      "period": "Jul 2022 — heute",
+      "title": "President, Schlegel USA Inc.",
+      "location": "New York, USA",
+      "detail": "Strategische Weiterentwicklung eines HMI-Herstellers. Business Planning, Liquiditätssteuerung, Forecasting sowie Aufbau von Partner- und Vertriebsstrukturen.",
+      "highlights": [
+        "Verantwortung für Business Plan, Forecasting, Liquiditätsdisziplin und kommerzielle Prioritäten in den USA.",
+        "Partnerstrukturen für OEMs, Distribution und strategische Kunden entwickelt.",
+        "Marktfeedback mit Produkt-, Lieferketten- und operativen Entscheidungen verbunden."
+      ]
+    },
+    {
+      "period": "Mär 2018 — Jun 2022",
+      "title": "CEO & President, CAPTRON North America LP",
+      "location": "New York, USA",
+      "detail": "Unternehmen erfolgreich gedreht und skaliert: Umsatz von 0,8 Mio. USD (2017) auf 13,5 Mio. USD (2021) gesteigert bei >15 % EBITDA. Lieferkette lokalisiert und OTIF von 56 % auf 88 % verbessert. Eigenes CRM-/ERP-/FiBu-System entwickelt.",
+      "highlights": [
+        "Kommerzielle Struktur, Account-Fokus und Forecasting-Rhythmus für nachhaltiges Wachstum neu aufgebaut.",
+        "Lieferkette und Fulfillment lokalisiert und OTIF von 56 % auf 88 % verbessert.",
+        "Interne CRM-, ERP-, Reporting- und Accounting-Prozesse für bessere Steuerungsdaten entwickelt."
+      ]
+    },
+    {
+      "period": "Jun 2014 — Apr 2018",
+      "title": "Head of Business Development, CAPTRON Electronic GmbH",
+      "location": "München, Deutschland",
+      "detail": "NAFTA-Distributionsnetz aufgebaut und Umsatz von 4 Tsd. USD (2014) auf 800 Tsd. USD (2017) skaliert. Neues Branchen- und Produktportfolio entwickelt mit >10 Mio. USD zusätzlichem globalem Umsatzbeitrag.",
+      "highlights": [
+        "NAFTA-Distributionsabdeckung und Vertriebsroutinen aus einer nahezu leeren Ausgangslage aufgebaut.",
+        "Neue industrielle Segmente identifiziert und in Produkt- und Portfolioinitiativen übersetzt.",
+        "Vertrieb, Produkt und internationale Marktentwicklung funktionsübergreifend zusammengeführt."
+      ]
+    },
+    {
+      "period": "Feb 2012 — Mai 2014",
+      "title": "Regional Manager Asien, SATECO Asia Limited",
+      "location": "Hongkong & Suzhou, China",
+      "detail": "Markteintritt in den chinesischen Automobilmarkt umgesetzt. FICE in Suzhou gegründet (Investitionsbudget 600 Tsd. €) und Umsatz von 4,5 Mio. € in China, Indien und Korea verantwortet.",
+      "highlights": [
+        "Lokalen Markteintritt für Automotive-OEMs und Tier-Zulieferer umgesetzt.",
+        "FICE-Struktur in Suzhou aufgebaut sowie Investitionsbudget und operative Anlaufphase gesteuert.",
+        "Umsatz, Partner und Kundenbeziehungen in China, Indien und Korea koordiniert."
+      ]
+    },
+    {
+      "period": "2003 — 2012",
+      "title": "Geschäftsführer- & Commercial-Rollen (Mentor, MBG, Eisbär)",
+      "location": "München & China",
+      "detail": "Interims-Geschäftsführung, Einkauf und kommerzielle Verantwortung. Aufbau von Lieferantenbeziehungen, Projektpipelines und internationalen Beschaffungsstrukturen.",
+      "highlights": [
+        "Einkauf, Lieferantenentwicklung und kommerzielle Verantwortung in mittelständischen Strukturen kombiniert.",
+        "Sourcing-Netzwerke und Projektpipelines in Europa und China aufgebaut.",
+        "Frühe General-Management-Erfahrung in operativen Hands-on-Rollen gesammelt."
+      ]
+    }
+  ],
+  "timelineDialog": {
+    "open": "Details öffnen für {{title}}",
+    "viewDetails": "Details",
+    "close": "Schließen",
+    "highlights": "Schwerpunkte"
+  },
+  "cv": {
+    "title": "Lebenslauf",
+    "subtitle": "Aktuelle PDF-Version mit Rollen, Ergebnissen und ausgewählten Highlights.",
+    "download": "Lebenslauf herunterladen"
+  },
+  "portfolio": {
+    "eyebrow": "Portfolio",
+    "title": "Ausgewählte Projekte von GitHub",
+    "subtitle": "Eine Live-Ansicht ausgewählter Repositories, Tools und Produktexperimente, die den Systemanteil meiner Arbeit zeigen.",
+    "githubProfile": "GitHub-Profil",
+    "loading": "GitHub-Projekte werden geladen",
+    "error": "GitHub-Projekte konnten gerade nicht geladen werden.",
+    "empty": "Es sind noch keine GitHub-Projekte konfiguriert.",
+    "noDescription": "Für dieses Repository ist noch keine Beschreibung hinterlegt.",
+    "openRepo": "{{name}} auf GitHub öffnen",
+    "stars": "{{count}} Sterne",
+    "forks": "{{count}} Forks",
+    "updated": "Aktualisiert {{date}}",
+    "liveProject": "Live-Projekt",
+    "viewCode": "Code ansehen"
+  },
+  "blog": {
+    "eyebrow": "Logbuch",
+    "title": "Berufliches, Segeln und Kochen",
+    "subtitle": "Praktische Gedanken zu Wachstum, Operations und digitalen Systemen, dazu Notizen vom Wasser und aus der Küche.",
+    "topicLabel": "Blogthemen",
+    "filterLabel": "Beiträge nach Kategorie filtern",
+    "filterAll": "Alle",
+    "topics": [
+      "Berufliches",
+      "Segeln",
+      "Kochen"
+    ],
+    "empty": "Berufliche Notizen, Segelgeschichten und Küchenexperimente erscheinen hier, sobald sie veröffentlicht sind.",
+    "emptyFiltered": "Für diese Kategorie gibt es noch keine veröffentlichten Beiträge.",
+    "readMore": "Weiterlesen"
+  },
+
+  "contact": {
+    "eyebrow": "Kontakt",
+    "title": "Steht ein konkreter Wachstumsschritt an?",
+    "intro": "Ob neue Märkte, digitaler Vertrieb, schlankere Prozesse oder klare operative Strukturen: Für den ersten Austausch reicht eine kurze Nachricht.",
+    "directTitle": "Kurz und direkt",
+    "directNote": "Am einfachsten erreichen Sie mich per E-Mail, Telefon, LinkedIn oder über einen kurzen Termin.",
+    "promptTitle": "Eine Nachricht reicht",
+    "promptText": "Schreiben Sie kurz, worum es geht. Ich melde mich mit einem sinnvollen nächsten Schritt.",
+    "phoneLabel": "Telefon",
+    "phoneNumber": "+49 157 736 28 753",
+    "emailLabel": "E-Mail",
+    "addressLabel": "Adresse",
+    "addressMapLabel": "Karte der Adresse",
+    "form": {
+      "name": "Name",
+      "email": "E-Mail",
+      "message": "Worum geht es konkret?",
+      "placeholderName": "Max Mustermann",
+      "placeholderEmail": "du@email.de",
+      "placeholderMessage": "Zum Beispiel: Markteintritt USA, digitaler Vertrieb oder effizientere Auftragsabwicklung ...",
+      "submit": "Nachricht senden",
+      "close": "Schließen",
+      "sending": "Wird gesendet...",
+      "success": "Danke. Ich melde mich zeitnah.",
+      "successEyebrow": "Nachricht gesendet",
+      "successTitle": "Vielen Dank für Ihre Nachricht",
+      "verifyEyebrow": "Ein Schritt fehlt noch",
+      "verifyTitle": "E-Mail bestätigen",
+      "verifyPrompt": "Hallo {{name}}, ich habe einen 6-stelligen Code an {{email}} gesendet. Bitte geben Sie ihn ein, um Ihre E-Mail-Adresse zu bestätigen.",
+      "verifyCodeLabel": "Bestätigungscode",
+      "verifyCodePlaceholder": "123456",
+      "verifySubmit": "E-Mail bestätigen",
+      "verifyEdit": "Angaben bearbeiten",
+      "verifySent": "Bitte prüfen Sie Ihre E-Mails und geben Sie den 6-stelligen Code ein.",
+      "verifySuccess": "E-Mail bestätigt. Ihre Nachricht wurde empfangen.",
+      "sendAnother": "Weitere Nachricht senden",
+      "alreadyExists": "Wir stehen bereits in Kontakt.",
+      "missingFields": "Bitte füllen Sie alle Pflichtfelder aus.",
+      "invalidCode": "Dieser Bestätigungscode ist ungültig.",
+      "notFound": "Für diese E-Mail-Adresse wurde keine ausstehende Bestätigung gefunden.",
+      "sendFailed": "Die Bestätigung war erfolgreich, aber die Nachricht konnte nicht gesendet werden. Bitte versuchen Sie es erneut.",
+      "mailNotConfigured": "Der E-Mail-Versand ist noch nicht konfiguriert.",
+      "errorGeneric": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+      "validation": {
+        "name": "Bitte geben Sie Ihren Namen ein.",
+        "email": "Bitte geben Sie eine gültige E-Mail-Adresse ein.",
+        "message": "Bitte fügen Sie etwas mehr Details hinzu.",
+        "code": "Bitte geben Sie den 6-stelligen Code ein.",
+        "codeRequired": "Der Bestätigungscode ist erforderlich."
+      }
+    }
+  }
+}

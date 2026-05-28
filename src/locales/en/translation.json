@@ -1,0 +1,355 @@
+{
+  "buttons": {
+    "booking": "Schedule a call",
+    "linkedin": "LinkedIn"
+  },
+  "nav": {
+    "about": "About",
+    "personal": "Personal",
+    "timeline": "Experience",
+    "executiveSummary": "Summary",
+    "map": "Countries",
+    "cv": "CV",
+    "impact": "Impact",
+    "portfolio": "Portfolio",
+    "blog": "Blog",
+    "contact": "Contact"
+  },
+  "offer": {
+    "eyebrow": "How I help",
+    "title": "I build and run growth engines for industrial tech.",
+    "subtitle": "CEO with a track record of building and scaling industrial-tech businesses and turning around performance when needed through execution and systems.",
+    "points": [
+      "Design sustainable GTM playbooks and partner routes that fit your market",
+      "Turnaround your operations and build efficient teams",
+      "Stabilize cash, supply, and delivery with pragmatic ops changes"
+    ],
+    "cta": "Schedule a Call",
+    "alt": "Portrait of Mathias Krostewitz"
+  },
+  "executiveSummary": {
+    "eyebrow": "Executive Summary",
+    "title": "At a glance",
+    "languages": {
+      "title": "Languages",
+      "list": [
+        {
+          "code": "EN",
+          "name": "English",
+          "level": "Fluent"
+        },
+        {
+          "code": "DE",
+          "name": "German",
+          "level": "Fluent"
+        },
+        {
+          "code": "ZH",
+          "name": "Chinese",
+          "level": "Basic"
+        }
+      ]
+    },
+    "stats": {
+      "yearsLeadership": "Years leading global teams",
+      "revenuePerHead": "Revenue generated",
+      "markets": "Markets established"
+    }
+  },
+  "about": {
+    "headline": "Building industrial technology businesses, from strategy to execution.",
+    "body": "My career has been shaped by building businesses under real-world conditions: new markets, limited resources, and high complexity.<br/><br/>Over the past 15+ years, I have built, scaled, and stabilized industrial companies across Europe, North America, and Asia — often in situations without a blueprint, where execution mattered more than theory.<br/><br/>I work hands-on at the intersection of market, organization, and technology: from go-to-market strategy and sales & supply-chain structures to operational systems such as CRM, ERP, and reporting. For me, strategy does not end with a concept — it ends with measurable results.<br/><br/>Outside of work, I find balance in sailing and hiking. Both strongly influence how I work: setting a clear course, planning ahead, navigating uncertainty, and making decisions as conditions change.",
+    "highlights": [
+      "Built international industrial businesses from the ground up, including in the U.S., China, and APAC",
+      "Scaled revenue from $0.8M to $13.5M while achieving >15% EBITDA",
+      "Established customer-centric go-to-market models (NPS >60, NRR ~126%)",
+      "Designed and implemented custom CRM, ERP, and accounting systems for real operational workflows",
+      "Developed partner and distribution networks across North America, APAC, and MENA"
+    ]
+  },
+  "personal": {
+    "eyebrow": "Personal",
+    "title": "Away from the desk, I prefer weather, water, and open terrain.",
+    "intro": "Skiing, cycling, and hiking keep me outside, but sailing is the one I come back to most. On the water, plans matter, conditions change, and good decisions come from reading both the instruments and the horizon.",
+    "hobbyLabel": "Hobbies",
+    "hobbies": [
+      "Sailing",
+      "Skiing",
+      "Cycling",
+      "Hiking"
+    ],
+    "sailing": {
+      "eyebrow": "Chiemsee sailing conditions",
+      "title": "Chiemsee wind",
+      "subtitle": "Current wind at 10 m height around {{location}}, sampled from Open-Meteo and shown in knots.",
+      "windSpeed": "Wind speed",
+      "windGusts": "Gusts",
+      "windDirection": "Wind from",
+      "temperature": "Temperature",
+      "airPressure": "Air pressure",
+      "cloudDevelopment": "Cloud development",
+      "cloudCover": "cloud cover",
+      "cloudTrendRising": "increasing by {{time}} ({{change}})",
+      "cloudTrendClearing": "clearing by {{time}} ({{change}})",
+      "cloudTrendStable": "stable through {{time}}",
+      "cloudTrendUnknown": "no trend available",
+      "cloudPatternTitle": "Day pattern",
+      "showCloudPattern": "Show cloud pattern",
+      "hideCloudPattern": "Hide cloud pattern",
+      "now": "Now",
+      "weatherState": {
+        "sun": "Clear",
+        "partly": "Partly cloudy",
+        "cloud": "Cloudy",
+        "rain": "Rain"
+      },
+      "forecast": "Forecast",
+      "forecastTime": "Time",
+      "noForecast": "No forecast available",
+      "updated": "Updated {{time}}",
+      "loading": "Loading wind data",
+      "error": "Wind data is unavailable right now.",
+      "source": "Open-Meteo",
+      "windMapAlt": "Animated map of current wind patterns around Chiemsee",
+      "webcamTitle": "CYC Prien webcam",
+      "webcamSubtitle": "Near-live view from the Chiemsee Yacht Club jetty.",
+      "webcamSource": "CYC webcam",
+      "liveSource": "wetter.com live webcam",
+      "webcamUnavailable": "The webcam image could not be embedded right now.",
+      "openWebcam": "Open webcam"
+    }
+  },
+  "skills": {
+    "title": "Impact areas",
+    "headline": "Where I create value",
+    "description": "I combine commercial leadership with hands-on systems thinking-so companies grow faster, execute cleaner, and scale without chaos.",
+    "industriesTitle": "Industry focus",
+    "industriesSubtitle": "Where I’ve driven outcomes across GTM, operations, and systems delivery.",
+    "industries": [
+      {
+        "icon": "🏭",
+        "title": "Industrial Manufacturing",
+        "detail": "Factory / discrete manufacturing environments"
+      },
+      {
+        "icon": "⚙️",
+        "title": "Automation & Controls",
+        "detail": "Industrial components and systems suppliers"
+      },
+      {
+        "icon": "📦",
+        "title": "Wholesale / Distribution",
+        "detail": "B2B technical and industrial distribution"
+      },
+      {
+        "icon": "🚉",
+        "title": "Transportation & Infrastructure",
+        "detail": "Traffic / transit tech and related systems"
+      },
+      {
+        "icon": "🚗",
+        "title": "Automotive",
+        "detail": "OEMs and Tier suppliers, China market experience"
+      },
+      {
+        "icon": "🔌",
+        "title": "Electronics Manufacturing",
+        "detail": "Industrial electronics / EMS contexts"
+      },
+      {
+        "icon": "📦",
+        "title": "Intralogistics / Warehousing",
+        "detail": "Supply-chain execution and logistics automation"
+      }
+    ],
+    "salesLabel": "Sales",
+    "salesDetail": "Enterprise growth, channels, key accounts",
+    "marketingLabel": "Marketing",
+    "marketingDetail": "Positioning + performance marketing for pipeline",
+    "opsLabel": "Operations (Supply Chain / Execution)",
+    "opsDetail": "OTIF, localization, scalable execution cadence",
+    "financeLabel": "Administration & Finance",
+    "financeDetail": "Forecasting, cash flow, KPI discipline",
+    "productLabel": "Engineering / Product",
+    "productDetail": "Market-to-product translation, roadmap clarity",
+    "productionLabel": "Production / Manufacturing",
+    "productionDetail": "Throughput and quality aligned to demand",
+    "levels": {
+      "support": "Support",
+      "lead": "Lead",
+      "own": "Own"
+    },
+    "map": {
+      "eyebrow": "International Impact",
+      "title": "Global Operating Experience",
+      "subtitle": "Countries where I have lived, led teams, and built markets across three continents.",
+      "lived": "Lived & led teams",
+      "worked": "Built markets",
+      "partner": "Partner networks",
+      "missingToken": "Add NEXT_PUBLIC_MAPBOX_TOKEN to show the map."
+    }
+  },
+  "timeline": [
+    {
+      "period": "Aug 2022 — Present",
+      "title": "Founder & CEO, INTUTEC LLC",
+      "location": "Palo Alto, USA",
+      "detail": "Founded and built an industrial marketplace for automation components. Responsible for vision, product definition, data model, UI architecture, go-to-market, and manufacturer onboarding.",
+      "highlights": [
+        "Translated fragmented industrial component data into a structured marketplace model.",
+        "Defined the product architecture, supplier onboarding flow, and commercial positioning.",
+        "Built the operating stack across product, data, sales process, and manufacturer relationships."
+      ]
+    },
+    {
+      "period": "Jul 2022 — Present",
+      "title": "President, Schlegel USA Inc.",
+      "location": "New York, USA",
+      "detail": "Leading the U.S. organization of an HMI components manufacturer. Responsibility for strategy, business planning, cash flow management, forecasting, and partner development.",
+      "highlights": [
+        "Own the U.S. business plan, forecasting cadence, cash flow discipline, and commercial priorities.",
+        "Develop partner structures for OEM, distributor, and strategic account growth.",
+        "Connect market feedback with product, supply, and operational decisions."
+      ]
+    },
+    {
+      "period": "Mar 2018 — Jun 2022",
+      "title": "CEO & President, CAPTRON North America LP",
+      "location": "New York, USA",
+      "detail": "Turned around and scaled the business. Increased revenue from $0.8M (2017) to $13.5M (2021) while achieving >15% EBITDA. Localized the supply chain, improving OTIF from 56% to 88%. Designed and implemented a custom CRM, ERP, and accounting system.",
+      "highlights": [
+        "Rebuilt the commercial engine, account focus, and forecasting rhythm for sustained growth.",
+        "Localized supply chain and fulfillment operations to improve OTIF from 56% to 88%.",
+        "Designed internal CRM, ERP, reporting, and accounting workflows to run the business with clearer data."
+      ]
+    },
+    {
+      "period": "Jun 2014 — Apr 2018",
+      "title": "Head of Business Development, CAPTRON Electronic GmbH",
+      "location": "Munich, Germany",
+      "detail": "Built the NAFTA distribution network and grew revenue from $4k (2014) to $800k (2017). Developed new industry segments and product portfolios, generating more than $10M in additional global revenue.",
+      "highlights": [
+        "Established NAFTA distribution coverage and sales routines from a near-zero base.",
+        "Identified new industrial segments and converted them into product and portfolio initiatives.",
+        "Built cross-functional momentum between sales, product, and international market development."
+      ]
+    },
+    {
+      "period": "Feb 2012 — May 2014",
+      "title": "Regional Manager Asia, SATECO Asia Limited",
+      "location": "Hong Kong & Suzhou, China",
+      "detail": "Led market entry into the Chinese automotive sector. Incorporated a FICE in Suzhou with a €600k investment budget and managed €4.5M in revenue across China, India, and Korea.",
+      "highlights": [
+        "Led local market entry work for automotive OEM and Tier supplier opportunities.",
+        "Set up the Suzhou FICE structure and managed the investment budget and operating ramp.",
+        "Coordinated revenue, partners, and customer relationships across China, India, and Korea."
+      ]
+    },
+    {
+      "period": "2003 — 2012",
+      "title": "GM & Commercial Roles (Mentor, MBG, Eisbär)",
+      "location": "Munich & China",
+      "detail": "Held interim general management and commercial roles. Led purchasing, built supplier networks, and developed project pipelines across consumer and industrial electronics.",
+      "highlights": [
+        "Combined purchasing, supplier development, and commercial responsibility in owner-managed environments.",
+        "Built sourcing networks and project pipelines across Europe and China.",
+        "Gained early general management experience in hands-on operating roles."
+      ]
+    }
+  ],
+  "timelineDialog": {
+    "open": "Open details for {{title}}",
+    "viewDetails": "Details",
+    "close": "Close",
+    "highlights": "Highlights"
+  },
+  "cv": {
+    "title": "Download my CV",
+    "subtitle": "Grab the latest PDF with roles, outcomes, and highlights.",
+    "download": "Download CV"
+  },
+  "portfolio": {
+    "eyebrow": "Portfolio",
+    "title": "Selected projects from GitHub",
+    "subtitle": "A live view of selected repositories, tools, and product experiments that show the systems side of my work.",
+    "githubProfile": "GitHub profile",
+    "loading": "Loading GitHub projects",
+    "error": "GitHub projects could not be loaded right now.",
+    "empty": "No GitHub projects are configured yet.",
+    "noDescription": "No repository description available yet.",
+    "openRepo": "Open {{name}} on GitHub",
+    "stars": "{{count}} stars",
+    "forks": "{{count}} forks",
+    "updated": "Updated {{date}}",
+    "liveProject": "Live project",
+    "viewCode": "View code"
+  },
+  "blog": {
+    "eyebrow": "Logbook",
+    "title": "Professional notes, sailing, and cooking",
+    "subtitle": "A place for practical writing on growth, operations, and systems, plus notes from the water and the kitchen.",
+    "topicLabel": "Blog topics",
+    "filterLabel": "Filter posts by category",
+    "filterAll": "All",
+    "topics": [
+      "Professional notes",
+      "Sailing",
+      "Cooking"
+    ],
+    "empty": "Professional notes, sailing logs, and cooking experiments will appear here as they are published.",
+    "emptyFiltered": "No published posts match this category yet.",
+    "readMore": "Read more"
+  },
+  "contact": {
+    "eyebrow": "Contact",
+    "title": "Is a specific growth step on the horizon?",
+    "intro": "Whether it is new markets, digital sales, leaner processes, or clear operating structures, a short note is enough for a first conversation.",
+    "directTitle": "Quick and direct",
+    "directNote": "Reach me by email, phone, LinkedIn, or schedule a short call.",
+    "promptTitle": "Start with a short note",
+    "promptText": "Send a short note with the context, and I will reply with a useful next step.",
+    "phoneLabel": "Phone",
+    "phoneNumber": "+1 (650) 561 5752",
+    "emailLabel": "Email",
+    "addressLabel": "Address",
+    "addressMapLabel": "Address map",
+    "form": {
+      "name": "Name",
+      "email": "Email",
+      "message": "What would you like to discuss?",
+      "placeholderName": "Jane Doe",
+      "placeholderEmail": "you@email.com",
+      "placeholderMessage": "For example: US market entry, digital B2B sales, process automation, or a specific operational challenge...",
+      "submit": "Send message",
+      "close": "Close",
+      "sending": "Sending...",
+      "success": "Thanks. I will reply shortly.",
+      "successEyebrow": "Message sent",
+      "successTitle": "Thank you for reaching out",
+      "verifyEyebrow": "One more step",
+      "verifyTitle": "Confirm your email",
+      "verifyPrompt": "Hi {{name}}, I sent a 6-digit code to {{email}}. Enter it below to confirm your email address.",
+      "verifyCodeLabel": "Verification code",
+      "verifyCodePlaceholder": "123456",
+      "verifySubmit": "Confirm email",
+      "verifyEdit": "Edit details",
+      "verifySent": "Check your email for a 6-digit code to confirm your address.",
+      "verifySuccess": "Email confirmed. Your message has been received.",
+      "sendAnother": "Send another",
+      "alreadyExists": "You are already in touch with me.",
+      "missingFields": "Please fill in all required fields.",
+      "invalidCode": "That verification code is not valid.",
+      "notFound": "No pending verification was found for this email address.",
+      "sendFailed": "Verification succeeded, but the message could not be sent. Please try again.",
+      "mailNotConfigured": "Email sending is not configured yet.",
+      "errorGeneric": "Something went wrong. Please try again.",
+      "validation": {
+        "name": "Please enter your name.",
+        "email": "Please enter a valid email address.",
+        "message": "Please add a bit more detail.",
+        "code": "Enter the 6-digit code.",
+        "codeRequired": "The verification code is required."
+      }
+    }
+  }
+}
