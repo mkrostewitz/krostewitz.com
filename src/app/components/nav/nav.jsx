@@ -10,17 +10,18 @@ import {
   MANUAL_LANGUAGE_STORAGE_KEY,
   normalizeLanguage,
 } from "../../../lib/languageDetection";
+import ThemeToggle from "../theme/ThemeToggle";
 import "./nav.component.css";
 
 const navLinks = [
   {href: "/#executiveSummary", labelKey: "nav.executiveSummary"},
   {href: "/#about", labelKey: "nav.about"},
-  {href: "/#personal", labelKey: "nav.personal"},
   {href: "/#skills", labelKey: "nav.impact"},
   {href: "/#timeline", labelKey: "nav.timeline"},
   {href: "/#cv", labelKey: "nav.cv"},
   {href: "/#blog", labelKey: "nav.blog", section: "blog"},
   {href: "/#portfolio", labelKey: "nav.portfolio"},
+  {href: "/#persoenlich", labelKey: "nav.personal"},
   {href: "/#contact", labelKey: "nav.contact"},
 ];
 
@@ -200,18 +201,6 @@ const NavBar = () => {
         </Link>
       </div>
 
-      {/* Hamburger Button (Mobile Menu) */}
-      <button
-        className={`menuToggle ${menuOpen ? "menuOpen" : ""}`}
-        onClick={() => setMenuOpen((open) => !open)}
-        aria-label={menuOpen ? "Close menu" : "Open menu"}
-        aria-expanded={menuOpen}
-      >
-        <span />
-        <span />
-        <span />
-      </button>
-
       {/* Primary nav links */}
       <nav className={`nav ${menuOpen ? "navOpen" : ""}`}>
         {visibleNavLinks.map(({href, labelKey}) => (
@@ -235,17 +224,34 @@ const NavBar = () => {
           ))}
         </div>
       </nav>
-      {/* Language switcher on desktop */}
-      <div className="langSwitch">
-        {supportedLanguages.map((code) => (
-          <button
-            key={code}
-            onClick={() => selectLanguage(code)}
-            className={`langButton ${lang === code ? "langActive" : ""}`}
-          >
-            {code.toUpperCase()}
-          </button>
-        ))}
+
+      <div className="topControls">
+        <ThemeToggle className="navThemeToggle" />
+
+        {/* Hamburger Button (Mobile Menu) */}
+        <button
+          className={`menuToggle ${menuOpen ? "menuOpen" : ""}`}
+          onClick={() => setMenuOpen((open) => !open)}
+          aria-label={menuOpen ? "Close menu" : "Open menu"}
+          aria-expanded={menuOpen}
+        >
+          <span />
+          <span />
+          <span />
+        </button>
+
+        {/* Language switcher on desktop */}
+        <div className="langSwitch">
+          {supportedLanguages.map((code) => (
+            <button
+              key={code}
+              onClick={() => selectLanguage(code)}
+              className={`langButton ${lang === code ? "langActive" : ""}`}
+            >
+              {code.toUpperCase()}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );

@@ -2,9 +2,9 @@
   position: relative;
   min-height: 180px;
   overflow: hidden;
-  border: 1px solid #e1e1e1;
+  border: 1px solid var(--border);
   border-radius: 8px;
-  background: #eef1f4;
+  background: var(--map-background);
 }
 
 .mapCanvas {
@@ -16,7 +16,7 @@
   display: grid;
   place-items: center;
   padding: 18px;
-  color: #666666;
+  color: var(--text-muted);
   font-size: 0.92rem;
   font-weight: 700;
   text-align: center;

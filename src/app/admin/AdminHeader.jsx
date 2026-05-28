@@ -3,6 +3,7 @@
 import Link from "next/link";
 import {useRouter} from "next/navigation";
 
+import ThemeToggle from "../components/theme/ThemeToggle";
 import styles from "./admin.module.css";
 
 export default function AdminHeader({active, user}) {
@@ -72,6 +73,8 @@ export default function AdminHeader({active, user}) {
             Security
           </Link>
         </nav>
+
+        <ThemeToggle />
 
         <button className={styles.ghostButton} onClick={logout}>
           Sign out

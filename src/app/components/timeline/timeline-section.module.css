@@ -19,7 +19,7 @@
   top: 0;
   bottom: 0;
   width: 2px;
-  background: #e5e5e5;
+  background: var(--border);
   z-index: -1;
 }
 
@@ -41,7 +41,7 @@
 .timelineMarker {
   align-self: start;
   background: var(--background);
-  border: 1px solid #d8d8d8;
+  border: 1px solid var(--border-strong);
   border-radius: 50%;
   box-shadow: 0 0 0 6px var(--background);
   display: grid;
@@ -69,7 +69,7 @@
 .timelineItem:hover .timelineMarker,
 .timelineItem:focus-visible .timelineMarker {
   border-color: var(--foreground);
-  box-shadow: 0 0 0 6px var(--background), 0 0 0 10px rgba(26, 26, 26, 0.1);
+  box-shadow: 0 0 0 6px var(--background), 0 0 0 10px var(--focus-ring);
   transform: scale(1.04);
 }
 
@@ -90,7 +90,7 @@
 .timelineBadge {
   align-items: center;
   background: var(--background);
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--border);
   border-radius: 12px;
   color: var(--foreground);
   display: flex;
@@ -107,7 +107,7 @@
 
 .timelineBody {
   background: var(--background);
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--border);
   border-radius: 14px;
   color: var(--foreground);
   font: inherit;
@@ -122,8 +122,8 @@
 
 .timelineItem:hover .timelineBody,
 .timelineItem:focus-visible .timelineBody {
-  border-color: #bcbcbc;
-  box-shadow: 0 12px 28px rgba(26, 26, 26, 0.08);
+  border-color: var(--border-strong);
+  box-shadow: 0 12px 28px var(--hover-shadow);
   transform: translateY(-1px);
 }
 
@@ -138,17 +138,17 @@
 }
 
 .location {
-  color: #666;
+  color: var(--text-muted);
   font-weight: 700;
   margin-bottom: 6px;
 }
 
 .timelineAction {
   align-items: center;
-  background: #fafafa;
-  border: 1px solid #d8d8d8;
+  background: var(--surface-subtle);
+  border: 1px solid var(--border-strong);
   border-radius: 999px;
-  color: #555;
+  color: var(--text-muted);
   display: inline-flex;
   font-size: 0.82rem;
   font-weight: 700;
@@ -185,7 +185,7 @@
 
 .modalBackdrop {
   align-items: center;
-  background: rgba(26, 26, 26, 0.52);
+  background: var(--overlay-background);
   display: flex;
   inset: 0;
   justify-content: center;
@@ -196,9 +196,9 @@
 
 .modal {
   background: var(--background);
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--border);
   border-radius: 16px;
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.22);
+  box-shadow: 0 24px 70px var(--panel-shadow);
   color: var(--foreground);
   display: grid;
   gap: 18px;
@@ -221,7 +221,7 @@
 }
 
 .modalPeriod {
-  color: #555;
+  color: var(--text-muted);
   font-size: 0.88rem;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -230,14 +230,14 @@
 }
 
 .modalLocation {
-  color: #666;
+  color: var(--text-muted);
   font-weight: 700;
   margin-top: 6px;
 }
 
 .closeButton {
   background: var(--background);
-  border: 1px solid #d8d8d8;
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
   color: var(--foreground);
   cursor: pointer;
@@ -248,12 +248,12 @@
 }
 
 .closeButton:hover {
-  background: #f6f6f6;
-  border-color: #bcbcbc;
+  background: var(--surface-muted);
+  border-color: var(--border-strong);
 }
 
 .modalSummary {
-  color: #333;
+  color: var(--text-secondary);
   line-height: 1.65;
 }
 
@@ -273,7 +273,7 @@
 }
 
 .modalHighlights li {
-  color: #333;
+  color: var(--text-secondary);
   line-height: 1.55;
   padding-left: 18px;
   position: relative;

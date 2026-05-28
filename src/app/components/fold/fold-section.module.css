@@ -2,7 +2,7 @@
   position: relative;
   z-index: 2;
   padding: 48px 7vw 40px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  border-bottom: 1px solid var(--hero-border);
   display: grid;
   gap: 32px;
   grid-template-columns: minmax(280px, 1.15fr) minmax(240px, 0.85fr);
@@ -27,7 +27,7 @@
 }
 
 .lead {
-  color: #4a4a4a;
+  color: var(--text-soft);
   line-height: 1.6;
   font-size: 1.05rem;
 }
@@ -42,8 +42,8 @@
 }
 
 .points li {
-  background: rgba(0, 0, 0, 0.05);
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: var(--hero-point-background);
+  border: 1px solid var(--hero-border);
   border-radius: 14px;
   padding: 10px 12px;
   color: var(--foreground);
@@ -62,9 +62,9 @@
   aspect-ratio: 4 / 5;
   border-radius: 18px;
   overflow: hidden;
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--hero-border);
   background: transparent;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 16px 48px var(--panel-shadow);
 }
 
 .portrait {

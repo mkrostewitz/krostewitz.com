@@ -1,6 +1,6 @@
 .page {
-  --post-accent: #5773ff;
-  --post-accent-soft: rgba(87, 115, 255, 0.1);
+  --post-accent: var(--accent);
+  --post-accent-soft: var(--accent-soft);
   min-height: 100vh;
   padding-top: 86px;
   background: var(--background);
@@ -33,7 +33,7 @@
 }
 
 .date {
-  color: #666666;
+  color: var(--text-muted);
   font-size: 0.92rem;
   font-weight: 800;
 }
@@ -45,10 +45,10 @@
 }
 
 .categories span {
-  border: 1px solid #d8ddd6;
+  border: 1px solid var(--chip-border);
   border-radius: 999px;
-  background: #f7f8f5;
-  color: #2f3a31;
+  background: var(--chip-background);
+  color: var(--chip-text);
   font-size: 0.84rem;
   font-weight: 800;
   line-height: 1;
@@ -65,7 +65,7 @@
 
 .header p {
   max-width: 760px;
-  color: #444444;
+  color: var(--text-soft);
   font-size: 1.08rem;
   line-height: 1.7;
 }
@@ -80,7 +80,7 @@
 }
 
 .shareBar > span {
-  color: #666666;
+  color: var(--text-muted);
   font-size: 0.9rem;
   font-weight: 800;
 }
@@ -97,10 +97,10 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #e2e2e2;
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 8px 12px;
-  background: #ffffff;
+  background: var(--surface);
   color: var(--foreground);
   font: inherit;
   font-size: 0.9rem;
@@ -125,9 +125,9 @@
 
 .media {
   overflow: hidden;
-  border: 1px solid #e2e2e2;
+  border: 1px solid var(--border);
   border-radius: 8px;
-  background: #f3f1ed;
+  background: var(--media-background);
 }
 
 .media img,
@@ -140,7 +140,7 @@
 
 .content {
   max-width: 760px;
-  color: #222222;
+  color: var(--foreground);
   font-size: 1.04rem;
   line-height: 1.8;
 }
@@ -188,13 +188,13 @@
 .content blockquote {
   border-left: 4px solid var(--post-accent);
   padding-left: 16px;
-  color: #444444;
+  color: var(--text-soft);
 }
 
 .content hr {
   height: 1px;
   border: 0;
-  background: #e2e2e2;
+  background: var(--border);
 }
 
 .content a {
@@ -207,7 +207,7 @@
 .content code,
 .content pre {
   border-radius: 6px;
-  background: #f0f2f5;
+  background: var(--code-background);
   font-family: var(--font-geist-mono), monospace;
 }
 

@@ -7,7 +7,7 @@
 
 .contactCard {
   grid-column: 1 / -1;
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--border);
   padding: 16px;
   border-radius: 16px;
   color: var(--foreground);
@@ -33,7 +33,7 @@
   gap: 2px;
   padding: 10px 12px;
   border-radius: 12px;
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--border);
   color: var(--foreground);
   text-decoration: none;
 }
@@ -45,7 +45,7 @@
 .contactLink span,
 .contactAddress span {
   font-size: 0.9rem;
-  color: #666;
+  color: var(--text-muted);
 }
 
 .contactLink strong,
@@ -74,9 +74,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #d8d8d8;
+  border: 1px solid var(--border-strong);
   border-radius: 999px;
-  color: #666;
+  color: var(--text-muted);
   font-size: 0.82rem;
   font-weight: 900;
   line-height: 1;
@@ -85,9 +85,9 @@
 }
 
 .linkedinIcon:hover {
-  border-color: #5773ff;
-  background: rgba(87, 115, 255, 0.08);
-  color: #4962e6;
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-hover);
 }
 
 .contactMap {
@@ -101,7 +101,7 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--border);
   padding: 16px;
   border-radius: 16px;
   min-height: 0;
@@ -145,7 +145,7 @@
 .form input,
 .form textarea {
   width: 100%;
-  border: 1px solid #d9dee7;
+  border: 1px solid var(--border-strong);
   border-radius: 10px;
   background: var(--background);
   color: var(--foreground);
@@ -181,19 +181,19 @@
 
 .form input:focus,
 .form textarea:focus {
-  border-color: #5773ff;
-  box-shadow: 0 0 0 3px rgba(87, 115, 255, 0.14);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-focus);
   outline: none;
 }
 
 .error {
-  color: #9f1d1d;
+  color: var(--danger-text);
   font-weight: 700;
   font-size: 0.86rem;
 }
 
 .success {
-  color: #1f7a2e;
+  color: var(--success-text);
   font-weight: 700;
 }
 
@@ -206,13 +206,13 @@
 }
 
 .notice.error {
-  background: #fff4f4;
-  border: 1px solid #efcaca;
+  background: var(--danger-background);
+  border: 1px solid var(--danger-border);
 }
 
 .notice.success {
-  background: #eef8ef;
-  border: 1px solid #cbe8cf;
+  background: var(--success-background);
+  border: 1px solid var(--success-border);
 }
 
 .successBlock {
@@ -239,7 +239,7 @@
   justify-items: center;
   overflow-y: auto;
   padding: clamp(16px, 6vh, 64px) 18px;
-  background: rgba(17, 17, 17, 0.52);
+  background: var(--overlay-background);
   backdrop-filter: blur(3px);
 }
 
@@ -249,12 +249,12 @@
   overflow: auto;
   display: grid;
   gap: 0;
-  border: 1px solid rgba(23, 23, 23, 0.1);
+  border: 1px solid var(--border);
   border-radius: 16px;
   padding: 0;
   background: var(--background);
   color: var(--foreground);
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.26);
+  box-shadow: 0 24px 70px var(--panel-shadow-strong);
 }
 
 .modalHeader {
@@ -274,7 +274,7 @@
 
 .kicker {
   margin: 0 0 6px;
-  color: #666;
+  color: var(--text-muted);
   font-size: 0.78rem;
   font-weight: 800;
   letter-spacing: 0.12em;
@@ -284,10 +284,10 @@
 .modalClose {
   width: 40px;
   height: 40px;
-  border: 1px solid #d8d8d8;
+  border: 1px solid var(--border-strong);
   border-radius: 999px;
   padding: 0;
-  background: #ffffff;
+  background: var(--surface);
   color: var(--foreground);
   cursor: pointer;
   display: inline-flex;
@@ -299,9 +299,9 @@
 
 .modalClose:hover,
 .modalClose:focus-visible {
-  border-color: #5773ff;
-  background: rgba(87, 115, 255, 0.08);
-  color: #4962e6;
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-hover);
 }
 
 .formHeader {
@@ -319,7 +319,7 @@
 .formHeader p:not(.kicker) {
   max-width: 54ch;
   margin: 0;
-  color: #4a4a4a;
+  color: var(--text-soft);
   font-size: 0.98rem;
   line-height: 1.55;
 }

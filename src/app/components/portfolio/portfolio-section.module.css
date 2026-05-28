@@ -19,7 +19,7 @@
 .projectCard,
 .skeletonCard,
 .message {
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--border);
   border-radius: 14px;
   padding: 16px;
 }
@@ -38,7 +38,7 @@
 }
 
 .repoName {
-  color: #666;
+  color: var(--text-muted);
   font-size: 0.84rem;
   font-weight: 700;
   margin: 0 0 4px;
@@ -58,7 +58,7 @@
 }
 
 .repoButton {
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--border);
   border-radius: 8px;
   color: var(--foreground);
   flex: 0 0 auto;
@@ -68,11 +68,11 @@
 }
 
 .repoButton:hover {
-  border-color: #333;
+  border-color: var(--foreground);
 }
 
 .description {
-  color: #444;
+  color: var(--text-soft);
   line-height: 1.55;
   min-height: 50px;
 }
@@ -84,18 +84,18 @@
 }
 
 .tags span {
-  background: #f0f0f0;
-  border: 1px solid #e5e5e5;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
   border-radius: 999px;
-  color: #333;
+  color: var(--text-secondary);
   font-size: 0.82rem;
   font-weight: 700;
   padding: 6px 9px;
 }
 
 .projectMeta {
-  border-top: 1px solid #e5e5e5;
-  color: #666;
+  border-top: 1px solid var(--border);
+  color: var(--text-muted);
   display: flex;
   flex-wrap: wrap;
   gap: 8px 14px;
@@ -121,7 +121,7 @@
 }
 
 .skeletonCard span {
-  background: linear-gradient(90deg, #eeeeee, #f8f8f8, #eeeeee);
+  background: var(--skeleton-gradient);
   background-size: 200% 100%;
   border-radius: 8px;
   height: 14px;

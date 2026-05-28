@@ -1,6 +1,28 @@
 import {Geist, Geist_Mono} from "next/font/google";
 import "./globals.css";
 
+const themeScript = `
+(function () {
+  try {
+    var storageKey = "krostewitz-theme";
+    var storedTheme = window.localStorage.getItem(storageKey);
+    var systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light";
+    var theme =
+      storedTheme === "light" || storedTheme === "dark"
+        ? storedTheme
+        : systemTheme;
+
+    document.documentElement.dataset.theme = theme;
+    document.documentElement.style.colorScheme = theme;
+  } catch (error) {
+    document.documentElement.dataset.theme = "light";
+    document.documentElement.style.colorScheme = "light";
+  }
+})();
+`;
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -22,7 +44,10 @@ export const metadata = {
 
 export default function RootLayout({children}) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{__html: themeScript}} />
+      </head>
       <body suppressHydrationWarning className={`${geistSans.variable} ${geistMono.variable}`}>
         {children}
       </body>

@@ -29,8 +29,8 @@
 }
 
 .primary:hover {
-  background: #333;
-  border-color: #333;
+  background: var(--text-secondary);
+  border-color: var(--text-secondary);
 }
 
 .secondary {
@@ -61,8 +61,9 @@
 
 .section {
   margin-top: 48px;
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--border);
   border-radius: 16px;
+  background: var(--surface);
   padding: 32px;
   scroll-margin-top: 110px;
 }
@@ -76,7 +77,7 @@
 .eyebrow {
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: #666;
+  color: var(--text-muted);
   font-weight: 700;
   font-size: 0.9rem;
 }
@@ -87,7 +88,7 @@
 }
 
 .lead {
-  color: #444;
+  color: var(--text-soft);
   line-height: 1.7;
 }
 
@@ -98,14 +99,15 @@
 }
 
 .card {
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--border);
+  background: var(--surface);
   padding: 16px;
   border-radius: 16px;
   color: var(--foreground);
 }
 
 .cardMeta {
-  color: #666;
+  color: var(--text-muted);
   font-weight: 700;
   margin-bottom: 8px;
 }
@@ -122,7 +124,8 @@
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--border);
+  background: var(--surface);
   border-radius: 14px;
   padding: 16px;
   color: var(--foreground);
