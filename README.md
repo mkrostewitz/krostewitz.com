@@ -18,6 +18,107 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
 
+## Admin authentication
+
+The admin area is available at `/admin`. It uses the MongoDB `users` collection for the admin user, MongoDB collections for auth challenges and sessions, Apple/iCloud SMTP for email codes and magic links, and an HTTP-only signed session cookie.
+
+Required environment for any admin sign-in:
+
+- `AUTH_SECRET` with at least 32 characters
+- `MONGO_DB_URI`, `MONGO_DB_NAME`, `MONGO_DB_USER`, `MONGO_DB_PASSWORD`
+- `APPLE_MAIL_USER`, `APPLE_MAIL_APP_PASSWORD`
+
+Store the admin user in MongoDB's `users` collection:
+
+```json
+{
+  "_id": "admin",
+  "email": "your-admin-email@example.com",
+  "name": "Mathias Krostewitz",
+  "passwordHash": "scrypt$64$16384$...",
+  "createdAt": "2026-05-24T00:00:00.000Z",
+  "updatedAt": "2026-05-24T00:00:00.000Z"
+}
+```
+
+The `_id: "admin"` field marks that user as allowed to access the admin area. You can also use `role: "admin"`, `roles: ["admin"]`, or `isAdmin: true` if you prefer a different user document shape.
+
+Required or recommended for email links:
+
+- `APPLE_MAIL_FROM` defaults to `APPLE_MAIL_USER` if omitted
+- `AUTH_BASE_URL` should be the public site origin in production, for example `https://krostewitz.com`. It defaults to the current request origin in development.
+
+## Language detection
+
+The public site calls `/api/language` on first load unless the visitor has manually selected a language. The route uses `IP_INFO_TOKEN` with IPinfo Lite to read the visitor country code, shows German for `AT`, `CH`, `DE`, `LI`, and `LU`, and falls back to English for every other country.
+
+## Blog posts
+
+The blog system lets the admin build portfolio posts from `/admin/posts` and publish them into the public site. Posts are stored in the MongoDB `posts` collection and support `draft`, `published`, and `archived` states. Only `published` posts are returned by the public `/api/posts` endpoint and rendered on the homepage.
+
+Main components and routes:
+
+- `src/app/admin/posts/PostManager.jsx` is the admin editor. It handles the post list, title, status, summary, rich text body, media upload, and AI-assisted content actions.
+- `src/app/admin/ai-settings/AiSettingsManager.jsx` is the global AI settings screen for the post assistant.
+- `src/app/components/blog/BlogSection.jsx` renders published posts as cards in the public homepage blog section.
+- `src/app/blog/[slug]/page.js` renders the full published post page with media, article content, share buttons, and Open Graph/Twitter metadata.
+- `src/app/api/admin/posts/*` contains authenticated admin CRUD and AI helper routes.
+- `src/app/api/admin/uploads/route.js` uploads post images and videos to DigitalOcean Spaces.
+
+Post media is stored in DigitalOcean Spaces and saved on each post as a single optional `media` object. Supported public media types are image and video. The post editor keeps `Save post` as the primary action; contextual actions such as new posts, AI generation, and uploads use secondary button styling to keep the admin hierarchy clear.
+
+AI assistance is available in the post editor for three workflows:
+
+- `Create` generates a new draft from a prompt.
+- `Tweak` rewrites or improves the current draft based on instructions.
+- `Translate` translates the current draft between supported languages, currently English and German.
+
+Global AI behavior is managed in `/admin/ai-settings` and stored in MongoDB under the `site_content` document `_id: "ai_settings"`. That screen lets the admin choose the OpenAI model, set agent instructions, adjust temperature, and decide whether requests should include CV context. The code only contains a brief starter template used to initialize the database record for a new site owner; the active brand instructions are read from the database. The model field offers common suggestions but accepts any model id available to the configured OpenAI account. Some newer reasoning models may not support temperature; the API retries once without temperature if OpenAI rejects that parameter.
+
+CV context is inherited from the same CV documents managed in `/admin/cv`. Each AI request reads the current global AI settings and CV download records from MongoDB and, when CV context is enabled, attaches fetchable PDF URLs as Responses API `input_file` items. This means newly uploaded CV PDFs are picked up automatically on the next AI request. Localhost-only URLs are skipped because OpenAI cannot fetch them from the API.
+
+The AI route is server-side only, so the browser never receives the OpenAI API key. Generated HTML is sanitized before being returned to the editor and should still be reviewed before publishing.
+
+Required environment for post media and AI features:
+
+- `DO_SPACES_BUCKET`, `DO_SPACES_REGION`, `DO_SPACES_KEY`, `DO_SPACES_SECRET`
+- `DO_SPACES_ENDPOINT`, `DO_SPACES_PUBLIC_URL`
+- `DO_SPACES_UPLOAD_PREFIX` for post media, defaulting to `portfolio-posts`
+- `POST_UPLOAD_MAX_BYTES`, defaulting to 100 MB
+- `OPENAI_API_KEY` for AI-assisted post editing
+- `OPENAI_POSTS_MODEL`, defaulting to `gpt-5.5`
+
+## GitHub portfolio
+
+The portfolio section loads repository metadata from `/api/github/projects`.
+
+- Select the visible repositories in `/admin/github-portfolio`.
+- `GITHUB_USERNAME` controls the default GitHub owner before GitHub Portfolio settings are saved. It defaults to `mkrostewitz`.
+- `GITHUB_PORTFOLIO_REPOS` is an optional comma-separated bootstrap list, for example `krostewitz.com,owner/another-repo` or full GitHub URLs.
+- `GITHUB_TOKEN` is optional, but recommended for private repositories and higher GitHub API rate limits.
+
+If no repositories are selected, the public portfolio section shows no projects.
+
+## CV downloads
+
+The public CV button reads its PDF URLs from MongoDB runtime content and falls back to the bundled files in `public/data` if nothing has been uploaded yet.
+
+- Upload and replace CV PDFs in `/admin/cv`.
+- Files are uploaded to stable DigitalOcean Spaces paths with readable attachment filenames.
+- `DO_SPACES_CV_PREFIX` controls the Spaces key prefix for CV files. It defaults to `cv`.
+- `CV_UPLOAD_MAX_BYTES` controls the PDF upload limit. It defaults to 10 MB.
+
+Secret helpers:
+
+```bash
+npm run admin:secret -- session
+npm run admin:secret -- password-hash "your-password"
+```
+
+Use `passwordHash` for password plus 2FA sign-in. Magic-link sign-in only needs the admin user document with an email, mail settings, MongoDB, and `AUTH_SECRET`.
+
+Authenticator-app 2FA can be configured after sign-in at `/admin/security`. The setup screen generates a pending TOTP secret, shows a QR code and manual key, and only saves `totpSecret` to the user document after a valid authenticator code is entered. Microsoft Authenticator, Apple Passwords, 1Password, and other standard TOTP apps are supported.
+
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
 ## Learn More
