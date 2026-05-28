@@ -11,9 +11,17 @@
     "map": "Ländererfahrung",
     "cv": "Lebenslauf",
     "impact": "Wirkung",
-    "portfolio": "Portfolio",
+    "portfolio": "Labor",
     "blog": "Blog",
     "contact": "Kontakt"
+  },
+  "theme": {
+    "light": "Hell",
+    "dark": "Dunkel",
+    "switchTo": {
+      "light": "In den hellen Modus wechseln",
+      "dark": "In den dunklen Modus wechseln"
+    }
   },
   "offer": {
     "eyebrow": "B2B-Digitalisierung · Vertrieb · Operations",
@@ -269,8 +277,8 @@
     "download": "Lebenslauf herunterladen"
   },
   "portfolio": {
-    "eyebrow": "Portfolio",
-    "title": "Ausgewählte Projekte von GitHub",
+    "eyebrow": "Labor",
+    "title": "Digitale Projekte & Experimente",
     "subtitle": "Eine Live-Ansicht ausgewählter Repositories, Tools und Produktexperimente, die den Systemanteil meiner Arbeit zeigen.",
     "githubProfile": "GitHub-Profil",
     "loading": "GitHub-Projekte werden geladen",
