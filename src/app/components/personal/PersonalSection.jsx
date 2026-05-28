@@ -1246,7 +1246,8 @@ const PersonalSection = () => {
   }, [mapWindReports, projectWindReport, windMapReady]);
 
   return (
-    <section id="personal" className={`${pageStyles.section} ${styles.section}`}>
+    <section id="persoenlich" className={`${pageStyles.section} ${styles.section}`}>
+      <span id="personal" className={styles.anchorAlias} aria-hidden="true" />
       <div className={pageStyles.sectionHeader}>
         <p className={pageStyles.eyebrow}>{t("eyebrow")}</p>
         <h2>{t("title")}</h2>
