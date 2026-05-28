@@ -50,7 +50,7 @@ Required or recommended for email links:
 
 ## Language detection
 
-The public site calls `/api/language` on first load unless the visitor has manually selected a language. The route uses `IP_INFO_TOKEN` with IPinfo Lite to read the visitor country code, shows German for `AT`, `CH`, `DE`, `LI`, and `LU`, and falls back to English for every other country.
+The public site calls `/api/language` on first load unless the visitor has manually selected a language. The route first reads platform country headers derived from the visitor IP, such as `x-vercel-ip-country`, `cf-ipcountry`, and `cloudfront-viewer-country`. If those are unavailable, it uses `IP_INFO_TOKEN` with IPinfo Lite to read the visitor country code from a forwarded public IP. German is shown for `AT`, `CH`, `DE`, `LI`, and `LU`; English is used for every other country or when detection is unavailable.
 
 ## Blog posts
 

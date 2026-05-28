@@ -22,6 +22,16 @@ const IP_HEADER_NAMES = [
   "x-client-ip",
   "fastly-client-ip",
 ];
+const COUNTRY_HEADER_NAMES = [
+  "x-vercel-ip-country",
+  "cf-ipcountry",
+  "cloudfront-viewer-country",
+  "x-country-code",
+  "x-appengine-country",
+  "x-geo-country",
+  "fastly-client-country-code",
+];
+const UNKNOWN_COUNTRY_CODES = new Set(["T1", "XX", "ZZ"]);
 
 function getIpInfoToken() {
   return process.env.IP_INFO_TOKEN || process.env.IPINFO_TOKEN || "";
@@ -84,6 +94,24 @@ function getClientIp(request) {
     }
   }
 
+  const requestIp = normalizeIp(request.ip);
+  if (requestIp && !isPrivateIp(requestIp)) return requestIp;
+
+  return null;
+}
+
+function getCountryCodeFromHeaders(request) {
+  for (const headerName of COUNTRY_HEADER_NAMES) {
+    const countryCode = normalizeCountryCode(request.headers.get(headerName));
+
+    if (
+      /^[A-Z]{2}$/.test(countryCode) &&
+      !UNKNOWN_COUNTRY_CODES.has(countryCode)
+    ) {
+      return countryCode;
+    }
+  }
+
   return null;
 }
 
@@ -126,6 +154,16 @@ async function fetchIpInfo(ip, token) {
 }
 
 export async function GET(request) {
+  const headerCountryCode = getCountryCodeFromHeaders(request);
+
+  if (headerCountryCode) {
+    return languageResponse({
+      countryCode: headerCountryCode,
+      language: languageForCountryCode(headerCountryCode),
+      source: "country-header",
+    });
+  }
+
   const token = getIpInfoToken();
   const ip = getClientIp(request);
 
