@@ -53,6 +53,7 @@ async function ensurePostIndexes(db) {
     indexPromise = Promise.all([
       posts.createIndex({slug: 1}, {unique: true}),
       posts.createIndex({status: 1, publishedAt: -1}),
+      posts.createIndex({"categories.slug": 1, status: 1, publishedAt: -1}),
       posts.createIndex({updatedAt: -1}),
     ]).catch((error) => {
       indexPromise = null;
@@ -135,6 +136,11 @@ function slugify(value) {
   return slug || "post";
 }
 
+function normalizeCategorySlug(value) {
+  const rawValue = String(value || "").trim();
+  return rawValue ? slugify(rawValue) : "";
+}
+
 async function generateUniqueSlug(db, title, excludeId = null) {
   const posts = getPostsCollection(db);
   const baseSlug = slugify(title);
@@ -162,6 +168,35 @@ function normalizeStatus(value) {
   }
 
   return status;
+}
+
+function normalizeCategories(value) {
+  const source = Array.isArray(value)
+    ? value
+    : String(value || "")
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean);
+  const categories = [];
+  const seen = new Set();
+
+  for (const item of source) {
+    const rawLabel =
+      typeof item === "object" && item !== null ? item.label || item.name : item;
+    const label = cleanText(rawLabel, 50);
+    const slug = slugify(
+      typeof item === "object" && item !== null ? item.slug || label : label
+    );
+
+    if (!label || seen.has(slug)) continue;
+
+    categories.push({label, slug});
+    seen.add(slug);
+
+    if (categories.length >= 12) break;
+  }
+
+  return categories;
 }
 
 function normalizeMedia(value) {
@@ -207,6 +242,7 @@ function normalizePostInput(input = {}) {
     title,
     status,
     summary: cleanText(input.summary || contentText, 260),
+    categories: normalizeCategories(input.categories),
     contentHtml,
     media: normalizeMedia(input.media),
   };
@@ -221,6 +257,7 @@ export function serializePost(document, options = {}) {
     title: document.title || "",
     slug: document.slug || "",
     summary: document.summary || "",
+    categories: normalizeCategories(document.categories),
     status: document.status || "draft",
     media: document.media || null,
     createdAt: toIsoDate(document.createdAt),
@@ -327,13 +364,20 @@ export async function updatePost(postId, input, user) {
   return serializePost(post, {includeContent: true, includeAdmin: true});
 }
 
-export async function getPublishedPosts() {
+export async function getPublishedPosts(filters = {}) {
   const db = await getDb();
   await ensurePostIndexes(db);
 
+  const query = {status: "published"};
+  const category = normalizeCategorySlug(filters.category || filters.tag);
+
+  if (category) {
+    query["categories.slug"] = category;
+  }
+
   const posts = await getPostsCollection(db)
     .find(
-      {status: "published"},
+      query,
       {
         projection: {
           contentHtml: 0,
@@ -346,6 +390,34 @@ export async function getPublishedPosts() {
     .toArray();
 
   return posts.map((post) => serializePost(post, {includeContent: false}));
+}
+
+export async function getPublishedPostCategories() {
+  const db = await getDb();
+  await ensurePostIndexes(db);
+
+  const categories = await getPostsCollection(db)
+    .aggregate([
+      {$match: {status: "published", "categories.0": {$exists: true}}},
+      {$unwind: "$categories"},
+      {
+        $group: {
+          _id: "$categories.slug",
+          label: {$first: "$categories.label"},
+          count: {$sum: 1},
+        },
+      },
+      {$sort: {label: 1}},
+    ])
+    .toArray();
+
+  return categories
+    .map((category) => ({
+      label: cleanText(category.label, 50),
+      slug: normalizeCategorySlug(category._id),
+      count: Number(category.count) || 0,
+    }))
+    .filter((category) => category.label && category.slug);
 }
 
 export async function getPublishedPostBySlug(slug) {
