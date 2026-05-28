@@ -100,7 +100,7 @@
 .form {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 18px;
   border: 1px solid #e5e5e5;
   padding: 16px;
   border-radius: 16px;
@@ -113,16 +113,29 @@
   border-radius: 0;
 }
 
+.formPanel,
+.field {
+  min-width: 0;
+}
+
+.modalBody {
+  display: grid;
+  gap: 18px;
+  padding: 0 28px 28px;
+}
+
 .fields {
   display: grid;
-  gap: 14px;
+  gap: 16px;
 }
 
 .form label {
   display: grid;
-  gap: 6px;
+  gap: 7px;
   color: var(--foreground);
+  font-size: 0.95rem;
   font-weight: 600;
+  line-height: 1.25;
 }
 
 .form p {
@@ -131,11 +144,26 @@
 
 .form input,
 .form textarea {
-  padding: 10px 12px;
+  width: 100%;
+  border: 1px solid #d9dee7;
   border-radius: 10px;
-  border: 1px solid #e5e5e5;
   background: var(--background);
   color: var(--foreground);
+  font: inherit;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.form input {
+  min-height: 46px;
+  padding: 10px 13px;
+}
+
+.form textarea {
+  min-height: 132px;
+  padding: 12px 13px;
+  resize: vertical;
 }
 
 .formFooter {
@@ -144,41 +172,60 @@
   flex-wrap: wrap;
   gap: 12px;
   margin-top: auto;
-  padding-top: 12px;
+  padding-top: 2px;
 }
 
 .submitButton {
-  min-width: 200px;
+  min-width: 190px;
 }
 
 .form input:focus,
 .form textarea:focus {
-  outline: 2px solid #333;
+  border-color: #5773ff;
+  box-shadow: 0 0 0 3px rgba(87, 115, 255, 0.14);
+  outline: none;
 }
 
 .error {
-  color: #c00;
+  color: #9f1d1d;
   font-weight: 700;
-  font-size: 0.9rem;
+  font-size: 0.86rem;
 }
 
 .success {
-  color: #080;
+  color: #1f7a2e;
   font-weight: 700;
 }
 
+.notice {
+  border-radius: 8px;
+  font-size: 0.92rem;
+  line-height: 1.4;
+  margin: 0;
+  padding: 10px 12px;
+}
+
+.notice.error {
+  background: #fff4f4;
+  border: 1px solid #efcaca;
+}
+
+.notice.success {
+  background: #eef8ef;
+  border: 1px solid #cbe8cf;
+}
+
 .successBlock {
-  gap: 18px;
+  gap: 0;
 }
 
 .successBlock button {
-  margin-top: 6px;
   align-self: flex-start;
 }
 
 .actionsRow {
   display: flex;
-  gap: 14px;
+  gap: 12px;
   flex-wrap: wrap;
   align-items: center;
 }
@@ -188,23 +235,26 @@
   inset: 0;
   z-index: 30;
   display: grid;
-  place-items: center;
-  padding: 20px;
-  background: rgba(17, 17, 17, 0.48);
+  align-items: start;
+  justify-items: center;
+  overflow-y: auto;
+  padding: clamp(16px, 6vh, 64px) 18px;
+  background: rgba(17, 17, 17, 0.52);
+  backdrop-filter: blur(3px);
 }
 
 .modalPanel {
-  width: min(100%, 720px);
-  max-height: min(86vh, 760px);
+  width: min(100%, 660px);
+  max-height: min(88vh, 760px);
   overflow: auto;
   display: grid;
-  gap: 18px;
-  border: 1px solid #e5e5e5;
+  gap: 0;
+  border: 1px solid rgba(23, 23, 23, 0.1);
   border-radius: 16px;
-  padding: 18px;
+  padding: 0;
   background: var(--background);
   color: var(--foreground);
-  box-shadow: 0 22px 70px rgba(0, 0, 0, 0.22);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.26);
 }
 
 .modalHeader {
@@ -212,32 +262,66 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
+  padding: 26px 28px 20px;
 }
 
 .modalHeader h3 {
   margin: 0;
-  font-size: 1.35rem;
+  font-size: clamp(1.55rem, 2vw, 1.9rem);
   letter-spacing: 0;
+  line-height: 1.12;
 }
 
 .kicker {
-  margin: 0 0 4px;
+  margin: 0 0 6px;
   color: #666;
-  font-size: 0.84rem;
+  font-size: 0.78rem;
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
 .modalClose {
-  min-height: 36px;
+  width: 40px;
+  height: 40px;
   border: 1px solid #d8d8d8;
   border-radius: 999px;
-  padding: 7px 12px;
+  padding: 0;
   background: #ffffff;
   color: var(--foreground);
   cursor: pointer;
-  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+}
+
+.modalClose:hover,
+.modalClose:focus-visible {
+  border-color: #5773ff;
+  background: rgba(87, 115, 255, 0.08);
+  color: #4962e6;
+}
+
+.formHeader {
+  display: grid;
+  gap: 6px;
+}
+
+.formHeader h3,
+.successBlock h3 {
+  margin: 0;
+  font-size: 1.24rem;
+  line-height: 1.2;
+}
+
+.formHeader p:not(.kicker) {
+  max-width: 54ch;
+  margin: 0;
+  color: #4a4a4a;
+  font-size: 0.98rem;
+  line-height: 1.55;
 }
 
 @media (max-width: 960px) {
@@ -261,6 +345,25 @@
 }
 
 @media (max-width: 520px) {
+  .modalOverlay {
+    padding: 12px;
+  }
+
+  .modalPanel {
+    max-height: calc(100vh - 24px);
+  }
+
+  .modalHeader,
+  .modalBody {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .modalHeader {
+    padding-top: 20px;
+    padding-bottom: 16px;
+  }
+
   .formFooter {
     display: grid;
   }
@@ -282,5 +385,9 @@
 
   .actionButton:first-child {
     grid-column: 1 / -1;
+  }
+
+  .actionsRow {
+    display: grid;
   }
 }

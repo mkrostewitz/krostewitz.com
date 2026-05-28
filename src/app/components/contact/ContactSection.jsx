@@ -1,4 +1,5 @@
 import {ErrorMessage, Field, Form, Formik} from "formik";
+import {X} from "lucide-react";
 import Link from "next/link";
 import {useEffect, useMemo, useState} from "react";
 import {useTranslation} from "react-i18next";
@@ -211,9 +212,11 @@ const ContactSection = () => {
               <button
                 type="button"
                 className={styles.modalClose}
+                aria-label={t("contact.form.close", {defaultValue: closeLabelDefault})}
+                title={t("contact.form.close", {defaultValue: closeLabelDefault})}
                 onClick={() => setIsModalOpen(false)}
               >
-                {t("contact.form.close", {defaultValue: closeLabelDefault})}
+                <X aria-hidden="true" size={20} strokeWidth={2.3} />
               </button>
             </div>
 
@@ -270,6 +273,7 @@ const ContactSection = () => {
           >
             {({isSubmitting, status}) => (
               <Form className={`${styles.formPanel} ${styles.form} ${styles.modalForm}`}>
+                <div className={styles.modalBody}>
                 <div className={styles.fields}>
                   <label className={styles.field}>
                     {t("contact.form.name")}
@@ -323,14 +327,21 @@ const ContactSection = () => {
                       : t("contact.form.submit")}
                   </button>
                   {status?.state === "sent" && (
-                    <p className={styles.success}>
+                    <p className={`${styles.notice} ${styles.success}`}>
                       {t("contact.form.success")}
                     </p>
                   )}
                   {status?.state === "error" && (
-                    <p className={styles.error}>{status.message}</p>
+                    <p className={`${styles.notice} ${styles.error}`}>
+                      {status.message}
+                    </p>
                   )}
-                  {apiMessage && <p className={styles.success}>{apiMessage}</p>}
+                  {apiMessage && (
+                    <p className={`${styles.notice} ${styles.success}`}>
+                      {apiMessage}
+                    </p>
+                  )}
+                </div>
                 </div>
               </Form>
             )}
@@ -384,6 +395,7 @@ const ContactSection = () => {
           >
             {({isSubmitting, status}) => (
               <Form className={`${styles.formPanel} ${styles.form} ${styles.modalForm}`}>
+                <div className={styles.modalBody}>
                 <div className={styles.formHeader}>
                   <p className={styles.kicker}>
                     {t("contact.form.verifyEyebrow")}
@@ -429,9 +441,16 @@ const ContactSection = () => {
                   </button>
                 </div>
                 {status?.state === "error" && (
-                  <p className={styles.error}>{status.message}</p>
+                  <p className={`${styles.notice} ${styles.error}`}>
+                    {status.message}
+                  </p>
                 )}
-                {apiMessage && <p className={styles.success}>{apiMessage}</p>}
+                {apiMessage && (
+                  <p className={`${styles.notice} ${styles.success}`}>
+                    {apiMessage}
+                  </p>
+                )}
+                </div>
               </Form>
             )}
           </Formik>
@@ -439,9 +458,12 @@ const ContactSection = () => {
 
             {phase === "success" && (
           <div className={`${styles.formPanel} ${styles.successBlock} ${styles.modalForm}`}>
+            <div className={styles.modalBody}>
             <p className={styles.kicker}>{t("contact.form.successEyebrow")}</p>
             <h3>{t("contact.form.successTitle")}</h3>
-            <p className={styles.success}>{t("contact.form.verifySuccess")}</p>
+            <p className={`${styles.notice} ${styles.success}`}>
+              {t("contact.form.verifySuccess")}
+            </p>
             <button
               type="button"
               className={`primary ${styles.submitButton}`}
@@ -449,12 +471,12 @@ const ContactSection = () => {
                 setPhase("form");
                 setPendingName("");
                 setPendingEmail("");
-                setPendingName("");
                 setApiMessage(null);
               }}
             >
               {t("contact.form.sendAnother")}
             </button>
+            </div>
           </div>
             )}
           </div>
