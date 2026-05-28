@@ -1,6 +1,17 @@
 import {Geist, Geist_Mono} from "next/font/google";
 import "./globals.css";
 
+const gaMeasurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim();
+
+const googleAnalyticsScript = gaMeasurementId
+  ? `
+window.dataLayer = window.dataLayer || [];
+function gtag(){window.dataLayer.push(arguments);}
+gtag("js", new Date());
+gtag("config", ${JSON.stringify(gaMeasurementId)});
+`
+  : "";
+
 const themeScript = `
 (function () {
   try {
@@ -47,6 +58,15 @@ export default function RootLayout({children}) {
     <html lang="en" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{__html: themeScript}} />
+        {gaMeasurementId ? (
+          <>
+            <script
+              async
+              src={`https://www.googletagmanager.com/gtag/js?id=${gaMeasurementId}`}
+            />
+            <script dangerouslySetInnerHTML={{__html: googleAnalyticsScript}} />
+          </>
+        ) : null}
       </head>
       <body suppressHydrationWarning className={`${geistSans.variable} ${geistMono.variable}`}>
         {children}
