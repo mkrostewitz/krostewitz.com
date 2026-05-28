@@ -25,6 +25,14 @@ export default function AdminHeader({active, user}) {
         <nav className={styles.adminNav} aria-label="Admin">
           <Link
             className={`${styles.navLink} ${
+              active === "profile" ? styles.navLinkActive : ""
+            }`}
+            href="/admin/profile"
+          >
+            Profile
+          </Link>
+          <Link
+            className={`${styles.navLink} ${
               active === "posts" ? styles.navLinkActive : ""
             }`}
             href="/admin/posts"
@@ -38,6 +46,14 @@ export default function AdminHeader({active, user}) {
             href="/admin/github-portfolio"
           >
             GitHub Portfolio
+          </Link>
+          <Link
+            className={`${styles.navLink} ${
+              active === "aiSettings" ? styles.navLinkActive : ""
+            }`}
+            href="/admin/ai-settings"
+          >
+            AI Settings
           </Link>
           <Link
             className={`${styles.navLink} ${

@@ -116,6 +116,21 @@
   font-size: 0.92rem;
 }
 
+.checkboxField {
+  display: inline-grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 9px;
+  align-items: center;
+  color: #333333;
+  font-weight: 700;
+  font-size: 0.92rem;
+}
+
+.checkboxField input {
+  width: 16px;
+  height: 16px;
+}
+
 .field input,
 .field select,
 .field textarea,
@@ -353,6 +368,253 @@
   gap: 14px;
 }
 
+.settingsGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 860px);
+  gap: 16px;
+}
+
+.profileGrid {
+  display: grid;
+  grid-template-columns: minmax(320px, 560px) minmax(280px, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.profilePanel {
+  display: grid;
+  gap: 16px;
+  border: 1px solid #dedede;
+  border-radius: 8px;
+  padding: 18px;
+  background: #ffffff;
+}
+
+.profilePanelFull {
+  grid-column: 1 / -1;
+}
+
+.featureToggle {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  border: 1px solid #d8d8d8;
+  border-radius: 8px;
+  padding: 14px;
+  background: #f8f9fb;
+  cursor: pointer;
+}
+
+.featureToggle input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.featureSwitch {
+  position: relative;
+  width: 46px;
+  height: 26px;
+  border: 1px solid #c6c6c6;
+  border-radius: 999px;
+  background: #d9dee6;
+  transition: background 0.16s ease, border-color 0.16s ease;
+}
+
+.featureSwitch::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22);
+  transition: transform 0.16s ease;
+}
+
+.featureToggle input:checked + .featureSwitch {
+  border-color: #315f8f;
+  background: #315f8f;
+}
+
+.featureToggle input:checked + .featureSwitch::after {
+  transform: translateX(20px);
+}
+
+.featureToggle:focus-within {
+  border-color: #6688dd;
+  box-shadow: 0 0 0 3px rgba(102, 136, 221, 0.18);
+}
+
+.featureText {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.featureText strong {
+  color: #171717;
+}
+
+.featureText small {
+  color: #666666;
+  line-height: 1.45;
+}
+
+.featureStatus {
+  border: 1px solid #d2d2d2;
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: #ffffff;
+  color: #333333;
+  font-size: 0.82rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.autocompleteField {
+  display: grid;
+  gap: 8px;
+}
+
+.autocompleteList {
+  display: grid;
+  gap: 4px;
+  max-height: 280px;
+  overflow: auto;
+  border: 1px solid #d8d8d8;
+  border-radius: 6px;
+  padding: 6px;
+  background: #ffffff;
+}
+
+.autocompleteOption {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 10px;
+  background: #ffffff;
+  color: #171717;
+  cursor: pointer;
+  text-align: left;
+}
+
+.autocompleteOption:hover {
+  border-color: #6688dd;
+  background: #f2f6ff;
+}
+
+.autocompleteOption strong,
+.addressPreview strong {
+  overflow-wrap: anywhere;
+}
+
+.autocompleteOption span,
+.addressPreview span {
+  color: #666666;
+  font-size: 0.88rem;
+}
+
+.addressPreview {
+  display: grid;
+  gap: 7px;
+  border: 1px solid #e1e1e1;
+  border-radius: 6px;
+  padding: 12px;
+  background: #f8f9fb;
+}
+
+.addressPreviewStack {
+  display: grid;
+  gap: 12px;
+}
+
+.profileMap {
+  min-height: 300px;
+  aspect-ratio: 4 / 3;
+}
+
+.aiSettingsFields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 220px);
+  gap: 14px;
+}
+
+.categoryEditor {
+  display: grid;
+  gap: 10px;
+}
+
+.categoryInputRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.categorySuggestions,
+.categoryChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.categorySuggestion,
+.categoryChip {
+  min-height: 34px;
+  border: 1px solid #d2d2d2;
+  border-radius: 999px;
+  padding: 7px 10px;
+  background: #ffffff;
+  color: #171717;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.categorySuggestion {
+  cursor: pointer;
+}
+
+.categorySuggestion:hover {
+  border-color: #6688dd;
+  background: #f2f6ff;
+  color: #173c88;
+}
+
+.categorySuggestion:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.categoryChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-color: #cfd9ff;
+  background: #f2f6ff;
+  color: #173c88;
+}
+
+.categoryChip button {
+  width: 20px;
+  height: 20px;
+  border: 1px solid #b9c8f5;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #173c88;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 900;
+  cursor: pointer;
+  line-height: 1;
+}
+
 .uploadButton {
   position: relative;
   min-height: 40px;
@@ -429,33 +691,71 @@
 .richTextToolbar {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
+  align-items: flex-start;
 }
 
-.richTextToolbar button {
-  min-width: 40px;
+.richTextToolbarGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  border: 1px solid #e2e2e2;
+  border-radius: 8px;
+  padding: 5px;
+  background: #f8f9fb;
+}
+
+.richTextButton {
+  width: 38px;
+  min-width: 38px;
   min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid #d2d2d2;
   border-radius: 6px;
-  padding: 8px 10px;
+  padding: 8px;
   background: #ffffff;
   color: #171717;
   font-weight: 800;
   cursor: pointer;
+  transition: background 0.16s ease, border-color 0.16s ease,
+    color 0.16s ease;
 }
 
-.richTextToolbar button:hover {
+.richTextButton svg {
+  display: block;
+}
+
+.richTextButton:hover,
+.richTextButtonActive,
+.richTextButton[aria-pressed="true"] {
   border-color: #6688dd;
   background: #f2f6ff;
+  color: #173c88;
+}
+
+.richTextButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
 }
 
 .richEditor {
-  min-height: 360px;
   border: 1px solid #d8d8d8;
   border-radius: 6px;
-  padding: 16px;
   background: #ffffff;
   color: #171717;
+  overflow: hidden;
+}
+
+.richEditor:focus-within {
+  border-color: #6688dd;
+  box-shadow: 0 0 0 3px rgba(102, 136, 221, 0.18);
+}
+
+.richEditor :global(.ProseMirror) {
+  min-height: 360px;
+  padding: 16px;
   direction: ltr;
   line-height: 1.7;
   outline: none;
@@ -463,24 +763,60 @@
   unicode-bidi: plaintext;
 }
 
-.richEditor:focus {
-  border-color: #6688dd;
-  box-shadow: 0 0 0 3px rgba(102, 136, 221, 0.18);
-}
-
-.richEditor > * + * {
+.richEditor :global(.ProseMirror) > * + * {
   margin-top: 0.85em;
 }
 
-.richEditor ul,
-.richEditor ol {
-  padding-left: 24px;
+.richEditor :global(.ProseMirror) h2,
+.richEditor :global(.ProseMirror) h3,
+.richEditor :global(.ProseMirror) h4 {
+  color: #171717;
+  line-height: 1.3;
 }
 
-.richEditor blockquote {
+.richEditor :global(.ProseMirror) h2 {
+  margin-top: 1.35em;
+  font-size: 1.45rem;
+}
+
+.richEditor :global(.ProseMirror) h3 {
+  margin-top: 1.2em;
+  font-size: 1.22rem;
+}
+
+.richEditor :global(.ProseMirror) h4 {
+  margin-top: 1.1em;
+  font-size: 1.05rem;
+}
+
+.richEditor :global(.ProseMirror) ul,
+.richEditor :global(.ProseMirror) ol {
+  padding-left: 26px;
+}
+
+.richEditor :global(.ProseMirror) li {
+  padding-left: 4px;
+}
+
+.richEditor :global(.ProseMirror) li + li {
+  margin-top: 0.35em;
+}
+
+.richEditor :global(.ProseMirror) li > ul,
+.richEditor :global(.ProseMirror) li > ol {
+  margin-top: 0.35em;
+}
+
+.richEditor :global(.ProseMirror) blockquote {
   border-left: 3px solid #6688dd;
   padding-left: 14px;
   color: #444444;
+}
+
+.richEditor :global(.ProseMirror) hr {
+  height: 1px;
+  border: 0;
+  background: #dedede;
 }
 
 .securityGrid {
@@ -672,10 +1008,23 @@
     grid-template-columns: 1fr;
   }
 
+  .featureToggle {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .featureStatus {
+    grid-column: 2;
+    justify-self: flex-start;
+  }
+
   .postWorkspace,
   .portfolioGrid,
+  .profileGrid,
   .formGrid,
   .aiGrid,
+  .settingsGrid,
+  .aiSettingsFields,
+  .categoryInputRow,
   .mediaPreview {
     grid-template-columns: 1fr;
   }
