@@ -1,6 +1,9 @@
 import {NextResponse} from "next/server";
 
-import {getSiteProfile} from "../../../lib/siteProfile";
+import {
+  getDefaultSiteMetadata,
+  getSiteProfile,
+} from "../../../lib/siteProfile";
 
 export const runtime = "nodejs";
 
@@ -14,6 +17,7 @@ export async function GET() {
       profile: {
         address: null,
         blogEnabled: true,
+        metadata: getDefaultSiteMetadata(),
         updatedAt: null,
         updatedBy: null,
       },

@@ -5,7 +5,11 @@ import {
   isSameOriginRequest,
   unauthorizedResponse,
 } from "../../../lib/adminAuth";
-import {UploadError, uploadPostAsset} from "../../../lib/storage";
+import {
+  UploadError,
+  uploadPostAsset,
+  uploadSiteAsset,
+} from "../../../lib/storage";
 
 export const runtime = "nodejs";
 
@@ -20,7 +24,11 @@ export async function POST(request) {
   try {
     const formData = await request.formData();
     const file = formData.get("file");
-    const asset = await uploadPostAsset(file, user);
+    const purpose = String(formData.get("purpose") || "");
+    const asset =
+      purpose === "site-branding"
+        ? await uploadSiteAsset(file, formData.get("kind"), user)
+        : await uploadPostAsset(file, user);
 
     return NextResponse.json({asset}, {status: 201});
   } catch (error) {

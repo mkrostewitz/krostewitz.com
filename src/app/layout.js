@@ -1,4 +1,10 @@
 import {Geist, Geist_Mono} from "next/font/google";
+
+import {
+  getDefaultSiteMetadata,
+  getSiteMetadata,
+  toNextMetadata,
+} from "./lib/siteProfile";
 import "./globals.css";
 
 const gaMeasurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim();
@@ -44,14 +50,16 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata = {
-  title: "Mathias Krostewitz - Operator & Builder",
-  description:
-    "Lean operator and full-stack builder with leadership across Asia and the US.",
-  icons: {
-    icon: [{url: "/mk-favicon.svg", type: "image/svg+xml"}],
-  },
-};
+export const dynamic = "force-dynamic";
+
+export async function generateMetadata() {
+  try {
+    return toNextMetadata(await getSiteMetadata());
+  } catch (error) {
+    console.warn("Unable to load site metadata", error);
+    return toNextMetadata(getDefaultSiteMetadata());
+  }
+}
 
 export default function RootLayout({children}) {
   return (

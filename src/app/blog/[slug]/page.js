@@ -5,7 +5,11 @@ import {notFound} from "next/navigation";
 
 import NavBar from "../../components/nav/nav";
 import {getPublishedPostBySlug} from "../../lib/posts";
-import {isBlogEnabled} from "../../lib/siteProfile";
+import {
+  getDefaultSiteMetadata,
+  getSiteMetadata,
+  isBlogEnabled,
+} from "../../lib/siteProfile";
 import styles from "./blog-post.module.css";
 import ShareButtons from "./ShareButtons";
 
@@ -27,12 +31,21 @@ function getSiteUrl() {
   ).replace(/\/+$/, "");
 }
 
+async function getSiteTitle() {
+  try {
+    return (await getSiteMetadata()).title;
+  } catch {
+    return getDefaultSiteMetadata().title;
+  }
+}
+
 export async function generateMetadata({params}) {
   const blogEnabled = await isBlogEnabled();
+  const siteTitle = await getSiteTitle();
 
   if (!blogEnabled) {
     return {
-      title: "Post not found - Mathias Krostewitz",
+      title: `Post not found - ${siteTitle}`,
     };
   }
 
@@ -41,11 +54,11 @@ export async function generateMetadata({params}) {
 
   if (!post) {
     return {
-      title: "Post not found - Mathias Krostewitz",
+      title: `Post not found - ${siteTitle}`,
     };
   }
 
-  const title = `${post.title} - Mathias Krostewitz`;
+  const title = `${post.title} - ${siteTitle}`;
   const description = post.summary;
   const url = `${getSiteUrl()}/blog/${post.slug}`;
   const image =

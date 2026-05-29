@@ -1,6 +1,7 @@
 "use client";
 
-import Image from "next/image";
+/* eslint-disable @next/next/no-img-element */
+
 import Link from "next/link";
 import {useEffect, useMemo, useState} from "react";
 import {useTranslation} from "react-i18next";
@@ -26,6 +27,7 @@ const navLinks = [
 ];
 
 const supportedLanguages = Object.keys(resources);
+const DEFAULT_LOGO_URL = "/logo.svg";
 
 function getSupportedLanguage(language) {
   const normalizedLanguage = normalizeLanguage(language);
@@ -74,6 +76,10 @@ const NavBar = () => {
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [blogEnabled, setBlogEnabled] = useState(null);
+  const [siteMetadata, setSiteMetadata] = useState({
+    logoUrl: DEFAULT_LOGO_URL,
+    title: "",
+  });
 
   const [lang, setLang] = useState(
     () =>
@@ -157,7 +163,12 @@ const NavBar = () => {
           throw new Error("Unable to load public settings.");
         }
 
+        const metadata = data.profile?.metadata || {};
         setBlogEnabled(data.profile?.blogEnabled !== false);
+        setSiteMetadata({
+          logoUrl: metadata.logoUrl || DEFAULT_LOGO_URL,
+          title: metadata.title || "",
+        });
       } catch (error) {
         if (error?.name === "AbortError") return;
         setBlogEnabled(true);
@@ -190,13 +201,12 @@ const NavBar = () => {
       {/* Logo / back-to-top anchor */}
       <div className="kicker">
         <Link href="/#top" onClick={closeMenu} aria-label="Back to top">
-          <Image
-            src="/logo.svg"
-            alt="MK logo"
-            width={60}
-            height={60}
+          <img
+            src={siteMetadata.logoUrl || DEFAULT_LOGO_URL}
+            alt={siteMetadata.title ? `${siteMetadata.title} logo` : "Site logo"}
+            width="60"
+            height="60"
             className="logo"
-            priority
           />
         </Link>
       </div>

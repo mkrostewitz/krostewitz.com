@@ -23,6 +23,82 @@
       "dark": "Switch to dark mode"
     }
   },
+  "admin": {
+    "profile": {
+      "title": "Profile",
+      "description": "Manage public contact details and section visibility.",
+      "sections": {
+        "public": {
+          "title": "Public sections",
+          "description": "Temporarily hide unfinished parts of the public website without deleting content."
+        },
+        "metadata": {
+          "title": "Site Identity and Branding",
+          "description": "Control the browser title, search description, logo, favicon, and app icon emitted by the public site."
+        },
+        "address": {
+          "title": "Current address",
+          "description": "Search with Mapbox and select a result to publish it in Contact."
+        },
+        "preview": {
+          "title": "Contact preview",
+          "description": "The public section stays unchanged until this form is saved."
+        }
+      },
+      "blog": {
+        "title": "Blog",
+        "visible": "Visible",
+        "hidden": "Hidden",
+        "visibleDescription": "Shown in navigation, homepage, and public post pages. Toggle saves immediately.",
+        "hiddenDescription": "Hidden from navigation, homepage, posts API, and public post pages. Toggle saves immediately."
+      },
+      "fields": {
+        "browserTitle": "Browser title",
+        "siteTitlePlaceholder": "Site title",
+        "logoUrl": "Logo URL",
+        "iconUrl": "Icon URL",
+        "appIconUrl": "App icon URL",
+        "metaDescription": "Meta description",
+        "metaDescriptionPlaceholder": "Short description for search and social previews",
+        "iconMimeType": "Icon MIME type",
+        "lastSaved": "Last saved: {{date}}",
+        "address": "Address",
+        "addressPlaceholder": "Start typing an address"
+      },
+      "actions": {
+        "saving": "Saving...",
+        "uploading": "Uploading...",
+        "uploadAsset": "Upload",
+        "saveMetadata": "Save site metadata",
+        "clearAddress": "Clear address",
+        "saveProfile": "Save profile"
+      },
+      "status": {
+        "notSaved": "Not saved",
+        "coordinatesUnavailable": "Coordinates not available",
+        "loading": "Loading profile settings...",
+        "missingMapboxToken": "Set NEXT_PUBLIC_MAPBOX_TOKEN to enable Mapbox address autocomplete.",
+        "searchingAddresses": "Searching addresses...",
+        "noMatchingAddresses": "No matching addresses found.",
+        "blogHidden": "Blog is hidden from the public website.",
+        "blogVisible": "Blog is visible on the public website.",
+        "profileSaved": "Profile settings saved.",
+        "assetUploaded": "{{asset}} uploaded and published."
+      },
+      "errors": {
+        "loadProfile": "Unable to load profile settings.",
+        "mapboxSearch": "Mapbox address search failed.",
+        "saveBlogVisibility": "Unable to save blog visibility.",
+        "uploadAsset": "Unable to upload {{asset}}.",
+        "chooseAddress": "Choose an address from the Mapbox results before saving.",
+        "saveProfile": "Unable to save profile settings."
+      },
+      "preview": {
+        "mapLabel": "Selected address map",
+        "empty": "No address is selected, so the public Contact section will hide it."
+      }
+    }
+  },
   "offer": {
     "eyebrow": "How I help",
     "title": "I build and run growth engines for industrial tech.",

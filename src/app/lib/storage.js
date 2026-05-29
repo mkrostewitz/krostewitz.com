@@ -7,6 +7,7 @@ const DEFAULT_MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
 const DEFAULT_MAX_CV_UPLOAD_BYTES = 10 * 1024 * 1024;
 const DEFAULT_UPLOAD_PREFIX = "portfolio-posts";
 const DEFAULT_CV_UPLOAD_PREFIX = "cv";
+const DEFAULT_SITE_UPLOAD_PREFIX = "site-assets";
 
 export class UploadError extends Error {
   constructor(message, status = 400) {
@@ -105,6 +106,16 @@ function getCvUploadPrefix() {
   return String(prefix).replace(/^\/+|\/+$/g, "") || DEFAULT_CV_UPLOAD_PREFIX;
 }
 
+function getSiteUploadPrefix() {
+  const prefix =
+    firstConfigured([
+      "DO_SPACES_SITE_PREFIX",
+      "DIGITALOCEAN_SPACES_SITE_PREFIX",
+    ]) || DEFAULT_SITE_UPLOAD_PREFIX;
+
+  return String(prefix).replace(/^\/+|\/+$/g, "") || DEFAULT_SITE_UPLOAD_PREFIX;
+}
+
 function safeFileName(value) {
   const fallback = "upload";
   const clean = String(value || fallback)
@@ -124,6 +135,20 @@ function getMediaType(mimeType) {
   if (mimeType.startsWith("image/")) return "image";
   if (mimeType.startsWith("video/")) return "video";
   return null;
+}
+
+function inferImageMimeType(file) {
+  const mimeType = String(file?.type || "");
+  const originalName = String(file?.name || "");
+
+  if (mimeType) return mimeType;
+  if (/\.svg$/i.test(originalName)) return "image/svg+xml";
+  if (/\.png$/i.test(originalName)) return "image/png";
+  if (/\.jpe?g$/i.test(originalName)) return "image/jpeg";
+  if (/\.webp$/i.test(originalName)) return "image/webp";
+  if (/\.ico$/i.test(originalName)) return "image/x-icon";
+
+  return "application/octet-stream";
 }
 
 function getSpacesClient(config) {
@@ -174,7 +199,8 @@ export async function uploadPostAsset(file, user) {
     throw new UploadError("Upload file is required.");
   }
 
-  const mimeType = String(file.type || "application/octet-stream");
+  const originalName = String(file.name || "");
+  const mimeType = inferImageMimeType(file);
   const mediaType = getMediaType(mimeType);
 
   if (!mediaType) {
@@ -189,7 +215,7 @@ export async function uploadPostAsset(file, user) {
   const now = new Date();
   const datePrefix = now.toISOString().slice(0, 10);
   const key = `${config.prefix}/${datePrefix}/${crypto.randomUUID()}-${safeFileName(
-    file.name
+    originalName
   )}`;
   const body = Buffer.from(await file.arrayBuffer());
 
@@ -207,7 +233,52 @@ export async function uploadPostAsset(file, user) {
     url,
     key,
     mimeType,
-    fileName: file.name || null,
+    fileName: originalName || null,
+    size: body.byteLength,
+  };
+}
+
+export async function uploadSiteAsset(file, kind, user) {
+  if (!file || typeof file.arrayBuffer !== "function") {
+    throw new UploadError("Upload file is required.");
+  }
+
+  const originalName = String(file.name || "");
+  const mimeType = inferImageMimeType(file);
+  const mediaType = getMediaType(mimeType);
+
+  if (mediaType !== "image") {
+    throw new UploadError("Only image uploads are supported for site assets.");
+  }
+
+  if (file.size > getMaxUploadBytes()) {
+    throw new UploadError("The selected file is too large.");
+  }
+
+  const safeKind = safeFileName(kind || "site-asset");
+  const publicFileName = safeFileName(originalName || safeKind);
+  const key = `${getSiteUploadPrefix()}/${safeKind}/${crypto.randomUUID()}-${publicFileName}`;
+  const body = Buffer.from(await file.arrayBuffer());
+  const url = await putPublicObject({
+    key,
+    body,
+    contentType: mimeType,
+    cacheControl: "no-cache",
+    metadata: {
+      uploadedBy: user?.email || "admin",
+      purpose: "site-branding",
+      kind: safeKind,
+    },
+  });
+
+  return {
+    type: "image",
+    purpose: "site-branding",
+    kind: safeKind,
+    url,
+    key,
+    mimeType,
+    fileName: originalName || publicFileName,
     size: body.byteLength,
   };
 }

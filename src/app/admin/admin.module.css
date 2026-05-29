@@ -394,6 +394,54 @@
   grid-column: 1 / -1;
 }
 
+.metadataGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.metadataTitleField {
+  grid-column: 1 / -1;
+}
+
+.metadataDescription {
+  grid-column: 1 / -1;
+}
+
+.metadataTypeField {
+  max-width: 320px;
+}
+
+.metadataAssetField {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.assetUploadRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 48px;
+  border: 1px solid var(--border-muted);
+  border-radius: 6px;
+  padding: 8px;
+  background: var(--surface-subtle);
+}
+
+.assetPreview {
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--border-muted);
+  border-radius: 6px;
+  padding: 5px;
+  background: var(--surface);
+  object-fit: contain;
+  flex: 0 0 auto;
+}
+
 .featureToggle {
   position: relative;
   display: grid;
@@ -1020,6 +1068,7 @@
   .postWorkspace,
   .portfolioGrid,
   .profileGrid,
+  .metadataGrid,
   .formGrid,
   .aiGrid,
   .settingsGrid,

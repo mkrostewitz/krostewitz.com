@@ -1,7 +1,11 @@
 "use client";
 
-import {useEffect, useMemo, useState} from "react";
+/* eslint-disable @next/next/no-img-element */
 
+import {useEffect, useMemo, useState} from "react";
+import {useTranslation} from "react-i18next";
+
+import {loadRuntimeTranslations} from "../../../lib/i18n";
 import AddressMap from "../../components/address-map/AddressMap";
 import AdminHeader from "../AdminHeader";
 import styles from "../admin.module.css";
@@ -9,14 +13,24 @@ import styles from "../admin.module.css";
 const EMPTY_PROFILE = {
   address: null,
   blogEnabled: true,
+  metadata: {
+    title: "",
+    description: "",
+    iconUrl: "",
+    iconType: "image/svg+xml",
+    appIconUrl: "",
+    appIconType: "image/svg+xml",
+    logoUrl: "",
+    logoType: "image/svg+xml",
+  },
   updatedAt: null,
   updatedBy: null,
 };
 
-function formatDate(value) {
-  if (!value) return "Not saved";
+function formatDate(value, locale, emptyLabel) {
+  if (!value) return emptyLabel;
 
-  return new Intl.DateTimeFormat("en", {
+  return new Intl.DateTimeFormat(locale || "en", {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -43,32 +57,69 @@ function mapFeatureToAddress(feature) {
   };
 }
 
-function formatCoordinates(address) {
+function formatCoordinates(address, unavailableLabel) {
   if (
     typeof address?.latitude !== "number" ||
     typeof address?.longitude !== "number"
   ) {
-    return "Coordinates not available";
+    return unavailableLabel;
   }
 
   return `${address.latitude.toFixed(5)}, ${address.longitude.toFixed(5)}`;
 }
 
+function normalizeMetadataForm(metadata = {}) {
+  const iconEntry = Array.isArray(metadata.icons?.icon)
+    ? metadata.icons.icon[0]
+    : metadata.icons?.icon;
+  const appIconEntry = Array.isArray(metadata.icons?.icon)
+    ? metadata.icons.icon[1]
+    : null;
+
+  return {
+    title: String(metadata.title || ""),
+    description: String(metadata.description || ""),
+    iconUrl: String(metadata.iconUrl || iconEntry?.url || ""),
+    iconType: String(metadata.iconType || iconEntry?.type || "image/svg+xml"),
+    appIconUrl: String(metadata.appIconUrl || appIconEntry?.url || ""),
+    appIconType: String(
+      metadata.appIconType || appIconEntry?.type || "image/svg+xml"
+    ),
+    logoUrl: String(metadata.logoUrl || ""),
+    logoType: String(metadata.logoType || "image/svg+xml"),
+  };
+}
+
+function getStatusText(status, t) {
+  if (!status) return "";
+
+  return status.key ? t(status.key, status.values) : status.text || "";
+}
+
 export default function ProfileSettings({user}) {
+  const {t, i18n} = useTranslation(undefined, {keyPrefix: "admin.profile"});
   const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "";
+  const locale = i18n.resolvedLanguage || i18n.language || "en";
+  const mapboxLanguage = String(locale).split("-")[0] || "en";
+  const coordinatesUnavailableLabel = t("status.coordinatesUnavailable");
+  const notSavedLabel = t("status.notSaved");
   const [profile, setProfile] = useState(EMPTY_PROFILE);
   const [address, setAddress] = useState(null);
   const [addressInput, setAddressInput] = useState("");
   const [blogEnabled, setBlogEnabled] = useState(true);
+  const [metadataForm, setMetadataForm] = useState(() =>
+    normalizeMetadataForm(EMPTY_PROFILE.metadata)
+  );
   const [suggestions, setSuggestions] = useState([]);
   const [status, setStatus] = useState({
     type: "message",
-    text: "Loading profile settings...",
+    key: "status.loading",
   });
   const [visibilityStatus, setVisibilityStatus] = useState(null);
   const [searchStatus, setSearchStatus] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [uploadingAsset, setUploadingAsset] = useState(null);
 
   const canSearch = useMemo(
     () =>
@@ -81,6 +132,10 @@ export default function ProfileSettings({user}) {
   );
 
   useEffect(() => {
+    void loadRuntimeTranslations();
+  }, []);
+
+  useEffect(() => {
     let cancelled = false;
 
     async function loadProfile() {
@@ -89,7 +144,7 @@ export default function ProfileSettings({user}) {
         const data = await response.json().catch(() => ({}));
 
         if (!response.ok) {
-          throw new Error(data.error || "Unable to load profile settings.");
+          throw new Error(data.error || t("errors.loadProfile"));
         }
 
         const nextProfile = data.profile || EMPTY_PROFILE;
@@ -99,11 +154,15 @@ export default function ProfileSettings({user}) {
           setAddress(nextProfile.address || null);
           setAddressInput(nextProfile.address?.label || "");
           setBlogEnabled(nextProfile.blogEnabled !== false);
+          setMetadataForm(normalizeMetadataForm(nextProfile.metadata));
           setStatus(null);
         }
       } catch (error) {
         if (!cancelled) {
-          setStatus({type: "error", text: error.message});
+          setStatus({
+            type: "error",
+            text: error.message || t("errors.loadProfile"),
+          });
         }
       } finally {
         if (!cancelled) {
@@ -117,14 +176,14 @@ export default function ProfileSettings({user}) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     if (!mapboxToken) {
       setSuggestions([]);
       setSearchStatus({
         type: "message",
-        text: "Set NEXT_PUBLIC_MAPBOX_TOKEN to enable Mapbox address autocomplete.",
+        key: "status.missingMapboxToken",
       });
       return undefined;
     }
@@ -137,7 +196,7 @@ export default function ProfileSettings({user}) {
 
     const controller = new AbortController();
     const timeout = window.setTimeout(async () => {
-      setSearchStatus({type: "message", text: "Searching addresses..."});
+      setSearchStatus({type: "message", key: "status.searchingAddresses"});
 
       try {
         const url = new URL(
@@ -150,13 +209,13 @@ export default function ProfileSettings({user}) {
         url.searchParams.set("autocomplete", "true");
         url.searchParams.set("types", "address");
         url.searchParams.set("limit", "6");
-        url.searchParams.set("language", "de");
+        url.searchParams.set("language", mapboxLanguage);
 
         const response = await fetch(url, {signal: controller.signal});
         const data = await response.json().catch(() => ({}));
 
         if (!response.ok) {
-          throw new Error(data.message || "Mapbox address search failed.");
+          throw new Error(data.message || t("errors.mapboxSearch"));
         }
 
         const nextSuggestions = (data.features || [])
@@ -167,13 +226,16 @@ export default function ProfileSettings({user}) {
         setSearchStatus(
           nextSuggestions.length
             ? null
-            : {type: "message", text: "No matching addresses found."}
+            : {type: "message", key: "status.noMatchingAddresses"}
         );
       } catch (error) {
         if (error.name === "AbortError") return;
 
         setSuggestions([]);
-        setSearchStatus({type: "error", text: error.message});
+        setSearchStatus({
+          type: "error",
+          text: error.message || t("errors.mapboxSearch"),
+        });
       }
     }, 250);
 
@@ -181,7 +243,7 @@ export default function ProfileSettings({user}) {
       window.clearTimeout(timeout);
       controller.abort();
     };
-  }, [addressInput, canSearch, mapboxToken]);
+  }, [addressInput, canSearch, mapboxLanguage, mapboxToken, t]);
 
   function handleAddressInput(value) {
     setAddressInput(value);
@@ -208,6 +270,83 @@ export default function ProfileSettings({user}) {
     setStatus(null);
   }
 
+  function handleMetadataInput(field, value) {
+    setMetadataForm((current) => ({...current, [field]: value}));
+    setStatus(null);
+  }
+
+  async function uploadMetadataAsset(
+    event,
+    {urlField, typeField, kind, labelKey}
+  ) {
+    const input = event.currentTarget;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    const assetLabel = t(labelKey);
+    setUploadingAsset(urlField);
+    setStatus(null);
+
+    try {
+      const body = new FormData();
+      body.append("file", file);
+      body.append("purpose", "site-branding");
+      body.append("kind", kind);
+
+      const uploadResponse = await fetch("/api/admin/uploads", {
+        method: "POST",
+        body,
+      });
+      const uploadData = await uploadResponse.json().catch(() => ({}));
+
+      if (!uploadResponse.ok) {
+        throw new Error(
+          uploadData.error || t("errors.uploadAsset", {asset: assetLabel})
+        );
+      }
+
+      const nextMetadata = {
+        ...metadataForm,
+        [urlField]: uploadData.asset?.url || "",
+        [typeField]:
+          uploadData.asset?.mimeType ||
+          metadataForm[typeField] ||
+          "image/svg+xml",
+      };
+
+      setMetadataForm(nextMetadata);
+
+      const saveResponse = await fetch("/api/admin/profile", {
+        method: "PUT",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({metadata: nextMetadata}),
+      });
+      const saveData = await saveResponse.json().catch(() => ({}));
+
+      if (!saveResponse.ok) {
+        throw new Error(saveData.error || t("errors.saveProfile"));
+      }
+
+      const nextProfile = saveData.profile || EMPTY_PROFILE;
+
+      setProfile(nextProfile);
+      setMetadataForm(normalizeMetadataForm(nextProfile.metadata));
+      setStatus({
+        type: "success",
+        key: "status.assetUploaded",
+        values: {asset: assetLabel},
+      });
+    } catch (error) {
+      setStatus({
+        type: "error",
+        text: error.message || t("errors.uploadAsset", {asset: assetLabel}),
+      });
+    } finally {
+      input.value = "";
+      setUploadingAsset(null);
+    }
+  }
+
   async function saveBlogVisibility(value) {
     const previousValue = blogEnabled;
 
@@ -224,22 +363,27 @@ export default function ProfileSettings({user}) {
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        throw new Error(data.error || "Unable to save blog visibility.");
+        throw new Error(data.error || t("errors.saveBlogVisibility"));
       }
 
       const nextProfile = data.profile || EMPTY_PROFILE;
 
       setProfile(nextProfile);
       setBlogEnabled(nextProfile.blogEnabled !== false);
+      setMetadataForm(normalizeMetadataForm(nextProfile.metadata));
       setVisibilityStatus({
         type: "success",
-        text: nextProfile.blogEnabled === false
-          ? "Blog is hidden from the public website."
-          : "Blog is visible on the public website.",
+        key:
+          nextProfile.blogEnabled === false
+            ? "status.blogHidden"
+            : "status.blogVisible",
       });
     } catch (error) {
       setBlogEnabled(previousValue);
-      setVisibilityStatus({type: "error", text: error.message});
+      setVisibilityStatus({
+        type: "error",
+        text: error.message || t("errors.saveBlogVisibility"),
+      });
     } finally {
       setIsSaving(false);
     }
@@ -251,7 +395,7 @@ export default function ProfileSettings({user}) {
     if (addressInput.trim() && !address) {
       setStatus({
         type: "error",
-        text: "Choose an address from the Mapbox results before saving.",
+        key: "errors.chooseAddress",
       });
       return;
     }
@@ -263,12 +407,12 @@ export default function ProfileSettings({user}) {
       const response = await fetch("/api/admin/profile", {
         method: "PUT",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({address, blogEnabled}),
+        body: JSON.stringify({address, blogEnabled, metadata: metadataForm}),
       });
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        throw new Error(data.error || "Unable to save profile settings.");
+        throw new Error(data.error || t("errors.saveProfile"));
       }
 
       const nextProfile = data.profile || EMPTY_PROFILE;
@@ -277,9 +421,13 @@ export default function ProfileSettings({user}) {
       setAddress(nextProfile.address || null);
       setAddressInput(nextProfile.address?.label || "");
       setBlogEnabled(nextProfile.blogEnabled !== false);
-      setStatus({type: "success", text: "Profile settings saved."});
+      setMetadataForm(normalizeMetadataForm(nextProfile.metadata));
+      setStatus({type: "success", key: "status.profileSaved"});
     } catch (error) {
-      setStatus({type: "error", text: error.message});
+      setStatus({
+        type: "error",
+        text: error.message || t("errors.saveProfile"),
+      });
     } finally {
       setIsSaving(false);
     }
@@ -292,10 +440,8 @@ export default function ProfileSettings({user}) {
       <main className={styles.main} aria-busy={isLoading}>
         <div className={styles.toolbar}>
           <div className={styles.titleBlock}>
-            <h1>Profile</h1>
-            <p className={styles.muted}>
-              Manage public contact details and section visibility.
-            </p>
+            <h1>{t("title")}</h1>
+            <p className={styles.muted}>{t("description")}</p>
           </div>
         </div>
 
@@ -303,11 +449,188 @@ export default function ProfileSettings({user}) {
           <section className={`${styles.profilePanel} ${styles.profilePanelFull}`}>
             <div className={styles.panelHeader}>
               <div className={styles.titleBlock}>
-                <h2>Public sections</h2>
+                <h2>{t("sections.metadata.title")}</h2>
                 <p className={styles.muted}>
-                  Temporarily hide unfinished parts of the public website without
-                  deleting content.
+                  {t("sections.metadata.description")}
                 </p>
+              </div>
+            </div>
+
+            <div className={styles.metadataGrid}>
+              <label className={`${styles.field} ${styles.metadataTitleField}`}>
+                {t("fields.browserTitle")}
+                <input
+                  maxLength={140}
+                  placeholder={t("fields.siteTitlePlaceholder")}
+                  value={metadataForm.title}
+                  onChange={(event) =>
+                    handleMetadataInput("title", event.target.value)
+                  }
+                />
+              </label>
+
+              <div className={styles.metadataAssetField}>
+                <label className={styles.field}>
+                  {t("fields.logoUrl")}
+                  <input
+                    placeholder="/logo.svg"
+                    value={metadataForm.logoUrl}
+                    onChange={(event) =>
+                      handleMetadataInput("logoUrl", event.target.value)
+                    }
+                  />
+                </label>
+                <div className={styles.assetUploadRow}>
+                  {metadataForm.logoUrl && (
+                    <img
+                      alt=""
+                      className={styles.assetPreview}
+                      src={metadataForm.logoUrl}
+                    />
+                  )}
+                  <label className={styles.uploadButton}>
+                    {uploadingAsset === "logoUrl"
+                      ? t("actions.uploading")
+                      : t("actions.uploadAsset")}
+                    <input
+                      accept="image/*"
+                      disabled={isSaving || Boolean(uploadingAsset)}
+                      type="file"
+                      onChange={(event) =>
+                        uploadMetadataAsset(event, {
+                          urlField: "logoUrl",
+                          typeField: "logoType",
+                          kind: "logo",
+                          labelKey: "fields.logoUrl",
+                        })
+                      }
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <div className={styles.metadataAssetField}>
+                <label className={styles.field}>
+                  {t("fields.iconUrl")}
+                  <input
+                    placeholder="/icon.svg"
+                    value={metadataForm.iconUrl}
+                    onChange={(event) =>
+                      handleMetadataInput("iconUrl", event.target.value)
+                    }
+                  />
+                </label>
+                <div className={styles.assetUploadRow}>
+                  {metadataForm.iconUrl && (
+                    <img
+                      alt=""
+                      className={styles.assetPreview}
+                      src={metadataForm.iconUrl}
+                    />
+                  )}
+                  <label className={styles.uploadButton}>
+                    {uploadingAsset === "iconUrl"
+                      ? t("actions.uploading")
+                      : t("actions.uploadAsset")}
+                    <input
+                      accept="image/*"
+                      disabled={isSaving || Boolean(uploadingAsset)}
+                      type="file"
+                      onChange={(event) =>
+                        uploadMetadataAsset(event, {
+                          urlField: "iconUrl",
+                          typeField: "iconType",
+                          kind: "favicon",
+                          labelKey: "fields.iconUrl",
+                        })
+                      }
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <div className={styles.metadataAssetField}>
+                <label className={styles.field}>
+                  {t("fields.appIconUrl")}
+                  <input
+                    placeholder="/icon.svg"
+                    value={metadataForm.appIconUrl}
+                    onChange={(event) =>
+                      handleMetadataInput("appIconUrl", event.target.value)
+                    }
+                  />
+                </label>
+                <div className={styles.assetUploadRow}>
+                  {metadataForm.appIconUrl && (
+                    <img
+                      alt=""
+                      className={styles.assetPreview}
+                      src={metadataForm.appIconUrl}
+                    />
+                  )}
+                  <label className={styles.uploadButton}>
+                    {uploadingAsset === "appIconUrl"
+                      ? t("actions.uploading")
+                      : t("actions.uploadAsset")}
+                    <input
+                      accept="image/*"
+                      disabled={isSaving || Boolean(uploadingAsset)}
+                      type="file"
+                      onChange={(event) =>
+                        uploadMetadataAsset(event, {
+                          urlField: "appIconUrl",
+                          typeField: "appIconType",
+                          kind: "app-icon",
+                          labelKey: "fields.appIconUrl",
+                        })
+                      }
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <label className={`${styles.field} ${styles.metadataDescription}`}>
+                {t("fields.metaDescription")}
+                <textarea
+                  maxLength={320}
+                  placeholder={t("fields.metaDescriptionPlaceholder")}
+                  rows={3}
+                  value={metadataForm.description}
+                  onChange={(event) =>
+                    handleMetadataInput("description", event.target.value)
+                  }
+                />
+              </label>
+
+              <label className={`${styles.field} ${styles.metadataTypeField}`}>
+                {t("fields.iconMimeType")}
+                <input
+                  placeholder="image/svg+xml"
+                  value={metadataForm.iconType}
+                  onChange={(event) =>
+                    handleMetadataInput("iconType", event.target.value)
+                  }
+                />
+              </label>
+            </div>
+
+            <div className={styles.editorActions}>
+              <p className={styles.muted}>
+                {t("fields.lastSaved", {
+                  date: formatDate(profile.updatedAt, locale, notSavedLabel),
+                })}
+              </p>
+              <button className={styles.button} disabled={isSaving} type="submit">
+                {isSaving ? t("actions.saving") : t("actions.saveMetadata")}
+              </button>
+            </div>
+          </section>
+
+          <section className={`${styles.profilePanel} ${styles.profilePanelFull}`}>
+            <div className={styles.panelHeader}>
+              <div className={styles.titleBlock}>
+                <h2>{t("sections.public.title")}</h2>
+                <p className={styles.muted}>{t("sections.public.description")}</p>
               </div>
             </div>
 
@@ -320,20 +643,20 @@ export default function ProfileSettings({user}) {
               />
               <span className={styles.featureSwitch} aria-hidden="true" />
               <span className={styles.featureText}>
-                <strong>Blog</strong>
+                <strong>{t("blog.title")}</strong>
                 <small>
                   {blogEnabled
-                    ? "Shown in navigation, homepage, and public post pages. Toggle saves immediately."
-                    : "Hidden from navigation, homepage, posts API, and public post pages. Toggle saves immediately."}
+                    ? t("blog.visibleDescription")
+                    : t("blog.hiddenDescription")}
                 </small>
               </span>
               <span className={styles.featureStatus}>
-                {blogEnabled ? "Visible" : "Hidden"}
+                {blogEnabled ? t("blog.visible") : t("blog.hidden")}
               </span>
             </label>
             {visibilityStatus && (
               <p className={styles[visibilityStatus.type]}>
-                {visibilityStatus.text}
+                {getStatusText(visibilityStatus, t)}
               </p>
             )}
           </section>
@@ -341,22 +664,20 @@ export default function ProfileSettings({user}) {
           <section className={styles.profilePanel}>
             <div className={styles.panelHeader}>
               <div className={styles.titleBlock}>
-                <h2>Current address</h2>
-                <p className={styles.muted}>
-                  Search with Mapbox and select a result to publish it in Kontakt.
-                </p>
+                <h2>{t("sections.address.title")}</h2>
+                <p className={styles.muted}>{t("sections.address.description")}</p>
               </div>
             </div>
 
             <div className={styles.autocompleteField}>
               <label className={styles.field}>
-                Address
+                {t("fields.address")}
                 <input
                   autoComplete="off"
                   aria-autocomplete="list"
                   aria-controls="profile-address-suggestions"
                   aria-expanded={suggestions.length > 0}
-                  placeholder="Start typing an address"
+                  placeholder={t("fields.addressPlaceholder")}
                   role="combobox"
                   value={addressInput}
                   onChange={(event) => handleAddressInput(event.target.value)}
@@ -379,7 +700,9 @@ export default function ProfileSettings({user}) {
                       onClick={() => selectAddress(suggestion)}
                     >
                       <strong>{suggestion.label}</strong>
-                      <span>{formatCoordinates(suggestion)}</span>
+                      <span>
+                        {formatCoordinates(suggestion, coordinatesUnavailableLabel)}
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -387,12 +710,16 @@ export default function ProfileSettings({user}) {
             </div>
 
             {searchStatus && (
-              <p className={styles[searchStatus.type]}>{searchStatus.text}</p>
+              <p className={styles[searchStatus.type]}>
+                {getStatusText(searchStatus, t)}
+              </p>
             )}
 
             <div className={styles.editorActions}>
               <p className={styles.muted}>
-                Last saved: {formatDate(profile.updatedAt)}
+                {t("fields.lastSaved", {
+                  date: formatDate(profile.updatedAt, locale, notSavedLabel),
+                })}
               </p>
               <div className={styles.buttonRow}>
                 <button
@@ -401,47 +728,45 @@ export default function ProfileSettings({user}) {
                   type="button"
                   onClick={clearAddress}
                 >
-                  Clear address
+                  {t("actions.clearAddress")}
                 </button>
                 <button className={styles.button} disabled={isSaving} type="submit">
-                  {isSaving ? "Saving..." : "Save profile"}
+                  {isSaving ? t("actions.saving") : t("actions.saveProfile")}
                 </button>
               </div>
             </div>
 
-            {status && <p className={styles[status.type]}>{status.text}</p>}
+            {status && (
+              <p className={styles[status.type]}>{getStatusText(status, t)}</p>
+            )}
           </section>
 
           <section className={styles.profilePanel}>
             <div className={styles.panelHeader}>
               <div className={styles.titleBlock}>
-                <h2>Kontakt preview</h2>
-                <p className={styles.muted}>
-                  The public section stays unchanged until this form is saved.
-                </p>
+                <h2>{t("sections.preview.title")}</h2>
+                <p className={styles.muted}>{t("sections.preview.description")}</p>
               </div>
             </div>
 
             {address ? (
               <div className={styles.addressPreviewStack}>
                 <div className={styles.addressPreview}>
-                  <span>Address</span>
+                  <span>{t("fields.address")}</span>
                   <strong>{address.label}</strong>
-                  <span>{formatCoordinates(address)}</span>
+                  <span>{formatCoordinates(address, coordinatesUnavailableLabel)}</span>
                 </div>
                 <AddressMap
                   address={address}
                   className={styles.profileMap}
                   interactive
-                  label="Selected address map"
+                  label={t("preview.mapLabel")}
                   markerScale={1}
                   styleUrl="mapbox://styles/mapbox/streets-v12"
                 />
               </div>
             ) : (
-              <p className={styles.muted}>
-                No address is selected, so the public Kontakt section will hide it.
-              </p>
+              <p className={styles.muted}>{t("preview.empty")}</p>
             )}
           </section>
         </form>

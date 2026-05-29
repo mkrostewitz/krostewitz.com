@@ -23,6 +23,82 @@
       "dark": "In den dunklen Modus wechseln"
     }
   },
+  "admin": {
+    "profile": {
+      "title": "Profil",
+      "description": "Öffentliche Kontaktdaten und die Sichtbarkeit von Bereichen verwalten.",
+      "sections": {
+        "public": {
+          "title": "Öffentliche Bereiche",
+          "description": "Unfertige Bereiche der öffentlichen Website vorübergehend ausblenden, ohne Inhalte zu löschen."
+        },
+        "metadata": {
+          "title": "Website-Identität und Branding",
+          "description": "Browser-Titel, Suchbeschreibung, Logo, Favicon und App-Icon der öffentlichen Website steuern."
+        },
+        "address": {
+          "title": "Aktuelle Adresse",
+          "description": "Mit Mapbox suchen und ein Ergebnis auswählen, um es im Kontaktbereich zu veröffentlichen."
+        },
+        "preview": {
+          "title": "Kontakt-Vorschau",
+          "description": "Der öffentliche Bereich bleibt unverändert, bis dieses Formular gespeichert wird."
+        }
+      },
+      "blog": {
+        "title": "Blog",
+        "visible": "Sichtbar",
+        "hidden": "Ausgeblendet",
+        "visibleDescription": "In Navigation, Startseite und öffentlichen Beitragsseiten sichtbar. Der Schalter speichert sofort.",
+        "hiddenDescription": "Aus Navigation, Startseite, Beitrags-API und öffentlichen Beitragsseiten ausgeblendet. Der Schalter speichert sofort."
+      },
+      "fields": {
+        "browserTitle": "Browser-Titel",
+        "siteTitlePlaceholder": "Website-Titel",
+        "logoUrl": "Logo-URL",
+        "iconUrl": "Icon-URL",
+        "appIconUrl": "App-Icon-URL",
+        "metaDescription": "Meta-Beschreibung",
+        "metaDescriptionPlaceholder": "Kurze Beschreibung für Suche und Social Previews",
+        "iconMimeType": "Icon-MIME-Typ",
+        "lastSaved": "Zuletzt gespeichert: {{date}}",
+        "address": "Adresse",
+        "addressPlaceholder": "Adresse eingeben"
+      },
+      "actions": {
+        "saving": "Speichert...",
+        "uploading": "Wird hochgeladen...",
+        "uploadAsset": "Hochladen",
+        "saveMetadata": "Website-Metadaten speichern",
+        "clearAddress": "Adresse löschen",
+        "saveProfile": "Profil speichern"
+      },
+      "status": {
+        "notSaved": "Nicht gespeichert",
+        "coordinatesUnavailable": "Koordinaten nicht verfügbar",
+        "loading": "Profileinstellungen werden geladen...",
+        "missingMapboxToken": "NEXT_PUBLIC_MAPBOX_TOKEN setzen, um die Mapbox-Adresssuche zu aktivieren.",
+        "searchingAddresses": "Adressen werden gesucht...",
+        "noMatchingAddresses": "Keine passenden Adressen gefunden.",
+        "blogHidden": "Der Blog ist auf der öffentlichen Website ausgeblendet.",
+        "blogVisible": "Der Blog ist auf der öffentlichen Website sichtbar.",
+        "profileSaved": "Profileinstellungen gespeichert.",
+        "assetUploaded": "{{asset}} hochgeladen und veröffentlicht."
+      },
+      "errors": {
+        "loadProfile": "Profileinstellungen konnten nicht geladen werden.",
+        "mapboxSearch": "Mapbox-Adresssuche fehlgeschlagen.",
+        "saveBlogVisibility": "Blog-Sichtbarkeit konnte nicht gespeichert werden.",
+        "uploadAsset": "{{asset}} konnte nicht hochgeladen werden.",
+        "chooseAddress": "Bitte vor dem Speichern eine Adresse aus den Mapbox-Ergebnissen auswählen.",
+        "saveProfile": "Profileinstellungen konnten nicht gespeichert werden."
+      },
+      "preview": {
+        "mapLabel": "Karte der ausgewählten Adresse",
+        "empty": "Es ist keine Adresse ausgewählt, daher blendet der öffentliche Kontaktbereich sie aus."
+      }
+    }
+  },
   "offer": {
     "eyebrow": "B2B-Digitalisierung · Vertrieb · Operations",
     "title": "Nachhaltiges Wachstum braucht digitale Strukturen.",
