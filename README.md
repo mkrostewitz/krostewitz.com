@@ -34,7 +34,7 @@ Store the admin user in MongoDB's `users` collection:
 {
   "_id": "admin",
   "email": "your-admin-email@example.com",
-  "name": "Mathias Krostewitz",
+  "name": "First- & Last Name",
   "passwordHash": "scrypt$64$16384$...",
   "createdAt": "2026-05-24T00:00:00.000Z",
   "updatedAt": "2026-05-24T00:00:00.000Z"
