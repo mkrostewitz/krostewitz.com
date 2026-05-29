@@ -51,7 +51,9 @@ const ContactSection = () => {
 
     async function loadProfile() {
       try {
-        const response = await fetch("/api/content/profile", {cache: "no-store"});
+        const response = await fetch("/api/content/profile", {
+          cache: "no-store",
+        });
         const data = await response.json().catch(() => ({}));
 
         if (!cancelled && response.ok) {
@@ -129,10 +131,10 @@ const ContactSection = () => {
               </a>
               <a
                 className={styles.contactLink}
-                href="mailto:mathias@krostewitz.com"
+                href={`mailto:${process.env.APPLE_MAIL_TO}`}
               >
                 <span>{t("contact.emailLabel")}</span>
-                <strong>mathias@krostewitz.com</strong>
+                <strong>{process.env.APPLE_MAIL_TO}</strong>
               </a>
               {address && (
                 <address className={styles.contactAddress}>
@@ -212,8 +214,12 @@ const ContactSection = () => {
               <button
                 type="button"
                 className={styles.modalClose}
-                aria-label={t("contact.form.close", {defaultValue: closeLabelDefault})}
-                title={t("contact.form.close", {defaultValue: closeLabelDefault})}
+                aria-label={t("contact.form.close", {
+                  defaultValue: closeLabelDefault,
+                })}
+                title={t("contact.form.close", {
+                  defaultValue: closeLabelDefault,
+                })}
                 onClick={() => setIsModalOpen(false)}
               >
                 <X aria-hidden="true" size={20} strokeWidth={2.3} />
@@ -221,263 +227,273 @@ const ContactSection = () => {
             </div>
 
             {phase === "form" && (
-          <Formik
-            initialValues={{name: "", email: "", message: ""}}
-            validationSchema={contactSchema}
-            onSubmit={async (values, {setSubmitting, resetForm, setStatus}) => {
-              setStatus(null);
-              setApiMessage(null);
-              try {
-                const res = await fetch("/api/contact", {
-                  method: "POST",
-                  headers: {"Content-Type": "application/json"},
-                  body: JSON.stringify(values),
-                });
+              <Formik
+                initialValues={{name: "", email: "", message: ""}}
+                validationSchema={contactSchema}
+                onSubmit={async (
+                  values,
+                  {setSubmitting, resetForm, setStatus},
+                ) => {
+                  setStatus(null);
+                  setApiMessage(null);
+                  try {
+                    const res = await fetch("/api/contact", {
+                      method: "POST",
+                      headers: {"Content-Type": "application/json"},
+                      body: JSON.stringify(values),
+                    });
 
-                const data = await res.json().catch(() => ({}));
-                if (!res.ok) {
-                  logApiError("/api/contact", res, data);
-                  const message =
-                    (data.errorCode && t(data.errorCode)) ||
-                    data.error ||
-                    t("contact.form.errorGeneric");
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok) {
+                      logApiError("/api/contact", res, data);
+                      const message =
+                        (data.errorCode && t(data.errorCode)) ||
+                        data.error ||
+                        t("contact.form.errorGeneric");
 
-                  if (res.status === 409 || res.status === 400) {
-                    setStatus({state: "error", message});
-                    return;
+                      if (res.status === 409 || res.status === 400) {
+                        setStatus({state: "error", message});
+                        return;
+                      }
+
+                      throw new Error(message);
+                    }
+
+                    if (data.status === "verify_required") {
+                      setPendingEmail(values.email);
+                      setPendingName(values.name);
+                      setPhase("verify");
+                      setApiMessage(t("contact.form.verifySent"));
+                      return;
+                    }
+
+                    setStatus({state: "sent"});
+                    resetForm();
+                  } catch (err) {
+                    console.error("Contact submit error", err);
+                    setStatus({
+                      state: "error",
+                      message: err.message || t("contact.form.errorGeneric"),
+                    });
+                  } finally {
+                    setSubmitting(false);
                   }
-
-                  throw new Error(message);
-                }
-
-                if (data.status === "verify_required") {
-                  setPendingEmail(values.email);
-                  setPendingName(values.name);
-                  setPhase("verify");
-                  setApiMessage(t("contact.form.verifySent"));
-                  return;
-                }
-
-                setStatus({state: "sent"});
-                resetForm();
-              } catch (err) {
-                console.error("Contact submit error", err);
-                setStatus({
-                  state: "error",
-                  message: err.message || t("contact.form.errorGeneric"),
-                });
-              } finally {
-                setSubmitting(false);
-              }
-            }}
-          >
-            {({isSubmitting, status}) => (
-              <Form className={`${styles.formPanel} ${styles.form} ${styles.modalForm}`}>
-                <div className={styles.modalBody}>
-                <div className={styles.fields}>
-                  <label className={styles.field}>
-                    {t("contact.form.name")}
-                    <Field
-                      name="name"
-                      placeholder={t("contact.form.placeholderName")}
-                    />
-                    <ErrorMessage
-                      name="name"
-                      component="span"
-                      className={styles.error}
-                    />
-                  </label>
-                  <label className={styles.field}>
-                    {t("contact.form.email")}
-                    <Field
-                      name="email"
-                      type="email"
-                      placeholder={t("contact.form.placeholderEmail")}
-                    />
-                    <ErrorMessage
-                      name="email"
-                      component="span"
-                      className={styles.error}
-                    />
-                  </label>
-                  <label className={styles.field}>
-                    {t("contact.form.message")}
-                    <Field
-                      as="textarea"
-                      rows="5"
-                      name="message"
-                      placeholder={t("contact.form.placeholderMessage")}
-                    />
-                    <ErrorMessage
-                      name="message"
-                      component="span"
-                      className={styles.error}
-                    />
-                  </label>
-                </div>
-
-                <div className={styles.formFooter}>
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className={`primary ${styles.submitButton}`}
+                }}
+              >
+                {({isSubmitting, status}) => (
+                  <Form
+                    className={`${styles.formPanel} ${styles.form} ${styles.modalForm}`}
                   >
-                    {isSubmitting
-                      ? t("contact.form.sending")
-                      : t("contact.form.submit")}
-                  </button>
-                  {status?.state === "sent" && (
-                    <p className={`${styles.notice} ${styles.success}`}>
-                      {t("contact.form.success")}
-                    </p>
-                  )}
-                  {status?.state === "error" && (
-                    <p className={`${styles.notice} ${styles.error}`}>
-                      {status.message}
-                    </p>
-                  )}
-                  {apiMessage && (
-                    <p className={`${styles.notice} ${styles.success}`}>
-                      {apiMessage}
-                    </p>
-                  )}
-                </div>
-                </div>
-              </Form>
-            )}
-          </Formik>
+                    <div className={styles.modalBody}>
+                      <div className={styles.fields}>
+                        <label className={styles.field}>
+                          {t("contact.form.name")}
+                          <Field
+                            name="name"
+                            placeholder={t("contact.form.placeholderName")}
+                          />
+                          <ErrorMessage
+                            name="name"
+                            component="span"
+                            className={styles.error}
+                          />
+                        </label>
+                        <label className={styles.field}>
+                          {t("contact.form.email")}
+                          <Field
+                            name="email"
+                            type="email"
+                            placeholder={t("contact.form.placeholderEmail")}
+                          />
+                          <ErrorMessage
+                            name="email"
+                            component="span"
+                            className={styles.error}
+                          />
+                        </label>
+                        <label className={styles.field}>
+                          {t("contact.form.message")}
+                          <Field
+                            as="textarea"
+                            rows="5"
+                            name="message"
+                            placeholder={t("contact.form.placeholderMessage")}
+                          />
+                          <ErrorMessage
+                            name="message"
+                            component="span"
+                            className={styles.error}
+                          />
+                        </label>
+                      </div>
+
+                      <div className={styles.formFooter}>
+                        <button
+                          type="submit"
+                          disabled={isSubmitting}
+                          className={`primary ${styles.submitButton}`}
+                        >
+                          {isSubmitting
+                            ? t("contact.form.sending")
+                            : t("contact.form.submit")}
+                        </button>
+                        {status?.state === "sent" && (
+                          <p className={`${styles.notice} ${styles.success}`}>
+                            {t("contact.form.success")}
+                          </p>
+                        )}
+                        {status?.state === "error" && (
+                          <p className={`${styles.notice} ${styles.error}`}>
+                            {status.message}
+                          </p>
+                        )}
+                        {apiMessage && (
+                          <p className={`${styles.notice} ${styles.success}`}>
+                            {apiMessage}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </Form>
+                )}
+              </Formik>
             )}
 
             {phase === "verify" && (
-          <Formik
-            initialValues={{code: ""}}
-            validationSchema={verifySchema}
-            onSubmit={async (values, {setSubmitting, setStatus}) => {
-              setStatus(null);
-              setApiMessage(null);
-              try {
-                const res = await fetch("/api/contact/verify", {
-                  method: "POST",
-                  headers: {"Content-Type": "application/json"},
-                  body: JSON.stringify({
-                    email: pendingEmail,
-                    code: values.code,
-                  }),
-                });
-                const data = await res.json().catch(() => ({}));
+              <Formik
+                initialValues={{code: ""}}
+                validationSchema={verifySchema}
+                onSubmit={async (values, {setSubmitting, setStatus}) => {
+                  setStatus(null);
+                  setApiMessage(null);
+                  try {
+                    const res = await fetch("/api/contact/verify", {
+                      method: "POST",
+                      headers: {"Content-Type": "application/json"},
+                      body: JSON.stringify({
+                        email: pendingEmail,
+                        code: values.code,
+                      }),
+                    });
+                    const data = await res.json().catch(() => ({}));
 
-                if (!res.ok) {
-                  logApiError("/api/contact/verify", res, data);
-                  const message =
-                    (data.errorCode && t(data.errorCode)) ||
-                    data.error ||
-                    t("contact.form.errorGeneric");
-                  if (res.status === 400 || res.status === 404) {
-                    setStatus({state: "error", message});
-                    return;
+                    if (!res.ok) {
+                      logApiError("/api/contact/verify", res, data);
+                      const message =
+                        (data.errorCode && t(data.errorCode)) ||
+                        data.error ||
+                        t("contact.form.errorGeneric");
+                      if (res.status === 400 || res.status === 404) {
+                        setStatus({state: "error", message});
+                        return;
+                      }
+                      throw new Error(message);
+                    }
+
+                    setPhase("success");
+                    setApiMessage(t("contact.form.verifySuccess"));
+                  } catch (err) {
+                    console.error("Contact verify error", err);
+                    setStatus({
+                      state: "error",
+                      message: err.message || t("contact.form.errorGeneric"),
+                    });
+                  } finally {
+                    setSubmitting(false);
                   }
-                  throw new Error(message);
-                }
-
-                setPhase("success");
-                setApiMessage(t("contact.form.verifySuccess"));
-              } catch (err) {
-                console.error("Contact verify error", err);
-                setStatus({
-                  state: "error",
-                  message:
-                    err.message || t("contact.form.errorGeneric"),
-                });
-              } finally {
-                setSubmitting(false);
-              }
-            }}
-          >
-            {({isSubmitting, status}) => (
-              <Form className={`${styles.formPanel} ${styles.form} ${styles.modalForm}`}>
-                <div className={styles.modalBody}>
-                <div className={styles.formHeader}>
-                  <p className={styles.kicker}>
-                    {t("contact.form.verifyEyebrow")}
-                  </p>
-                  <h3>{t("contact.form.verifyTitle")}</h3>
-                  <p>
-                    {t("contact.form.verifyPrompt", {
-                      name: pendingName,
-                      email: pendingEmail,
-                    })}
-                  </p>
-                </div>
-                <label className={styles.field}>
-                  {t("contact.form.verifyCodeLabel")}
-                  <Field
-                    name="code"
-                    placeholder={t("contact.form.verifyCodePlaceholder")}
-                    maxLength="6"
-                  />
-                  <ErrorMessage
-                    name="code"
-                    component="span"
-                    className={styles.error}
-                  />
-                </label>
-                <div className={styles.actionsRow}>
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className={`primary ${styles.submitButton}`}
+                }}
+              >
+                {({isSubmitting, status}) => (
+                  <Form
+                    className={`${styles.formPanel} ${styles.form} ${styles.modalForm}`}
                   >
-                    {t("contact.form.verifySubmit")}
-                  </button>
-                  <button
-                    type="button"
-                    className={`secondary ${styles.submitButton}`}
-                    onClick={() => {
-                      setPhase("form");
-                      setApiMessage(null);
-                    }}
-                  >
-                    {t("contact.form.verifyEdit")}
-                  </button>
-                </div>
-                {status?.state === "error" && (
-                  <p className={`${styles.notice} ${styles.error}`}>
-                    {status.message}
-                  </p>
+                    <div className={styles.modalBody}>
+                      <div className={styles.formHeader}>
+                        <p className={styles.kicker}>
+                          {t("contact.form.verifyEyebrow")}
+                        </p>
+                        <h3>{t("contact.form.verifyTitle")}</h3>
+                        <p>
+                          {t("contact.form.verifyPrompt", {
+                            name: pendingName,
+                            email: pendingEmail,
+                          })}
+                        </p>
+                      </div>
+                      <label className={styles.field}>
+                        {t("contact.form.verifyCodeLabel")}
+                        <Field
+                          name="code"
+                          placeholder={t("contact.form.verifyCodePlaceholder")}
+                          maxLength="6"
+                        />
+                        <ErrorMessage
+                          name="code"
+                          component="span"
+                          className={styles.error}
+                        />
+                      </label>
+                      <div className={styles.actionsRow}>
+                        <button
+                          type="submit"
+                          disabled={isSubmitting}
+                          className={`primary ${styles.submitButton}`}
+                        >
+                          {t("contact.form.verifySubmit")}
+                        </button>
+                        <button
+                          type="button"
+                          className={`secondary ${styles.submitButton}`}
+                          onClick={() => {
+                            setPhase("form");
+                            setApiMessage(null);
+                          }}
+                        >
+                          {t("contact.form.verifyEdit")}
+                        </button>
+                      </div>
+                      {status?.state === "error" && (
+                        <p className={`${styles.notice} ${styles.error}`}>
+                          {status.message}
+                        </p>
+                      )}
+                      {apiMessage && (
+                        <p className={`${styles.notice} ${styles.success}`}>
+                          {apiMessage}
+                        </p>
+                      )}
+                    </div>
+                  </Form>
                 )}
-                {apiMessage && (
-                  <p className={`${styles.notice} ${styles.success}`}>
-                    {apiMessage}
-                  </p>
-                )}
-                </div>
-              </Form>
-            )}
-          </Formik>
+              </Formik>
             )}
 
             {phase === "success" && (
-          <div className={`${styles.formPanel} ${styles.successBlock} ${styles.modalForm}`}>
-            <div className={styles.modalBody}>
-            <p className={styles.kicker}>{t("contact.form.successEyebrow")}</p>
-            <h3>{t("contact.form.successTitle")}</h3>
-            <p className={`${styles.notice} ${styles.success}`}>
-              {t("contact.form.verifySuccess")}
-            </p>
-            <button
-              type="button"
-              className={`primary ${styles.submitButton}`}
-              onClick={() => {
-                setPhase("form");
-                setPendingName("");
-                setPendingEmail("");
-                setApiMessage(null);
-              }}
-            >
-              {t("contact.form.sendAnother")}
-            </button>
-            </div>
-          </div>
+              <div
+                className={`${styles.formPanel} ${styles.successBlock} ${styles.modalForm}`}
+              >
+                <div className={styles.modalBody}>
+                  <p className={styles.kicker}>
+                    {t("contact.form.successEyebrow")}
+                  </p>
+                  <h3>{t("contact.form.successTitle")}</h3>
+                  <p className={`${styles.notice} ${styles.success}`}>
+                    {t("contact.form.verifySuccess")}
+                  </p>
+                  <button
+                    type="button"
+                    className={`primary ${styles.submitButton}`}
+                    onClick={() => {
+                      setPhase("form");
+                      setPendingName("");
+                      setPendingEmail("");
+                      setApiMessage(null);
+                    }}
+                  >
+                    {t("contact.form.sendAnother")}
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         </div>

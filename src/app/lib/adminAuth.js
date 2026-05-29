@@ -133,7 +133,10 @@ function normalizeAdminUser(user) {
     password: user.password || "",
     passwordHash: user.passwordHash || "",
     totpSecret: user.totpSecret || "",
-    issuer: user.totpIssuer || "krostewitz.com",
+    issuer:
+      user.totpIssuer ||
+      process.env.AUTH_BASE_URL ||
+      process.env.NEXT_PUBLIC_SITE_URL,
   };
 }
 
@@ -217,7 +220,7 @@ async function verifyScryptPassword(password, storedHash) {
       (error, derivedKey) => {
         if (error) reject(error);
         else resolve(derivedKey.toString("base64url"));
-      }
+      },
     );
   });
 
@@ -315,7 +318,10 @@ export function verifyTotp(code, secret, options = {}) {
 export function createTotpUri(admin, secret = admin?.totpSecret) {
   if (!admin?.email || !secret) return "";
 
-  const issuer = admin.issuer || "krostewitz.com";
+  const issuer =
+    admin.issuer ||
+    process.env.AUTH_BASE_URL ||
+    process.env.NEXT_PUBLIC_SITE_URL;
   const label = `${issuer}:${admin.email}`;
   const params = new URLSearchParams({
     secret: normalizeBase32(secret),
@@ -410,7 +416,7 @@ export async function verifyAuthChallenge(challengeId, code) {
 
   await challenges.updateOne(
     {_id: challenge._id},
-    {$inc: {attempts: 1}, $set: {updatedAt: new Date()}}
+    {$inc: {attempts: 1}, $set: {updatedAt: new Date()}},
   );
 
   const verified =
@@ -422,7 +428,7 @@ export async function verifyAuthChallenge(challengeId, code) {
 
   const result = await challenges.updateOne(
     {_id: challenge._id, verifiedAt: {$exists: false}},
-    {$set: {verifiedAt: new Date()}}
+    {$set: {verifiedAt: new Date()}},
   );
 
   if (result.modifiedCount !== 1) return null;
@@ -453,7 +459,7 @@ export async function verifyMagicLinkChallenge(challengeId, token) {
 
   await challenges.updateOne(
     {_id: challenge._id},
-    {$inc: {attempts: 1}, $set: {updatedAt: new Date()}}
+    {$inc: {attempts: 1}, $set: {updatedAt: new Date()}},
   );
 
   const tokenHash = hashToken(token);
@@ -463,7 +469,7 @@ export async function verifyMagicLinkChallenge(challengeId, token) {
 
   const result = await challenges.updateOne(
     {_id: challenge._id, consumedAt: {$exists: false}},
-    {$set: {consumedAt: new Date(), verifiedAt: new Date()}}
+    {$set: {consumedAt: new Date(), verifiedAt: new Date()}},
   );
 
   if (result.modifiedCount !== 1) return null;

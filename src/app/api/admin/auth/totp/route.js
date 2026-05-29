@@ -53,7 +53,7 @@ async function updateUserDocument(email, update) {
         ...(update.$set || {}),
         updatedAt: new Date(),
       },
-    }
+    },
   );
 }
 
@@ -77,7 +77,7 @@ export async function POST(request) {
   if (!admin) return unauthorizedResponse();
 
   const secret = generateTotpSecret();
-  const issuer = admin.issuer || "krostewitz.com";
+  const issuer = admin.issuer || process.env.ADMIN_TOTP_ISSUER;
   const otpauthUrl = createTotpUri({...admin, issuer}, secret);
 
   await updateUserDocument(admin.email, {
@@ -113,11 +113,12 @@ export async function PUT(request) {
   if (!pendingSecret || !verifyTotp(code, pendingSecret)) {
     return NextResponse.json(
       {error: "Invalid authenticator code."},
-      {status: 400}
+      {status: 400},
     );
   }
 
-  const issuer = user.pendingTotpIssuer || admin.issuer || "krostewitz.com";
+  const issuer =
+    user.pendingTotpIssuer || admin.issuer || process.env.ADMIN_TOTP_ISSUER;
 
   await updateUserDocument(admin.email, {
     $set: {

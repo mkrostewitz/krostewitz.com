@@ -18,7 +18,7 @@ export default function AdminHeader({active, user}) {
   return (
     <header className={styles.header}>
       <div className={styles.brand}>
-        <strong>krostewitz.com admin</strong>
+        <strong>{process.env.NEXT_PUBLIC_SITE_ABBREVIATION}</strong>
         <span className={styles.muted}>{user?.email}</span>
       </div>
 

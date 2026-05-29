@@ -17,12 +17,15 @@ import {
 export const runtime = "nodejs";
 
 function invalidLogin() {
-  return NextResponse.json({error: "Invalid email or password."}, {status: 401});
+  return NextResponse.json(
+    {error: "Invalid email or password."},
+    {status: 401},
+  );
 }
 
 function getConfiguredSecondFactors(admin) {
   return getAvailableSecondFactors(admin).filter(
-    (method) => method !== "email" || isAppleMailConfigured()
+    (method) => method !== "email" || isAppleMailConfigured(),
   );
 }
 
@@ -31,9 +34,12 @@ export async function POST(request) {
     return NextResponse.json({error: "Invalid request origin."}, {status: 403});
   }
 
-  const {email, password, method, intent = "credentials"} = await request
-    .json()
-    .catch(() => ({}));
+  const {
+    email,
+    password,
+    method,
+    intent = "credentials",
+  } = await request.json().catch(() => ({}));
   const requestedEmail = String(email || "")
     .trim()
     .toLowerCase();
@@ -44,7 +50,7 @@ export async function POST(request) {
   if (!isPasswordSignInConfigured(admin)) {
     return NextResponse.json(
       {error: "Password sign-in is not configured."},
-      {status: 500}
+      {status: 500},
     );
   }
 
@@ -55,7 +61,7 @@ export async function POST(request) {
   if (methods.length === 0) {
     return NextResponse.json(
       {error: "No second factor is configured."},
-      {status: 500}
+      {status: 500},
     );
   }
 
@@ -75,7 +81,7 @@ export async function POST(request) {
     console.error("Admin auth challenge error", error);
     return NextResponse.json(
       {error: "Admin authentication is not fully configured."},
-      {status: 500}
+      {status: 500},
     );
   }
 
@@ -84,7 +90,7 @@ export async function POST(request) {
     if (!transporter) {
       return NextResponse.json(
         {error: "Email transport is not configured."},
-        {status: 500}
+        {status: 500},
       );
     }
 
@@ -92,14 +98,14 @@ export async function POST(request) {
       await transporter.sendMail({
         from: getDefaultSender(),
         to: admin.email,
-        subject: "Your krostewitz.com admin sign-in code",
+        subject: `Your ${process.env.NEXT_PUBLIC_SITE_URL} admin sign-in code`,
         text: `Your admin sign-in code is ${challenge.code}.\n\nThis code expires in 10 minutes. If you did not request it, change your password immediately.`,
       });
     } catch (error) {
       console.error("Admin auth email error", error);
       return NextResponse.json(
         {error: "Unable to send verification email."},
-        {status: 500}
+        {status: 500},
       );
     }
   }

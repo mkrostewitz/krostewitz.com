@@ -20,9 +20,7 @@ function normalizeEmail(email) {
 
 function getAuthBaseUrl(request) {
   const configured =
-    process.env.AUTH_BASE_URL ||
-    process.env.SITE_URL ||
-    process.env.NEXT_PUBLIC_SITE_URL;
+    process.env.AUTH_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL;
 
   if (configured) {
     const value = configured.trim().replace(/\/+$/, "");
@@ -61,7 +59,7 @@ export async function POST(request) {
   if (!transporter) {
     return NextResponse.json(
       {error: "Email transport is not configured."},
-      {status: 500}
+      {status: 500},
     );
   }
 
@@ -72,7 +70,7 @@ export async function POST(request) {
     console.error("Admin magic link challenge error", error);
     return NextResponse.json(
       {error: "Admin authentication is not fully configured."},
-      {status: 500}
+      {status: 500},
     );
   }
 
@@ -82,14 +80,14 @@ export async function POST(request) {
     await transporter.sendMail({
       from: getDefaultSender(),
       to: admin.email,
-      subject: "Your krostewitz.com admin sign-in link",
-      text: `Open this link to sign in to krostewitz.com admin:\n\n${link}\n\nThis link expires in 15 minutes and can only be used once. If you did not request it, change your password immediately.`,
+      subject: `Your ${process.env.AUTH_BASE_URL} admin sign-in link`,
+      text: `Open this link to sign in to ${process.env.AUTH_BASE_URL} admin:\n\n${link}\n\nThis link expires in 15 minutes and can only be used once. If you did not request it, change your password immediately.`,
     });
   } catch (error) {
     console.error("Admin magic link email error", error);
     return NextResponse.json(
       {error: "Unable to send magic link email."},
-      {status: 500}
+      {status: 500},
     );
   }
 

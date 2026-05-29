@@ -46,7 +46,7 @@ The `_id: "admin"` field marks that user as allowed to access the admin area. Yo
 Required or recommended for email links:
 
 - `APPLE_MAIL_FROM` defaults to `APPLE_MAIL_USER` if omitted
-- `AUTH_BASE_URL` should be the public site origin in production, for example `https://krostewitz.com`. It defaults to the current request origin in development.
+- `AUTH_BASE_URL` should be the public site origin in production, for example `https://domainname.com`. It defaults to the current request origin in development.
 
 ## Language detection
 
@@ -94,7 +94,7 @@ The portfolio section loads repository metadata from `/api/github/projects`.
 
 - Select the visible repositories in `/admin/github-portfolio`.
 - `GITHUB_USERNAME` controls the default GitHub owner before GitHub Portfolio settings are saved. It defaults to `mkrostewitz`.
-- `GITHUB_PORTFOLIO_REPOS` is an optional comma-separated bootstrap list, for example `krostewitz.com,owner/another-repo` or full GitHub URLs.
+- `GITHUB_PORTFOLIO_REPOS` is an optional comma-separated bootstrap list, for example `domainname.com,owner/another-repo` or full GitHub URLs.
 - `GITHUB_TOKEN` is optional, but recommended for private repositories and higher GitHub API rate limits.
 
 If no repositories are selected, the public portfolio section shows no projects.

@@ -24,7 +24,7 @@ export default function LoginForm() {
 
   const visibleMethods = useMemo(
     () => METHODS.filter((item) => availableMethods.includes(item.id)),
-    [availableMethods]
+    [availableMethods],
   );
 
   async function submitCredentials(event) {
@@ -165,7 +165,9 @@ export default function LoginForm() {
     <div className={styles.loginPanel}>
       <div className={styles.titleBlock}>
         <h1>Admin sign in</h1>
-        <p className={styles.muted}>Access post management for krostewitz.com.</p>
+        <p className={styles.muted}>
+          Access post management for {process.env.NEXT_PUBLIC_SITE_NAME}.
+        </p>
       </div>
 
       {phase === "credentials" ? (
