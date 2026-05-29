@@ -1,0 +1,7 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  # Preserves existing scanner exceptions and adds known non-secret deployment values.
+  SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_MAPBOX_TOKEN,APPLE_MAIL_APP_PASSWORD,APPLE_MAIL_FROM,APPLE_MAIL_TO,APPLE_MAIL_USER,DO_SPACES_UPLOAD_PREFIX,AUTH_BASE_URL"
