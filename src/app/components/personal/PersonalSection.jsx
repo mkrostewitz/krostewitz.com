@@ -33,6 +33,7 @@ const COMPASS_TICKS = Array.from({length: 24}, (_, index) => {
   };
 });
 const WIND_REFRESH_MS = 5 * 60 * 1000;
+const WATER_TEMPERATURE_REFRESH_MS = 15 * 60 * 1000;
 const WEBCAM_REFRESH_MS = 3 * 60 * 1000;
 const KNOT_TO_METERS_PER_SECOND = 0.514444;
 const WIND_FLOW_TIME_SCALE = 10 * 60;
@@ -526,6 +527,13 @@ function formatForecastHour(value, language) {
   }).format(new Date(Date.UTC(year, month - 1, day, hour, minute)));
 }
 
+function formatGkdReadingTime(value) {
+  if (!value) return "--";
+
+  const [, timePart] = value.split(" ");
+  return timePart || value;
+}
+
 function readHourlyForecast(entry, currentTime) {
   const hourly = entry.hourly;
   const times = Array.isArray(hourly?.time) ? hourly.time : [];
@@ -671,6 +679,10 @@ const PersonalSection = () => {
   const [webcamAvailable, setWebcamAvailable] = useState(true);
   const [windMapHover, setWindMapHover] = useState(null);
   const [cloudPatternOpen, setCloudPatternOpen] = useState(false);
+  const [waterTemperatureReport, setWaterTemperatureReport] = useState({
+    data: null,
+    status: "loading",
+  });
   const [windReport, setWindReport] = useState({
     error: null,
     points: [],
@@ -697,9 +709,19 @@ const PersonalSection = () => {
   const pressure = station?.pressure;
   const temperature = station?.temperature;
   const weatherCode = station?.weatherCode;
+  const waterTemperature = waterTemperatureReport.data?.value;
   const cloudCoverValue = cloudCover == null ? "--" : `${Math.round(cloudCover)}%`;
   const pressureValue = pressure == null ? "--" : `${Math.round(pressure)} hPa`;
   const temperatureValue = temperature == null ? "--" : `${temperature.toFixed(1)} °C`;
+  const waterTemperatureValue =
+    waterTemperature == null ? "--" : `${waterTemperature.toFixed(1)} °C`;
+  const waterTemperatureMeta = waterTemperatureReport.data?.time
+    ? t("sailing.waterTemperatureUpdated", {
+        time: waterTemperatureReport.data.time,
+      })
+    : waterTemperatureReport.status === "loading"
+      ? t("sailing.waterTemperatureLoading")
+      : t("sailing.waterTemperatureUnavailable");
   const weatherIconType = getWeatherIconType(weatherCode, cloudCover);
   const weatherIconClass =
     {
@@ -719,6 +741,24 @@ const PersonalSection = () => {
   const stationForecast = station?.forecast ?? [];
   const forecastLabel = t("sailing.forecast");
   const noForecastLabel = t("sailing.noForecast");
+  const metricForecastRows = stationForecast
+    .slice(0, HOVER_FORECAST_HOURS)
+    .map((forecast) => ({
+      pressure:
+        forecast.pressure == null ? "--" : `${Math.round(forecast.pressure)} hPa`,
+      temperature:
+        forecast.temperature == null ? "--" : `${forecast.temperature.toFixed(1)} °C`,
+      time: formatForecastHour(forecast.time, i18n.language),
+    }));
+  const waterTemperatureRows = (
+    waterTemperatureReport.data?.readings ?? []
+  )
+    .slice(0, HOVER_FORECAST_HOURS)
+    .map((reading) => ({
+      temperature:
+        reading.value == null ? "--" : `${Number(reading.value).toFixed(1)} °C`,
+      time: formatGkdReadingTime(reading.time),
+    }));
   const forecastRows = stationForecast
     .slice(0, HOVER_FORECAST_HOURS)
     .map((forecast) => {
@@ -793,13 +833,19 @@ const PersonalSection = () => {
 
     return {
       cloudCover: `${cloudValue}%`,
-      height: `${10 + cloudValue * 0.34}px`,
+      iconClass:
+        {
+          cloud: styles.cloudPatternIconCloud,
+          partly: styles.cloudPatternIconPartly,
+          rain: styles.cloudPatternIconRain,
+          sun: styles.cloudPatternIconSun,
+        }[getWeatherIconType(forecast.weatherCode, forecast.cloudCover)] ??
+        styles.cloudPatternIconCloud,
       key: `${forecast.time}-${index}`,
       time:
         index === 0 && currentCloudForecast
           ? t("sailing.now")
           : formatForecastHour(forecast.time, i18n.language),
-      tint: (0.32 + cloudValue * 0.0048).toFixed(2),
     };
   });
   const cloudPatternToggleLabel = cloudPatternOpen
@@ -813,6 +859,15 @@ const PersonalSection = () => {
   const compassTooltip = forecastRows.length
     ? `${forecastLabel} ${t("sailing.windDirection")}: ${directionForecast}`
     : `${forecastLabel}: ${noForecastLabel}`;
+  const temperatureTooltip = metricForecastRows.length
+    ? `${forecastLabel} ${t("sailing.temperature")}`
+    : `${forecastLabel}: ${noForecastLabel}`;
+  const pressureTooltip = metricForecastRows.length
+    ? `${forecastLabel} ${t("sailing.airPressure")}`
+    : `${forecastLabel}: ${noForecastLabel}`;
+  const waterTemperatureTooltip = waterTemperatureRows.length
+    ? `${t("sailing.recentMeasurements")} ${t("sailing.waterTemperature")}`
+    : `${t("sailing.recentMeasurements")}: ${noForecastLabel}`;
   const mapWindReports = useMemo(
     () =>
       allWindReports.map((report) => ({
@@ -1066,6 +1121,58 @@ const PersonalSection = () => {
   }, []);
 
   useEffect(() => {
+    const controller = new AbortController();
+    let active = true;
+
+    async function loadWaterTemperature() {
+      setWaterTemperatureReport((currentReport) => ({
+        ...currentReport,
+        status: currentReport.data ? "refreshing" : "loading",
+      }));
+
+      try {
+        const response = await fetch("/api/water-temperature", {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        const payload = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(
+            payload.error || `Water temperature responded with ${response.status}`,
+          );
+        }
+
+        if (!active) return;
+
+        setWaterTemperatureReport({
+          data: payload.waterTemperature ?? null,
+          status: "ready",
+        });
+      } catch (error) {
+        if (error?.name === "AbortError" || !active) return;
+
+        setWaterTemperatureReport((currentReport) => ({
+          ...currentReport,
+          status: "error",
+        }));
+      }
+    }
+
+    void loadWaterTemperature();
+    const interval = window.setInterval(
+      loadWaterTemperature,
+      WATER_TEMPERATURE_REFRESH_MS,
+    );
+
+    return () => {
+      active = false;
+      controller.abort();
+      window.clearInterval(interval);
+    };
+  }, []);
+
+  useEffect(() => {
     const interval = window.setInterval(() => {
       setWebcamTick(Date.now());
     }, WEBCAM_REFRESH_MS);
@@ -1296,13 +1403,102 @@ const PersonalSection = () => {
               onPointerUp={handleWindMapPointerUp}
             />
             <div className={`${styles.weatherOverlay} ${styles.weatherOverlayTop}`}>
-              <div className={styles.weatherBox}>
+              <div
+                className={`${styles.weatherBox} ${styles.weatherBoxInteractive}`}
+                role="img"
+                aria-label={temperatureTooltip}
+                tabIndex={0}
+              >
                 <span>{t("sailing.temperature")}</span>
                 <strong>{temperatureValue}</strong>
+                <div
+                  className={`${styles.forecastTooltip} ${styles.weatherForecastTooltip}`}
+                  aria-hidden
+                >
+                  <strong>{forecastLabel}</strong>
+                  {metricForecastRows.length ? (
+                    <div className={`${styles.forecastTable} ${styles.forecastTableCompact}`}>
+                      <span>{t("sailing.forecastTime")}</span>
+                      <span>{t("sailing.temperature")}</span>
+                      {metricForecastRows.map((forecast) => (
+                        <span
+                          key={`temperature-forecast-${forecast.time}`}
+                          className={styles.forecastRow}
+                        >
+                          <span>{forecast.time}</span>
+                          <span>{forecast.temperature}</span>
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className={styles.forecastEmpty}>{noForecastLabel}</span>
+                  )}
+                </div>
               </div>
-              <div className={styles.weatherBox}>
+              <div
+                className={`${styles.weatherBox} ${styles.weatherBoxWater} ${styles.weatherBoxInteractive}`}
+                role="img"
+                aria-label={waterTemperatureTooltip}
+                tabIndex={0}
+              >
+                <span>{t("sailing.waterTemperature")}</span>
+                <strong>{waterTemperatureValue}</strong>
+                <small>{waterTemperatureMeta}</small>
+                <div
+                  className={`${styles.forecastTooltip} ${styles.weatherForecastTooltip}`}
+                  aria-hidden
+                >
+                  <strong>{t("sailing.recentMeasurements")}</strong>
+                  {waterTemperatureRows.length ? (
+                    <div className={`${styles.forecastTable} ${styles.forecastTableCompact}`}>
+                      <span>{t("sailing.forecastTime")}</span>
+                      <span>{t("sailing.waterTemperature")}</span>
+                      {waterTemperatureRows.map((reading) => (
+                        <span
+                          key={`water-temperature-reading-${reading.time}`}
+                          className={styles.forecastRow}
+                        >
+                          <span>{reading.time}</span>
+                          <span>{reading.temperature}</span>
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className={styles.forecastEmpty}>{noForecastLabel}</span>
+                  )}
+                </div>
+              </div>
+              <div
+                className={`${styles.weatherBox} ${styles.weatherBoxInteractive}`}
+                role="img"
+                aria-label={pressureTooltip}
+                tabIndex={0}
+              >
                 <span>{t("sailing.airPressure")}</span>
                 <strong>{pressureValue}</strong>
+                <div
+                  className={`${styles.forecastTooltip} ${styles.weatherForecastTooltip}`}
+                  aria-hidden
+                >
+                  <strong>{forecastLabel}</strong>
+                  {metricForecastRows.length ? (
+                    <div className={`${styles.forecastTable} ${styles.forecastTableCompact}`}>
+                      <span>{t("sailing.forecastTime")}</span>
+                      <span>{t("sailing.airPressure")}</span>
+                      {metricForecastRows.map((forecast) => (
+                        <span
+                          key={`pressure-forecast-${forecast.time}`}
+                          className={styles.forecastRow}
+                        >
+                          <span>{forecast.time}</span>
+                          <span>{forecast.pressure}</span>
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className={styles.forecastEmpty}>{noForecastLabel}</span>
+                  )}
+                </div>
               </div>
             </div>
             <div className={`${styles.weatherOverlay} ${styles.weatherOverlayBottom}`}>
@@ -1346,13 +1542,13 @@ const PersonalSection = () => {
                         {cloudPatternRows.map((forecast) => (
                           <span key={forecast.key} className={styles.cloudPatternPoint}>
                             <span
-                              className={styles.cloudPatternBar}
+                              className={`${styles.cloudPatternIcon} ${forecast.iconClass}`}
                               aria-hidden
-                              style={{
-                                "--cloud-alpha": forecast.tint,
-                                "--cloud-height": forecast.height,
-                              }}
-                            />
+                            >
+                              <span />
+                              <span />
+                              <span />
+                            </span>
                             <span>{forecast.time}</span>
                             <small>{forecast.cloudCover}</small>
                           </span>
@@ -1533,8 +1729,16 @@ const PersonalSection = () => {
         </div>
 
         <div className={styles.sourceRow}>
+          <span>{t("sailing.sources")}</span>
           <a href="https://open-meteo.com/en/docs" target="_blank" rel="noreferrer">
             {t("sailing.source")}
+          </a>
+          <a
+            href="https://www.gkd.bayern.de/de/seen/wassertemperatur/inn/stock-18400503/messwerte/tabelle"
+            target="_blank"
+            rel="noreferrer"
+          >
+            {t("sailing.waterSource")}
           </a>
         </div>
       </div>

@@ -163,6 +163,7 @@
 
 .weatherOverlay {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   left: 14px;
   pointer-events: none;
@@ -174,6 +175,10 @@
 .weatherOverlayTop {
   justify-content: space-between;
   top: 14px;
+}
+
+.weatherOverlayTop .weatherBox {
+  flex: 0 1 150px;
 }
 
 .weatherOverlayBottom {
@@ -191,6 +196,16 @@
   gap: 3px;
   min-width: 138px;
   padding: 9px 10px;
+  position: relative;
+}
+
+.weatherBoxInteractive {
+  pointer-events: auto;
+}
+
+.weatherBoxInteractive:focus-visible {
+  outline: 2px solid rgba(125, 210, 255, 0.65);
+  outline-offset: 4px;
 }
 
 .weatherBox > span:not(.weatherBoxHeader):not(.weatherValueRow):not(.cloudPattern),
@@ -228,6 +243,10 @@
 .weatherBoxWide {
   max-width: min(380px, 100%);
   min-width: 250px;
+}
+
+.weatherBoxWater {
+  min-width: 156px;
 }
 
 .cloudForecastToggle {
@@ -281,41 +300,128 @@
 }
 
 .cloudPatternBars {
-  align-items: end;
+  align-items: center;
   display: grid;
-  gap: 4px;
+  gap: 6px;
   grid-auto-columns: minmax(0, 1fr);
   grid-auto-flow: column;
-  min-height: 64px;
   min-width: 0;
 }
 
 .cloudPatternPoint {
-  align-items: end;
+  align-items: center;
   display: grid;
   gap: 3px;
-  grid-template-rows: 40px auto auto;
+  grid-template-rows: 34px auto auto;
   justify-items: center;
   min-width: 0;
 }
 
-.cloudPatternBar {
-  align-self: end;
-  background: linear-gradient(
-    180deg,
-    rgba(201, 213, 220, var(--cloud-alpha)),
-    rgba(125, 210, 255, var(--cloud-alpha))
-  );
-  border: 1px solid rgba(247, 248, 250, 0.1);
-  border-radius: 999px 999px 4px 4px;
-  box-shadow: 0 0 10px rgba(125, 210, 255, 0.12);
+.cloudPatternIcon {
   display: block;
-  height: var(--cloud-height);
-  min-height: 9px;
-  width: min(13px, 100%);
+  height: 28px;
+  position: relative;
+  width: 36px;
 }
 
-.cloudPatternPoint > span:not(.cloudPatternBar),
+.cloudPatternIcon span {
+  display: block;
+  position: absolute;
+}
+
+.cloudPatternIconSun::before,
+.cloudPatternIconPartly::before {
+  background: #ffb15f;
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(255, 177, 95, 0.42);
+  content: "";
+  height: 15px;
+  left: 4px;
+  position: absolute;
+  top: 4px;
+  width: 15px;
+}
+
+.cloudPatternIconSun::after {
+  border-radius: 50%;
+  box-shadow:
+    0 -9px 0 -6px rgba(255, 177, 95, 0.9),
+    0 9px 0 -6px rgba(255, 177, 95, 0.9),
+    9px 0 0 -6px rgba(255, 177, 95, 0.9),
+    -9px 0 0 -6px rgba(255, 177, 95, 0.9);
+  content: "";
+  height: 15px;
+  left: 4px;
+  position: absolute;
+  top: 4px;
+  width: 15px;
+}
+
+.cloudPatternIconCloud span:nth-child(1),
+.cloudPatternIconPartly span:nth-child(1),
+.cloudPatternIconRain span:nth-child(1) {
+  background: #aab7c0;
+  border-radius: 999px;
+  bottom: 7px;
+  height: 11px;
+  left: 8px;
+  width: 24px;
+  z-index: 2;
+}
+
+.cloudPatternIconCloud span:nth-child(2),
+.cloudPatternIconPartly span:nth-child(2),
+.cloudPatternIconRain span:nth-child(2) {
+  background: #c9d5dc;
+  border-radius: 50%;
+  bottom: 11px;
+  height: 13px;
+  left: 13px;
+  width: 13px;
+  z-index: 2;
+}
+
+.cloudPatternIconCloud span:nth-child(3),
+.cloudPatternIconPartly span:nth-child(3),
+.cloudPatternIconRain span:nth-child(3) {
+  background: #8ca1ad;
+  border-radius: 50%;
+  bottom: 8px;
+  height: 10px;
+  left: 5px;
+  width: 10px;
+  z-index: 2;
+}
+
+.cloudPatternIconPartly span,
+.cloudPatternIconCloud span,
+.cloudPatternIconRain span {
+  filter: drop-shadow(0 0 6px rgba(170, 183, 192, 0.18));
+}
+
+.cloudPatternIconRain::before,
+.cloudPatternIconRain::after {
+  background: var(--wind-map-cyan);
+  border-radius: 999px;
+  box-shadow: 9px 3px 0 rgba(125, 210, 255, 0.76);
+  content: "";
+  height: 8px;
+  position: absolute;
+  top: 19px;
+  transform: rotate(18deg);
+  width: 2px;
+  z-index: 2;
+}
+
+.cloudPatternIconRain::before {
+  left: 10px;
+}
+
+.cloudPatternIconRain::after {
+  left: 20px;
+}
+
+.cloudPatternPoint > span:not(.cloudPatternIcon),
 .cloudPatternPoint small,
 .cloudPatternEmpty {
   color: rgba(170, 183, 192, 0.84);
@@ -595,6 +701,10 @@
   width: 100%;
 }
 
+.forecastTableCompact {
+  grid-template-columns: 48px minmax(0, 1fr);
+}
+
 .forecastTable > span:not(.forecastRow) {
   color: rgba(170, 183, 192, 0.82);
   font-size: 0.62rem;
@@ -637,6 +747,40 @@
 .compassDial:focus-visible .forecastTooltip {
   opacity: 1;
   transform: translate(-50%, -50%) scale(1);
+}
+
+.weatherForecastTooltip {
+  inline-size: min(220px, calc(100vw - 48px));
+  left: 50%;
+  top: calc(100% + 8px);
+  transform: translate(-50%, -4px) scale(0.96);
+}
+
+.weatherBoxInteractive:hover .weatherForecastTooltip,
+.weatherBoxInteractive:focus-visible .weatherForecastTooltip {
+  opacity: 1;
+  transform: translate(-50%, 0) scale(1);
+}
+
+.weatherOverlayTop .weatherBox:first-child .weatherForecastTooltip {
+  left: 0;
+  transform: translate(0, -4px) scale(0.96);
+}
+
+.weatherOverlayTop .weatherBox:first-child:hover .weatherForecastTooltip,
+.weatherOverlayTop .weatherBox:first-child:focus-visible .weatherForecastTooltip {
+  transform: translate(0, 0) scale(1);
+}
+
+.weatherOverlayTop .weatherBox:last-child .weatherForecastTooltip {
+  left: auto;
+  right: 0;
+  transform: translate(0, -4px) scale(0.96);
+}
+
+.weatherOverlayTop .weatherBox:last-child:hover .weatherForecastTooltip,
+.weatherOverlayTop .weatherBox:last-child:focus-visible .weatherForecastTooltip {
+  transform: translate(0, 0) scale(1);
 }
 
 .gaugeDial:focus-visible,
@@ -875,8 +1019,16 @@
   background: var(--surface-subtle);
   border-top: 1px solid var(--border);
   display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
   justify-content: flex-end;
   padding: 10px 14px;
+}
+
+.sourceRow span {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 800;
 }
 
 .sourceRow a,
@@ -992,6 +1144,11 @@
   .weatherBox {
     min-width: 0;
     padding: 8px;
+  }
+
+  .weatherOverlayTop {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .weatherBox strong {
