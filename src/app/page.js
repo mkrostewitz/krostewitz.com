@@ -16,6 +16,7 @@ import ExecutiveSummary from "./components/executive/ExecutiveSection";
 import CvSection from "./components/cv/CvSection";
 import BlogSection from "./components/blog/BlogSection";
 import PortfolioSection from "./components/portfolio/PortfolioSection";
+import PublicFooter from "./components/footer/PublicFooter";
 
 export default function Home() {
   const {t} = useTranslation();
@@ -98,6 +99,7 @@ export default function Home() {
         {/* Contact Me */}
         <ContactSection />
       </main>
+      <PublicFooter />
     </div>
   );
 }
