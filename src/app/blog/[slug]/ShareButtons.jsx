@@ -1,11 +1,12 @@
 "use client";
 
-import {useMemo, useState} from "react";
+import {useMemo} from "react";
 
+import {useSnackbar} from "../../components/snackbar/SnackbarProvider";
 import styles from "./blog-post.module.css";
 
 export default function ShareButtons({title, summary, url}) {
-  const [copyLabel, setCopyLabel] = useState("Copy link");
+  const {showSnackbar} = useSnackbar();
 
   const links = useMemo(() => {
     const encodedUrl = encodeURIComponent(url);
@@ -41,11 +42,9 @@ export default function ShareButtons({title, summary, url}) {
 
     try {
       await navigator.clipboard.writeText(url);
-      setCopyLabel("Copied");
-      window.setTimeout(() => setCopyLabel("Copy link"), 1800);
+      showSnackbar({type: "success", message: "Link copied."});
     } catch {
-      setCopyLabel("Copy failed");
-      window.setTimeout(() => setCopyLabel("Copy link"), 1800);
+      showSnackbar({type: "error", message: "Copy failed."});
     }
   }
 
@@ -65,7 +64,7 @@ export default function ShareButtons({title, summary, url}) {
           </a>
         ))}
         <button type="button" onClick={copyLink}>
-          {copyLabel}
+          Copy link
         </button>
       </div>
     </div>

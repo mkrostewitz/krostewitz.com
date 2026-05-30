@@ -2,6 +2,7 @@
 
 import {useEffect, useState} from "react";
 
+import {useSnackbar} from "../../components/snackbar/SnackbarProvider";
 import AdminHeader from "../AdminHeader";
 import styles from "../admin.module.css";
 
@@ -41,11 +42,8 @@ function normalizeForm(settings = {}) {
 }
 
 export default function AiSettingsManager({user}) {
+  const {closeSnackbar, showSnackbar} = useSnackbar();
   const [form, setForm] = useState(EMPTY_FORM);
-  const [status, setStatus] = useState({
-    type: "message",
-    text: "Loading AI settings...",
-  });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -65,11 +63,11 @@ export default function AiSettingsManager({user}) {
 
         if (!cancelled) {
           setForm(normalizeForm(data.settings));
-          setStatus(null);
+          closeSnackbar();
         }
       } catch (error) {
         if (!cancelled) {
-          setStatus({type: "error", text: error.message});
+          showSnackbar({type: "error", message: error.message});
         }
       } finally {
         if (!cancelled) {
@@ -83,7 +81,7 @@ export default function AiSettingsManager({user}) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [closeSnackbar, showSnackbar]);
 
   function updateField(name, value) {
     setForm((current) => ({
@@ -95,7 +93,7 @@ export default function AiSettingsManager({user}) {
   async function saveSettings(event) {
     event.preventDefault();
     setIsSaving(true);
-    setStatus(null);
+    closeSnackbar();
 
     try {
       const response = await fetch("/api/admin/ai-settings", {
@@ -115,9 +113,9 @@ export default function AiSettingsManager({user}) {
       }
 
       setForm(normalizeForm(data.settings));
-      setStatus({type: "success", text: "AI settings saved."});
+      showSnackbar({type: "success", message: "AI settings saved."});
     } catch (error) {
-      setStatus({type: "error", text: error.message});
+      showSnackbar({type: "error", message: error.message});
     } finally {
       setIsSaving(false);
     }
@@ -219,8 +217,6 @@ export default function AiSettingsManager({user}) {
                 {isSaving ? "Saving..." : "Save settings"}
               </button>
             </div>
-
-            {status && <p className={styles[status.type]}>{status.text}</p>}
           </section>
         </form>
       </main>

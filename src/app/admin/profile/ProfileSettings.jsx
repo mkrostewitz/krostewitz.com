@@ -2,11 +2,12 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import {useEffect, useMemo, useState} from "react";
+import {useEffect, useMemo, useRef, useState} from "react";
 import {useTranslation} from "react-i18next";
 
 import {loadRuntimeTranslations} from "../../../lib/i18n";
 import AddressMap from "../../components/address-map/AddressMap";
+import {useSnackbar} from "../../components/snackbar/SnackbarProvider";
 import AdminHeader from "../AdminHeader";
 import styles from "../admin.module.css";
 
@@ -90,19 +91,15 @@ function normalizeMetadataForm(metadata = {}) {
   };
 }
 
-function getStatusText(status, t) {
-  if (!status) return "";
-
-  return status.key ? t(status.key, status.values) : status.text || "";
-}
-
 export default function ProfileSettings({user}) {
   const {t, i18n} = useTranslation(undefined, {keyPrefix: "admin.profile"});
+  const {closeSnackbar, showSnackbar} = useSnackbar();
   const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "";
   const locale = i18n.resolvedLanguage || i18n.language || "en";
   const mapboxLanguage = String(locale).split("-")[0] || "en";
   const coordinatesUnavailableLabel = t("status.coordinatesUnavailable");
   const notSavedLabel = t("status.notSaved");
+  const missingMapboxNoticeShownRef = useRef(false);
   const [profile, setProfile] = useState(EMPTY_PROFILE);
   const [address, setAddress] = useState(null);
   const [addressInput, setAddressInput] = useState("");
@@ -111,12 +108,6 @@ export default function ProfileSettings({user}) {
     normalizeMetadataForm(EMPTY_PROFILE.metadata)
   );
   const [suggestions, setSuggestions] = useState([]);
-  const [status, setStatus] = useState({
-    type: "message",
-    key: "status.loading",
-  });
-  const [visibilityStatus, setVisibilityStatus] = useState(null);
-  const [searchStatus, setSearchStatus] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [uploadingAsset, setUploadingAsset] = useState(null);
@@ -155,13 +146,13 @@ export default function ProfileSettings({user}) {
           setAddressInput(nextProfile.address?.label || "");
           setBlogEnabled(nextProfile.blogEnabled !== false);
           setMetadataForm(normalizeMetadataForm(nextProfile.metadata));
-          setStatus(null);
+          closeSnackbar();
         }
       } catch (error) {
         if (!cancelled) {
-          setStatus({
+          showSnackbar({
             type: "error",
-            text: error.message || t("errors.loadProfile"),
+            message: error.message || t("errors.loadProfile"),
           });
         }
       } finally {
@@ -176,28 +167,30 @@ export default function ProfileSettings({user}) {
     return () => {
       cancelled = true;
     };
-  }, [t]);
+  }, [closeSnackbar, showSnackbar, t]);
 
   useEffect(() => {
     if (!mapboxToken) {
       setSuggestions([]);
-      setSearchStatus({
-        type: "message",
-        key: "status.missingMapboxToken",
-      });
+      if (!missingMapboxNoticeShownRef.current) {
+        showSnackbar({
+          type: "info",
+          message: t("status.missingMapboxToken"),
+        });
+        missingMapboxNoticeShownRef.current = true;
+      }
       return undefined;
     }
 
+    missingMapboxNoticeShownRef.current = false;
+
     if (!canSearch) {
       setSuggestions([]);
-      setSearchStatus(null);
       return undefined;
     }
 
     const controller = new AbortController();
     const timeout = window.setTimeout(async () => {
-      setSearchStatus({type: "message", key: "status.searchingAddresses"});
-
       try {
         const url = new URL(
           `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
@@ -223,18 +216,19 @@ export default function ProfileSettings({user}) {
           .map(mapFeatureToAddress);
 
         setSuggestions(nextSuggestions);
-        setSearchStatus(
-          nextSuggestions.length
-            ? null
-            : {type: "message", key: "status.noMatchingAddresses"}
-        );
+        if (!nextSuggestions.length) {
+          showSnackbar({
+            type: "info",
+            message: t("status.noMatchingAddresses"),
+          });
+        }
       } catch (error) {
         if (error.name === "AbortError") return;
 
         setSuggestions([]);
-        setSearchStatus({
+        showSnackbar({
           type: "error",
-          text: error.message || t("errors.mapboxSearch"),
+          message: error.message || t("errors.mapboxSearch"),
         });
       }
     }, 250);
@@ -243,11 +237,10 @@ export default function ProfileSettings({user}) {
       window.clearTimeout(timeout);
       controller.abort();
     };
-  }, [addressInput, canSearch, mapboxLanguage, mapboxToken, t]);
+  }, [addressInput, canSearch, mapboxLanguage, mapboxToken, showSnackbar, t]);
 
   function handleAddressInput(value) {
     setAddressInput(value);
-    setStatus(null);
 
     if (address && value.trim() !== address.label) {
       setAddress(null);
@@ -258,21 +251,18 @@ export default function ProfileSettings({user}) {
     setAddress(nextAddress);
     setAddressInput(nextAddress.label);
     setSuggestions([]);
-    setSearchStatus(null);
-    setStatus(null);
+    closeSnackbar();
   }
 
   function clearAddress() {
     setAddress(null);
     setAddressInput("");
     setSuggestions([]);
-    setSearchStatus(null);
-    setStatus(null);
+    closeSnackbar();
   }
 
   function handleMetadataInput(field, value) {
     setMetadataForm((current) => ({...current, [field]: value}));
-    setStatus(null);
   }
 
   async function uploadMetadataAsset(
@@ -285,7 +275,7 @@ export default function ProfileSettings({user}) {
 
     const assetLabel = t(labelKey);
     setUploadingAsset(urlField);
-    setStatus(null);
+    closeSnackbar();
 
     try {
       const body = new FormData();
@@ -331,15 +321,14 @@ export default function ProfileSettings({user}) {
 
       setProfile(nextProfile);
       setMetadataForm(normalizeMetadataForm(nextProfile.metadata));
-      setStatus({
+      showSnackbar({
         type: "success",
-        key: "status.assetUploaded",
-        values: {asset: assetLabel},
+        message: t("status.assetUploaded", {asset: assetLabel}),
       });
     } catch (error) {
-      setStatus({
+      showSnackbar({
         type: "error",
-        text: error.message || t("errors.uploadAsset", {asset: assetLabel}),
+        message: error.message || t("errors.uploadAsset", {asset: assetLabel}),
       });
     } finally {
       input.value = "";
@@ -351,7 +340,7 @@ export default function ProfileSettings({user}) {
     const previousValue = blogEnabled;
 
     setBlogEnabled(value);
-    setVisibilityStatus(null);
+    closeSnackbar();
     setIsSaving(true);
 
     try {
@@ -371,18 +360,19 @@ export default function ProfileSettings({user}) {
       setProfile(nextProfile);
       setBlogEnabled(nextProfile.blogEnabled !== false);
       setMetadataForm(normalizeMetadataForm(nextProfile.metadata));
-      setVisibilityStatus({
+      showSnackbar({
         type: "success",
-        key:
+        message: t(
           nextProfile.blogEnabled === false
             ? "status.blogHidden"
-            : "status.blogVisible",
+            : "status.blogVisible"
+        ),
       });
     } catch (error) {
       setBlogEnabled(previousValue);
-      setVisibilityStatus({
+      showSnackbar({
         type: "error",
-        text: error.message || t("errors.saveBlogVisibility"),
+        message: error.message || t("errors.saveBlogVisibility"),
       });
     } finally {
       setIsSaving(false);
@@ -393,15 +383,15 @@ export default function ProfileSettings({user}) {
     event.preventDefault();
 
     if (addressInput.trim() && !address) {
-      setStatus({
+      showSnackbar({
         type: "error",
-        key: "errors.chooseAddress",
+        message: t("errors.chooseAddress"),
       });
       return;
     }
 
     setIsSaving(true);
-    setStatus(null);
+    closeSnackbar();
 
     try {
       const response = await fetch("/api/admin/profile", {
@@ -422,11 +412,11 @@ export default function ProfileSettings({user}) {
       setAddressInput(nextProfile.address?.label || "");
       setBlogEnabled(nextProfile.blogEnabled !== false);
       setMetadataForm(normalizeMetadataForm(nextProfile.metadata));
-      setStatus({type: "success", key: "status.profileSaved"});
+      showSnackbar({type: "success", message: t("status.profileSaved")});
     } catch (error) {
-      setStatus({
+      showSnackbar({
         type: "error",
-        text: error.message || t("errors.saveProfile"),
+        message: error.message || t("errors.saveProfile"),
       });
     } finally {
       setIsSaving(false);
@@ -654,11 +644,6 @@ export default function ProfileSettings({user}) {
                 {blogEnabled ? t("blog.visible") : t("blog.hidden")}
               </span>
             </label>
-            {visibilityStatus && (
-              <p className={styles[visibilityStatus.type]}>
-                {getStatusText(visibilityStatus, t)}
-              </p>
-            )}
           </section>
 
           <section className={styles.profilePanel}>
@@ -709,12 +694,6 @@ export default function ProfileSettings({user}) {
               )}
             </div>
 
-            {searchStatus && (
-              <p className={styles[searchStatus.type]}>
-                {getStatusText(searchStatus, t)}
-              </p>
-            )}
-
             <div className={styles.editorActions}>
               <p className={styles.muted}>
                 {t("fields.lastSaved", {
@@ -735,10 +714,6 @@ export default function ProfileSettings({user}) {
                 </button>
               </div>
             </div>
-
-            {status && (
-              <p className={styles[status.type]}>{getStatusText(status, t)}</p>
-            )}
           </section>
 
           <section className={styles.profilePanel}>

@@ -6,17 +6,18 @@ import {useTranslation} from "react-i18next";
 import * as Yup from "yup";
 
 import AddressMap from "../address-map/AddressMap";
+import {useSnackbar} from "../snackbar/SnackbarProvider";
 import pageStyles from "../../page.module.css";
 import "../../buttons.css";
 import styles from "./contact-section.module.css";
 
 const ContactSection = () => {
   const {i18n, t} = useTranslation();
+  const {closeSnackbar, showSnackbar} = useSnackbar();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [phase, setPhase] = useState("form"); // form | verify | success
   const [pendingEmail, setPendingEmail] = useState("");
   const [pendingName, setPendingName] = useState("");
-  const [apiMessage, setApiMessage] = useState(null);
   const [profile, setProfile] = useState({address: null});
   const logApiError = (endpoint, res, data) => {
     console.warn("Contact API error", {endpoint, status: res.status, data});
@@ -94,7 +95,7 @@ const ContactSection = () => {
     setPhase("form");
     setPendingName("");
     setPendingEmail("");
-    setApiMessage(null);
+    closeSnackbar();
     setIsModalOpen(true);
   }
 
@@ -232,10 +233,9 @@ const ContactSection = () => {
                 validationSchema={contactSchema}
                 onSubmit={async (
                   values,
-                  {setSubmitting, resetForm, setStatus},
+                  {setSubmitting, resetForm},
                 ) => {
-                  setStatus(null);
-                  setApiMessage(null);
+                  closeSnackbar();
                   try {
                     const res = await fetch("/api/contact", {
                       method: "POST",
@@ -252,7 +252,7 @@ const ContactSection = () => {
                         t("contact.form.errorGeneric");
 
                       if (res.status === 409 || res.status === 400) {
-                        setStatus({state: "error", message});
+                        showSnackbar({type: "error", message});
                         return;
                       }
 
@@ -263,16 +263,22 @@ const ContactSection = () => {
                       setPendingEmail(values.email);
                       setPendingName(values.name);
                       setPhase("verify");
-                      setApiMessage(t("contact.form.verifySent"));
+                      showSnackbar({
+                        type: "info",
+                        message: t("contact.form.verifySent"),
+                      });
                       return;
                     }
 
-                    setStatus({state: "sent"});
+                    showSnackbar({
+                      type: "success",
+                      message: t("contact.form.success"),
+                    });
                     resetForm();
                   } catch (err) {
                     console.error("Contact submit error", err);
-                    setStatus({
-                      state: "error",
+                    showSnackbar({
+                      type: "error",
                       message: err.message || t("contact.form.errorGeneric"),
                     });
                   } finally {
@@ -280,7 +286,7 @@ const ContactSection = () => {
                   }
                 }}
               >
-                {({isSubmitting, status}) => (
+                {({isSubmitting}) => (
                   <Form
                     className={`${styles.formPanel} ${styles.form} ${styles.modalForm}`}
                   >
@@ -337,21 +343,6 @@ const ContactSection = () => {
                             ? t("contact.form.sending")
                             : t("contact.form.submit")}
                         </button>
-                        {status?.state === "sent" && (
-                          <p className={`${styles.notice} ${styles.success}`}>
-                            {t("contact.form.success")}
-                          </p>
-                        )}
-                        {status?.state === "error" && (
-                          <p className={`${styles.notice} ${styles.error}`}>
-                            {status.message}
-                          </p>
-                        )}
-                        {apiMessage && (
-                          <p className={`${styles.notice} ${styles.success}`}>
-                            {apiMessage}
-                          </p>
-                        )}
                       </div>
                     </div>
                   </Form>
@@ -363,9 +354,8 @@ const ContactSection = () => {
               <Formik
                 initialValues={{code: ""}}
                 validationSchema={verifySchema}
-                onSubmit={async (values, {setSubmitting, setStatus}) => {
-                  setStatus(null);
-                  setApiMessage(null);
+                onSubmit={async (values, {setSubmitting}) => {
+                  closeSnackbar();
                   try {
                     const res = await fetch("/api/contact/verify", {
                       method: "POST",
@@ -384,18 +374,21 @@ const ContactSection = () => {
                         data.error ||
                         t("contact.form.errorGeneric");
                       if (res.status === 400 || res.status === 404) {
-                        setStatus({state: "error", message});
+                        showSnackbar({type: "error", message});
                         return;
                       }
                       throw new Error(message);
                     }
 
                     setPhase("success");
-                    setApiMessage(t("contact.form.verifySuccess"));
+                    showSnackbar({
+                      type: "success",
+                      message: t("contact.form.verifySuccess"),
+                    });
                   } catch (err) {
                     console.error("Contact verify error", err);
-                    setStatus({
-                      state: "error",
+                    showSnackbar({
+                      type: "error",
                       message: err.message || t("contact.form.errorGeneric"),
                     });
                   } finally {
@@ -403,7 +396,7 @@ const ContactSection = () => {
                   }
                 }}
               >
-                {({isSubmitting, status}) => (
+                {({isSubmitting}) => (
                   <Form
                     className={`${styles.formPanel} ${styles.form} ${styles.modalForm}`}
                   >
@@ -444,24 +437,11 @@ const ContactSection = () => {
                         <button
                           type="button"
                           className={`secondary ${styles.submitButton}`}
-                          onClick={() => {
-                            setPhase("form");
-                            setApiMessage(null);
-                          }}
+                          onClick={() => setPhase("form")}
                         >
                           {t("contact.form.verifyEdit")}
                         </button>
                       </div>
-                      {status?.state === "error" && (
-                        <p className={`${styles.notice} ${styles.error}`}>
-                          {status.message}
-                        </p>
-                      )}
-                      {apiMessage && (
-                        <p className={`${styles.notice} ${styles.success}`}>
-                          {apiMessage}
-                        </p>
-                      )}
                     </div>
                   </Form>
                 )}
@@ -477,9 +457,6 @@ const ContactSection = () => {
                     {t("contact.form.successEyebrow")}
                   </p>
                   <h3>{t("contact.form.successTitle")}</h3>
-                  <p className={`${styles.notice} ${styles.success}`}>
-                    {t("contact.form.verifySuccess")}
-                  </p>
                   <button
                     type="button"
                     className={`primary ${styles.submitButton}`}
@@ -487,7 +464,7 @@ const ContactSection = () => {
                       setPhase("form");
                       setPendingName("");
                       setPendingEmail("");
-                      setApiMessage(null);
+                      closeSnackbar();
                     }}
                   >
                     {t("contact.form.sendAnother")}

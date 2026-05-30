@@ -5,6 +5,7 @@ import {
   getSiteMetadata,
   toNextMetadata,
 } from "./lib/siteProfile";
+import {SnackbarProvider} from "./components/snackbar/SnackbarProvider";
 import "./globals.css";
 
 const gaMeasurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim();
@@ -76,8 +77,11 @@ export default function RootLayout({children}) {
           </>
         ) : null}
       </head>
-      <body suppressHydrationWarning className={`${geistSans.variable} ${geistMono.variable}`}>
-        {children}
+      <body
+        suppressHydrationWarning
+        className={`${geistSans.variable} ${geistMono.variable}`}
+      >
+        <SnackbarProvider>{children}</SnackbarProvider>
       </body>
     </html>
   );

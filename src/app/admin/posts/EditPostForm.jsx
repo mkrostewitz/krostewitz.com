@@ -347,16 +347,14 @@ export default function EditPostForm({
   onSaved,
 }) {
   const router = useRouter();
-  const {showSnackbar} = useSnackbar();
+  const {closeSnackbar, showSnackbar} = useSnackbar();
   const titleRef = useRef("");
   const [form, setForm] = useState(() => createFormFromPost(post));
   const [categoryDraft, setCategoryDraft] = useState("");
-  const [status, setStatus] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isAiWorking, setIsAiWorking] = useState(false);
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
-  const [aiStatus, setAiStatus] = useState(null);
   const [aiForm, setAiForm] = useState({
     mode: "tweak",
     targetLanguage: "en",
@@ -432,7 +430,6 @@ export default function EditPostForm({
   useEffect(() => {
     setForm(createFormFromPost(post));
     setCategoryDraft("");
-    setStatus(null);
   }, [post]);
 
   useEffect(() => {
@@ -571,7 +568,7 @@ export default function EditPostForm({
     if (!file) return;
 
     setIsUploading(true);
-    setStatus(null);
+    closeSnackbar();
 
     try {
       const body = new FormData();
@@ -588,9 +585,9 @@ export default function EditPostForm({
       }
 
       updateField("media", data.asset);
-      setStatus({type: "success", text: "File uploaded."});
+      showSnackbar({type: "success", message: "File uploaded."});
     } catch (error) {
-      setStatus({type: "error", text: error.message});
+      showSnackbar({type: "error", message: error.message});
     } finally {
       input.value = "";
       setIsUploading(false);
@@ -606,16 +603,15 @@ export default function EditPostForm({
     const hasSelectedTarget = Object.values(targetFields).some(Boolean);
 
     if (!hasSelectedTarget) {
-      setAiStatus({
+      showSnackbar({
         type: "error",
-        text: "Select at least one field for the assistant to update.",
+        message: "Select at least one field for the assistant to update.",
       });
       return;
     }
 
     setIsAiWorking(true);
-    setAiStatus(null);
-    setStatus(null);
+    closeSnackbar();
 
     try {
       const response = await fetch("/api/admin/posts/ai", {
@@ -639,12 +635,12 @@ export default function EditPostForm({
 
       applyGeneratedPost(data.post, targetFields);
       setIsAiModalOpen(false);
-      setStatus({
+      showSnackbar({
         type: "success",
-        text: "AI content applied. Review it before saving the post.",
+        message: "AI content applied. Review it before saving the post.",
       });
     } catch (error) {
-      setAiStatus({type: "error", text: error.message});
+      showSnackbar({type: "error", message: error.message});
     } finally {
       setIsAiWorking(false);
     }
@@ -653,7 +649,7 @@ export default function EditPostForm({
   async function savePost(event) {
     event.preventDefault();
     setIsSaving(true);
-    setStatus(null);
+    closeSnackbar();
 
     try {
       const contentHtml = readEditorContent();
@@ -698,7 +694,7 @@ export default function EditPostForm({
         return;
       }
     } catch (error) {
-      setStatus({type: "error", text: error.message});
+      showSnackbar({type: "error", message: error.message});
     } finally {
       setIsSaving(false);
     }
@@ -1042,8 +1038,6 @@ export default function EditPostForm({
               />
             </label>
 
-            {aiStatus && <p className={styles[aiStatus.type]}>{aiStatus.text}</p>}
-
             <div className={styles.modalFooter}>
               <button
                 className={styles.secondaryButton}
@@ -1077,10 +1071,7 @@ export default function EditPostForm({
             className={`${styles.iconButton} ${styles.aiAssistantButton}`}
             title="AI assistant"
             type="button"
-            onClick={() => {
-              setAiStatus(null);
-              setIsAiModalOpen(true);
-            }}
+            onClick={() => setIsAiModalOpen(true)}
           >
             <Sparkles aria-hidden="true" size={18} strokeWidth={2.2} />
           </button>
@@ -1327,8 +1318,6 @@ export default function EditPostForm({
           editor={editor}
         />
       </section>
-
-      {status && <p className={styles[status.type]}>{status.text}</p>}
     </form>
   );
 }

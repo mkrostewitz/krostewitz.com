@@ -2,6 +2,7 @@
 
 import {useEffect, useMemo, useState} from "react";
 
+import {useSnackbar} from "../../components/snackbar/SnackbarProvider";
 import AdminHeader from "../AdminHeader";
 import styles from "../admin.module.css";
 
@@ -27,14 +28,11 @@ function sortRepos(repos, selected) {
 }
 
 export default function GithubPortfolioSettings({user}) {
+  const {closeSnackbar, showSnackbar} = useSnackbar();
   const [username, setUsername] = useState("");
   const [savedSettings, setSavedSettings] = useState(null);
   const [repos, setRepos] = useState([]);
   const [selectedRepos, setSelectedRepos] = useState(new Set());
-  const [status, setStatus] = useState({
-    type: "message",
-    text: "Loading GitHub portfolio...",
-  });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -45,7 +43,7 @@ export default function GithubPortfolioSettings({user}) {
 
   async function loadGithubPortfolio(owner = username) {
     setIsLoading(true);
-    setStatus(null);
+    closeSnackbar();
 
     try {
       const params = owner ? `?username=${encodeURIComponent(owner)}` : "";
@@ -65,12 +63,10 @@ export default function GithubPortfolioSettings({user}) {
       setSelectedRepos(new Set(settings.selectedRepos || []));
 
       if (data.repoError) {
-        setStatus({type: "error", text: data.repoError});
-      } else {
-        setStatus(null);
+        showSnackbar({type: "error", message: data.repoError});
       }
     } catch (error) {
-      setStatus({type: "error", text: error.message});
+      showSnackbar({type: "error", message: error.message});
     } finally {
       setIsLoading(false);
     }
@@ -99,7 +95,7 @@ export default function GithubPortfolioSettings({user}) {
   async function saveGithubPortfolio(event) {
     event.preventDefault();
     setIsSaving(true);
-    setStatus(null);
+    closeSnackbar();
 
     try {
       const response = await fetch("/api/admin/github-portfolio", {
@@ -118,9 +114,12 @@ export default function GithubPortfolioSettings({user}) {
 
       setSavedSettings(data.settings);
       setSelectedRepos(new Set(data.settings?.selectedRepos || []));
-      setStatus({type: "success", text: "GitHub portfolio selection saved."});
+      showSnackbar({
+        type: "success",
+        message: "GitHub portfolio selection saved.",
+      });
     } catch (error) {
-      setStatus({type: "error", text: error.message});
+      showSnackbar({type: "error", message: error.message});
     } finally {
       setIsSaving(false);
     }
@@ -182,8 +181,6 @@ export default function GithubPortfolioSettings({user}) {
                 {isSaving ? "Saving..." : "Save selection"}
               </button>
             </div>
-
-            {status && <p className={styles[status.type]}>{status.text}</p>}
           </section>
 
           <section className={styles.portfolioPanel}>

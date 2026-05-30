@@ -3,6 +3,7 @@
 import {useMemo, useState} from "react";
 import {useRouter} from "next/navigation";
 
+import {useSnackbar} from "../../components/snackbar/SnackbarProvider";
 import styles from "../admin.module.css";
 
 const METHODS = [
@@ -12,6 +13,7 @@ const METHODS = [
 
 export default function LoginForm() {
   const router = useRouter();
+  const {closeSnackbar, showSnackbar} = useSnackbar();
   const [phase, setPhase] = useState("credentials");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -19,7 +21,6 @@ export default function LoginForm() {
   const [availableMethods, setAvailableMethods] = useState(["email"]);
   const [challengeId, setChallengeId] = useState("");
   const [code, setCode] = useState("");
-  const [status, setStatus] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const visibleMethods = useMemo(
@@ -30,7 +31,7 @@ export default function LoginForm() {
   async function submitCredentials(event) {
     event.preventDefault();
     setIsSubmitting(true);
-    setStatus(null);
+    closeSnackbar();
 
     try {
       const response = await fetch("/api/admin/auth/login", {
@@ -47,12 +48,12 @@ export default function LoginForm() {
       setAvailableMethods(data.methods || ["email"]);
       setMethod((data.methods || ["email"])[0] || "email");
       setPhase("secondFactor");
-      setStatus({
-        type: "message",
-        text: "Password accepted. Choose a second factor to continue.",
+      showSnackbar({
+        type: "info",
+        message: "Password accepted. Choose a second factor to continue.",
       });
     } catch (error) {
-      setStatus({type: "error", text: error.message});
+      showSnackbar({type: "error", message: error.message});
     } finally {
       setIsSubmitting(false);
     }
@@ -60,7 +61,7 @@ export default function LoginForm() {
 
   async function startSecondFactor(nextMethod) {
     setIsSubmitting(true);
-    setStatus(null);
+    closeSnackbar();
     setMethod(nextMethod);
 
     try {
@@ -85,15 +86,15 @@ export default function LoginForm() {
       setMethod(data.method);
       setCode("");
       setPhase("verify");
-      setStatus({
-        type: "message",
-        text:
+      showSnackbar({
+        type: "info",
+        message:
           data.method === "email"
             ? "A verification code was sent to the configured admin email."
             : "Enter the current code from your authenticator app.",
       });
     } catch (error) {
-      setStatus({type: "error", text: error.message});
+      showSnackbar({type: "error", message: error.message});
     } finally {
       setIsSubmitting(false);
     }
@@ -102,7 +103,7 @@ export default function LoginForm() {
   async function submitVerification(event) {
     event.preventDefault();
     setIsSubmitting(true);
-    setStatus(null);
+    closeSnackbar();
 
     try {
       const response = await fetch("/api/admin/auth/verify", {
@@ -119,7 +120,7 @@ export default function LoginForm() {
       router.replace("/admin/posts");
       router.refresh();
     } catch (error) {
-      setStatus({type: "error", text: error.message});
+      showSnackbar({type: "error", message: error.message});
     } finally {
       setIsSubmitting(false);
     }
@@ -127,12 +128,12 @@ export default function LoginForm() {
 
   async function requestMagicLink() {
     if (!email.trim()) {
-      setStatus({type: "error", text: "Enter the admin email first."});
+      showSnackbar({type: "error", message: "Enter the admin email first."});
       return;
     }
 
     setIsSubmitting(true);
-    setStatus(null);
+    closeSnackbar();
 
     try {
       const response = await fetch("/api/admin/auth/magic-link", {
@@ -146,9 +147,12 @@ export default function LoginForm() {
         throw new Error(data.error || "Unable to send magic link.");
       }
 
-      setStatus(null);
+      showSnackbar({
+        type: "success",
+        message: "Magic link sent to the configured admin email.",
+      });
     } catch (error) {
-      setStatus({type: "error", text: error.message});
+      showSnackbar({type: "error", message: error.message});
     } finally {
       setIsSubmitting(false);
     }
@@ -158,7 +162,7 @@ export default function LoginForm() {
     setPhase("credentials");
     setCode("");
     setChallengeId("");
-    setStatus(null);
+    closeSnackbar();
   }
 
   return (
@@ -268,8 +272,6 @@ export default function LoginForm() {
           </div>
         </form>
       )}
-
-      {status && <p className={styles[status.type]}>{status.text}</p>}
     </div>
   );
 }

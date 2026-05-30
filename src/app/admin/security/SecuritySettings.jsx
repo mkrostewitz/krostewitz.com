@@ -2,14 +2,15 @@
 
 import {useEffect, useState} from "react";
 
+import {useSnackbar} from "../../components/snackbar/SnackbarProvider";
 import AdminHeader from "../AdminHeader";
 import styles from "../admin.module.css";
 
 export default function SecuritySettings({user}) {
+  const {closeSnackbar, showSnackbar} = useSnackbar();
   const [settings, setSettings] = useState(null);
   const [setup, setSetup] = useState(null);
   const [code, setCode] = useState("");
-  const [status, setStatus] = useState({type: "message", text: "Loading..."});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -28,10 +29,10 @@ export default function SecuritySettings({user}) {
 
         if (!cancelled) {
           setSettings(data);
-          setStatus(null);
+          closeSnackbar();
         }
       } catch (error) {
-        if (!cancelled) setStatus({type: "error", text: error.message});
+        if (!cancelled) showSnackbar({type: "error", message: error.message});
       }
     }
 
@@ -40,11 +41,11 @@ export default function SecuritySettings({user}) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [closeSnackbar, showSnackbar]);
 
   async function startSetup() {
     setIsSubmitting(true);
-    setStatus(null);
+    closeSnackbar();
 
     try {
       const response = await fetch("/api/admin/auth/totp", {method: "POST"});
@@ -57,7 +58,7 @@ export default function SecuritySettings({user}) {
       setSetup(data);
       setCode("");
     } catch (error) {
-      setStatus({type: "error", text: error.message});
+      showSnackbar({type: "error", message: error.message});
     } finally {
       setIsSubmitting(false);
     }
@@ -66,7 +67,7 @@ export default function SecuritySettings({user}) {
   async function verifySetup(event) {
     event.preventDefault();
     setIsSubmitting(true);
-    setStatus(null);
+    closeSnackbar();
 
     try {
       const response = await fetch("/api/admin/auth/totp", {
@@ -87,12 +88,12 @@ export default function SecuritySettings({user}) {
       }));
       setSetup(null);
       setCode("");
-      setStatus({
+      showSnackbar({
         type: "success",
-        text: "Authenticator sign-in is enabled.",
+        message: "Authenticator sign-in is enabled.",
       });
     } catch (error) {
-      setStatus({type: "error", text: error.message});
+      showSnackbar({type: "error", message: error.message});
     } finally {
       setIsSubmitting(false);
     }
@@ -100,7 +101,7 @@ export default function SecuritySettings({user}) {
 
   async function disableTotp() {
     setIsSubmitting(true);
-    setStatus(null);
+    closeSnackbar();
 
     try {
       const response = await fetch("/api/admin/auth/totp", {
@@ -115,12 +116,12 @@ export default function SecuritySettings({user}) {
       setSettings((current) => ({...current, enabled: false}));
       setSetup(null);
       setCode("");
-      setStatus({
+      showSnackbar({
         type: "success",
-        text: "Authenticator sign-in is disabled.",
+        message: "Authenticator sign-in is disabled.",
       });
     } catch (error) {
-      setStatus({type: "error", text: error.message});
+      showSnackbar({type: "error", message: error.message});
     } finally {
       setIsSubmitting(false);
     }
@@ -189,7 +190,7 @@ export default function SecuritySettings({user}) {
                       onClick={() => {
                         setSetup(null);
                         setCode("");
-                        setStatus(null);
+                        closeSnackbar();
                       }}
                     >
                       Cancel
@@ -220,8 +221,6 @@ export default function SecuritySettings({user}) {
                 )}
               </div>
             )}
-
-            {status && <p className={styles[status.type]}>{status.text}</p>}
           </div>
         </section>
       </main>

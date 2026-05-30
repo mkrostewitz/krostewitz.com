@@ -2,6 +2,7 @@
 
 import {useEffect, useState} from "react";
 
+import {useSnackbar} from "../../components/snackbar/SnackbarProvider";
 import AdminHeader from "../AdminHeader";
 import styles from "../admin.module.css";
 
@@ -37,12 +38,9 @@ function formatBytes(value) {
 }
 
 export default function CvManager({user}) {
+  const {closeSnackbar, showSnackbar} = useSnackbar();
   const [downloads, setDownloads] = useState({});
   const [uploadingLanguage, setUploadingLanguage] = useState("");
-  const [status, setStatus] = useState({
-    type: "message",
-    text: "Loading CV files...",
-  });
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -59,11 +57,11 @@ export default function CvManager({user}) {
 
         if (!cancelled) {
           setDownloads(data.downloads || {});
-          setStatus(null);
+          closeSnackbar();
         }
       } catch (error) {
         if (!cancelled) {
-          setStatus({type: "error", text: error.message});
+          showSnackbar({type: "error", message: error.message});
         }
       } finally {
         if (!cancelled) {
@@ -77,7 +75,7 @@ export default function CvManager({user}) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [closeSnackbar, showSnackbar]);
 
   async function uploadCv(event, language) {
     const input = event.currentTarget;
@@ -85,7 +83,7 @@ export default function CvManager({user}) {
     if (!file) return;
 
     setUploadingLanguage(language);
-    setStatus(null);
+    closeSnackbar();
 
     try {
       const body = new FormData();
@@ -103,9 +101,9 @@ export default function CvManager({user}) {
       }
 
       setDownloads(data.downloads || {});
-      setStatus({type: "success", text: "CV file uploaded."});
+      showSnackbar({type: "success", message: "CV file uploaded."});
     } catch (error) {
-      setStatus({type: "error", text: error.message});
+      showSnackbar({type: "error", message: error.message});
     } finally {
       input.value = "";
       setUploadingLanguage("");
@@ -181,8 +179,6 @@ export default function CvManager({user}) {
             );
           })}
         </div>
-
-        {status && <p className={styles[status.type]}>{status.text}</p>}
       </main>
     </div>
   );

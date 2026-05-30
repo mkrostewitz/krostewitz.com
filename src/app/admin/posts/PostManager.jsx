@@ -3,6 +3,7 @@
 import Link from "next/link";
 import {useEffect, useMemo, useState} from "react";
 
+import {useSnackbar} from "../../components/snackbar/SnackbarProvider";
 import AdminHeader from "../AdminHeader";
 import styles from "../admin.module.css";
 
@@ -36,11 +37,8 @@ function getCategoryKey(category) {
 }
 
 export default function PostManager({user}) {
+  const {closeSnackbar, showSnackbar} = useSnackbar();
   const [posts, setPosts] = useState([]);
-  const [status, setStatus] = useState({
-    type: "message",
-    text: "Loading posts...",
-  });
   const [isLoading, setIsLoading] = useState(true);
 
   const counts = useMemo(
@@ -69,11 +67,11 @@ export default function PostManager({user}) {
 
         if (!cancelled) {
           setPosts(data.posts || []);
-          setStatus(null);
+          closeSnackbar();
         }
       } catch (error) {
         if (!cancelled) {
-          setStatus({type: "error", text: error.message});
+          showSnackbar({type: "error", message: error.message});
         }
       } finally {
         if (!cancelled) {
@@ -87,7 +85,7 @@ export default function PostManager({user}) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [closeSnackbar, showSnackbar]);
 
   return (
     <div className={styles.shell}>
@@ -192,8 +190,6 @@ export default function PostManager({user}) {
                 <p className={styles.postListEmpty}>No posts yet.</p>
               )}
             </div>
-
-            {status && <p className={styles[status.type]}>{status.text}</p>}
           </section>
         </div>
       </main>
