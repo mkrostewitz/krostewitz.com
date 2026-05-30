@@ -12,6 +12,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1053.0",
     "@tiptap/extension-link": "^3.23.6",
+    "@tiptap/extension-table": "^3.23.6",
     "@tiptap/extension-underline": "^3.23.6",
     "@tiptap/react": "^3.23.6",
     "@tiptap/starter-kit": "^3.23.6",

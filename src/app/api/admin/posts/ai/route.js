@@ -19,6 +19,12 @@ const SUPPORTED_LANGUAGES = {
 
 const SUPPORTED_MODES = new Set(["create", "tweak", "translate"]);
 
+const DEFAULT_TARGET_FIELDS = {
+  title: true,
+  summary: true,
+  contentHtml: true,
+};
+
 const OUTPUT_SCHEMA = {
   type: "object",
   additionalProperties: false,
@@ -34,7 +40,7 @@ const OUTPUT_SCHEMA = {
     contentHtml: {
       type: "string",
       description:
-        "Safe rich-text HTML using only basic article tags, no markdown fences.",
+        "Safe rich-text HTML using article tags and tables, no markdown fences.",
     },
   },
   required: ["title", "summary", "contentHtml"],
@@ -94,6 +100,32 @@ function normalizeLanguage(value) {
   return SUPPORTED_LANGUAGES[language] ? language : "en";
 }
 
+function normalizeTargetFields(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return DEFAULT_TARGET_FIELDS;
+  }
+
+  return {
+    title: value.title === true,
+    summary: value.summary === true,
+    contentHtml: value.contentHtml === true || value.content === true,
+  };
+}
+
+function hasTargetField(targetFields) {
+  return Object.values(targetFields).some(Boolean);
+}
+
+function getTargetFieldNames(targetFields) {
+  return [
+    targetFields.title ? "title" : "",
+    targetFields.summary ? "summary" : "",
+    targetFields.contentHtml ? "contentHtml" : "",
+  ]
+    .filter(Boolean)
+    .join(", ");
+}
+
 function getRequestOrigin(request) {
   return (
     process.env.NEXT_PUBLIC_SITE_URL ||
@@ -151,14 +183,14 @@ function buildInstruction(mode, targetLanguage, agentInstructions) {
   ].join(" ");
 
   if (mode === "create") {
-    return `${base} Create a polished portfolio blog post in ${languageName}. Use clear executive language, concrete structure, and safe HTML.`;
+    return `${base} Create a polished portfolio blog post in ${languageName}. Use clear executive language, concrete structure, and safe HTML. Use all supplied post fields as context, and only generate or rewrite the selected output fields.`;
   }
 
   if (mode === "translate") {
-    return `${base} Translate the supplied post into ${languageName}. Preserve meaning, tone, formatting, links, and HTML structure.`;
+    return `${base} Translate the supplied post into ${languageName}. Preserve meaning, tone, formatting, links, and HTML structure. Use all supplied post fields as context, and only translate the selected output fields.`;
   }
 
-  return `${base} Improve the supplied post in ${languageName}. Apply the user's instructions while preserving the author's voice, safe HTML, and article structure.`;
+  return `${base} Improve the supplied post in ${languageName}. Apply the user's instructions while preserving the author's voice, safe HTML, and article structure. Use all supplied post fields as context, and only rewrite the selected output fields.`;
 }
 
 async function createOpenAiResponse(apiKey, requestBody) {
@@ -180,6 +212,7 @@ async function runOpenAiPostEdit({
   targetLanguage,
   prompt,
   post,
+  targetFields,
   model,
   temperature,
   agentInstructions,
@@ -194,12 +227,17 @@ async function runOpenAiPostEdit({
         targetLanguage,
         targetLanguageName: SUPPORTED_LANGUAGES[targetLanguage],
         userInstructions: prompt,
+        targetFields,
+        selectedFields: getTargetFieldNames(targetFields),
         hasCvContext: cvFileInputs.length > 0,
         post,
         outputRules: [
+          "Use all supplied post fields as context, including fields that are not selected.",
+          "Only create or rewrite fields where targetFields is true.",
+          "For fields where targetFields is false, copy the original supplied value unchanged.",
           "title and summary must be plain text.",
           "contentHtml must be valid article HTML.",
-          "Allowed contentHtml tags: p, br, strong, em, u, s, h2, h3, h4, ul, ol, li, blockquote, a, code, pre, hr, div, span.",
+          "Allowed contentHtml tags: p, br, strong, em, u, s, h2, h3, h4, ul, ol, li, blockquote, a, code, pre, hr, table, tbody, thead, tfoot, tr, th, td, colgroup, col, div, span.",
           "Do not include scripts, inline event handlers, markdown, or code fences.",
         ],
       }),
@@ -277,8 +315,16 @@ export async function POST(request) {
     const body = await request.json().catch(() => ({}));
     const mode = normalizeMode(body.mode);
     const targetLanguage = normalizeLanguage(body.targetLanguage);
+    const targetFields = normalizeTargetFields(body.targetFields);
     const prompt = clampText(body.prompt, 4000);
     const existingContent = cleanText(body.contentHtml, 100000);
+
+    if (!hasTargetField(targetFields)) {
+      return NextResponse.json(
+        {error: "Select at least one field for the assistant to update."},
+        {status: 400}
+      );
+    }
 
     if (mode === "create" && !prompt) {
       return NextResponse.json(
@@ -287,9 +333,14 @@ export async function POST(request) {
       );
     }
 
-    if (mode !== "create" && !existingContent && !cleanText(body.title, 200)) {
+    if (
+      mode !== "create" &&
+      !existingContent &&
+      !cleanText(body.title, 200) &&
+      !cleanText(body.summary, 260)
+    ) {
       return NextResponse.json(
-        {error: "Add post content before using this AI action."},
+        {error: "Add a title, summary, or content before using this AI action."},
         {status: 400}
       );
     }
@@ -302,6 +353,7 @@ export async function POST(request) {
       mode,
       targetLanguage,
       prompt,
+      targetFields,
       model: aiSettings.model,
       temperature: aiSettings.temperature,
       agentInstructions: aiSettings.agentInstructions,

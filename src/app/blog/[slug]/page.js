@@ -1,15 +1,16 @@
 /* eslint-disable @next/next/no-img-element */
 
-import Link from "next/link";
 import {notFound} from "next/navigation";
 
 import NavBar from "../../components/nav/nav";
+import PublicFooter from "../../components/footer/PublicFooter";
 import {getPublishedPostBySlug} from "../../lib/posts";
 import {
   getDefaultSiteMetadata,
   getSiteMetadata,
   isBlogEnabled,
 } from "../../lib/siteProfile";
+import BlogBackLink from "./BlogBackLink";
 import styles from "./blog-post.module.css";
 import ShareButtons from "./ShareButtons";
 
@@ -112,9 +113,7 @@ export default async function BlogPostPage({params}) {
       <NavBar />
 
       <main className={styles.main}>
-        <Link className={styles.backLink} href="/#blog">
-          Back to blog
-        </Link>
+        <BlogBackLink />
 
         <article className={styles.article}>
           <header className={styles.header}>
@@ -159,6 +158,7 @@ export default async function BlogPostPage({params}) {
           />
         </article>
       </main>
+      <PublicFooter />
     </div>
   );
 }

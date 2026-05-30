@@ -29,6 +29,15 @@ const RICH_TEXT_TAGS = [
   "code",
   "pre",
   "hr",
+  "table",
+  "tbody",
+  "thead",
+  "tfoot",
+  "tr",
+  "th",
+  "td",
+  "colgroup",
+  "col",
   "div",
   "span",
 ];
@@ -96,6 +105,26 @@ export function sanitizePostHtml(value) {
     allowedTags: RICH_TEXT_TAGS,
     allowedAttributes: {
       a: ["href", "name", "target", "rel"],
+      table: ["style"],
+      col: ["style"],
+      th: ["colspan", "rowspan", "colwidth", "style"],
+      td: ["colspan", "rowspan", "colwidth", "style"],
+    },
+    allowedStyles: {
+      table: {
+        width: [/^\d+(?:\.\d+)?px$/, /^\d+(?:\.\d+)?%$/],
+        "min-width": [/^\d+(?:\.\d+)?px$/],
+      },
+      col: {
+        width: [/^\d+(?:\.\d+)?px$/, /^\d+(?:\.\d+)?%$/],
+        "min-width": [/^\d+(?:\.\d+)?px$/],
+      },
+      th: {
+        "text-align": [/^(left|center|right)$/],
+      },
+      td: {
+        "text-align": [/^(left|center|right)$/],
+      },
     },
     allowedSchemes: ["http", "https", "mailto", "tel"],
     transformTags: {
@@ -136,6 +165,17 @@ function slugify(value) {
   return slug || "post";
 }
 
+function hasOwnProperty(object, key) {
+  return Object.prototype.hasOwnProperty.call(object, key);
+}
+
+function normalizePostSlugInput(input = {}) {
+  if (!hasOwnProperty(input, "slug")) return undefined;
+
+  const rawSlug = String(input.slug || "").trim();
+  return rawSlug ? slugify(rawSlug) : "";
+}
+
 function normalizeCategorySlug(value) {
   const rawValue = String(value || "").trim();
   return rawValue ? slugify(rawValue) : "";
@@ -157,6 +197,16 @@ async function generateUniqueSlug(db, title, excludeId = null) {
 
     candidate = `${baseSlug}-${suffix}`;
     suffix += 1;
+  }
+}
+
+async function assertUniqueSlug(db, slug, excludeId = null) {
+  const posts = getPostsCollection(db);
+  const query = excludeId ? {slug, _id: {$ne: excludeId}} : {slug};
+  const existing = await posts.findOne(query, {projection: {_id: 1}});
+
+  if (existing) {
+    throw new PostValidationError("That post slug is already in use.", 409);
   }
 }
 
@@ -197,6 +247,25 @@ function normalizeCategories(value) {
   }
 
   return categories;
+}
+
+function normalizePublishedAt(input = {}) {
+  if (!hasOwnProperty(input, "publishedAt")) return undefined;
+
+  if (
+    input.publishedAt === null ||
+    String(input.publishedAt || "").trim() === ""
+  ) {
+    return null;
+  }
+
+  const date = new Date(input.publishedAt);
+
+  if (Number.isNaN(date.getTime())) {
+    throw new PostValidationError("Published date is invalid.");
+  }
+
+  return date;
 }
 
 function normalizeMedia(value) {
@@ -240,11 +309,13 @@ function normalizePostInput(input = {}) {
 
   return {
     title,
+    slug: normalizePostSlugInput(input),
     status,
     summary: cleanText(input.summary || contentText, 260),
     categories: normalizeCategories(input.categories),
     contentHtml,
     media: normalizeMedia(input.media),
+    publishedAt: normalizePublishedAt(input),
   };
 }
 
@@ -311,15 +382,26 @@ export async function createPost(input, user) {
   const posts = getPostsCollection(db);
   const normalized = normalizePostInput(input);
   const now = new Date();
-  const slug = await generateUniqueSlug(db, normalized.title);
+  const slug = normalized.slug || (await generateUniqueSlug(db, normalized.title));
+
+  if (normalized.slug) {
+    await assertUniqueSlug(db, slug);
+  }
+
   const document = {
-    ...normalized,
+    title: normalized.title,
     slug,
+    status: normalized.status,
+    summary: normalized.summary,
+    categories: normalized.categories,
+    contentHtml: normalized.contentHtml,
+    media: normalized.media,
     authorEmail: user?.email || null,
     updatedBy: user?.email || null,
     createdAt: now,
     updatedAt: now,
-    publishedAt: normalized.status === "published" ? now : null,
+    publishedAt:
+      normalized.status === "published" ? normalized.publishedAt || now : null,
   };
 
   const result = await posts.insertOne(document);
@@ -343,15 +425,36 @@ export async function updatePost(postId, input, user) {
   const normalized = normalizePostInput(input);
   const now = new Date();
   const update = {
-    ...normalized,
+    title: normalized.title,
+    status: normalized.status,
+    summary: normalized.summary,
+    categories: normalized.categories,
+    contentHtml: normalized.contentHtml,
+    media: normalized.media,
     updatedAt: now,
     updatedBy: user?.email || null,
   };
 
-  if (normalized.status === "published" && existing.status !== "published") {
+  if (normalized.slug !== undefined) {
+    const slug =
+      normalized.slug || (await generateUniqueSlug(db, normalized.title, _id));
+    await assertUniqueSlug(db, slug, _id);
+    update.slug = slug;
+  }
+
+  if (normalized.publishedAt !== undefined) {
+    update.publishedAt = normalized.publishedAt;
+  } else if (
+    normalized.status === "published" &&
+    existing.status !== "published"
+  ) {
     update.publishedAt = now;
   } else if (normalized.status !== "published" && !existing.publishedAt) {
     update.publishedAt = null;
+  }
+
+  if (normalized.status === "published" && !update.publishedAt) {
+    update.publishedAt = existing.publishedAt || now;
   }
 
   const result = await posts.findOneAndUpdate(
