@@ -170,6 +170,10 @@
       "windGusts": "Gusts",
       "windDirection": "Wind from",
       "temperature": "Temperature",
+      "waterTemperature": "Water temp",
+      "waterTemperatureLoading": "Loading GKD",
+      "waterTemperatureUnavailable": "GKD unavailable",
+      "waterTemperatureUpdated": "Stock · {{time}}",
       "airPressure": "Air pressure",
       "cloudDevelopment": "Cloud development",
       "cloudCover": "cloud cover",
@@ -189,11 +193,14 @@
       },
       "forecast": "Forecast",
       "forecastTime": "Time",
+      "recentMeasurements": "Recent readings",
       "noForecast": "No forecast available",
       "updated": "Updated {{time}}",
       "loading": "Loading wind data",
       "error": "Wind data is unavailable right now.",
+      "sources": "Sources",
       "source": "Open-Meteo",
+      "waterSource": "GKD Bayern",
       "windMapAlt": "Animated map of current wind patterns around Chiemsee",
       "webcamTitle": "CYC Prien webcam",
       "webcamSubtitle": "Near-live view from the Chiemsee Yacht Club jetty.",
@@ -382,7 +389,8 @@
     ],
     "empty": "Professional notes, sailing logs, and cooking experiments will appear here as they are published.",
     "emptyFiltered": "No published posts match this category yet.",
-    "readMore": "Read more"
+    "readMore": "Read more",
+    "backToBlog": "Back to blog"
   },
   "contact": {
     "eyebrow": "Contact",
@@ -433,6 +441,136 @@
         "message": "Please add a bit more detail.",
         "code": "Enter the 6-digit code.",
         "codeRequired": "The verification code is required."
+      }
+    }
+  },
+  "notFound": {
+    "metaTitle": "Page not found",
+    "eyebrow": "404 / Not found",
+    "title": "This page is not available.",
+    "lead": "The address may have changed, the post may be unpublished, or the link may contain a typo. Start from the homepage or jump to the most useful sections below.",
+    "actionsLabel": "404 page navigation",
+    "actions": {
+      "home": "Home",
+      "blog": "Blog",
+      "contact": "Contact"
+    },
+    "visual": {
+      "status": "Route missing"
+    }
+  },
+  "footer": {
+    "legalLabel": "Legal links",
+    "impressum": "Impressum",
+    "privacy": "Privacy policy"
+  },
+  "legal": {
+    "fields": {
+      "email": "Email",
+      "phone": "Phone",
+      "website": "Website",
+      "vatId": "VAT ID",
+      "register": "Register"
+    },
+    "impressum": {
+      "metaTitle": "Impressum - Mathias Krostewitz",
+      "eyebrow": "Legal notice",
+      "title": "Impressum",
+      "lead": "Provider identification for {{siteName}} according to § 5 Digitale-Dienste-Gesetz (DDG).",
+      "provider": {
+        "title": "Provider",
+        "missingAddress": "Postal address must be completed before publication."
+      },
+      "contact": {
+        "title": "Contact"
+      },
+      "business": {
+        "title": "Business details"
+      },
+      "editorial": {
+        "title": "Responsible for editorial content"
+      },
+      "dispute": {
+        "title": "Consumer dispute resolution",
+        "body": "I am not willing or obliged to participate in dispute resolution proceedings before a consumer arbitration board."
+      },
+      "liability": {
+        "title": "Liability for content and links",
+        "body": "I prepare the content on this website with reasonable care. External links lead to third-party websites whose content is outside my control. The respective provider or operator is responsible for linked content."
+      }
+    },
+    "privacy": {
+      "metaTitle": "Privacy Policy - Mathias Krostewitz",
+      "eyebrow": "Privacy",
+      "title": "Privacy Policy",
+      "lead": "This policy explains how {{siteName}} processes personal data when you visit the website, use the contact form, or connect third-party publishing features.",
+      "updated": "Last updated: May 30, 2026",
+      "controller": {
+        "title": "Controller",
+        "addressPending": "Address pending"
+      },
+      "visit": {
+        "title": "Data processed when you visit the website",
+        "paragraphs": [
+          "When the website is loaded, technical data may be processed to deliver the site securely and reliably. This can include IP address, request time, requested URL, referrer, browser type, device information, and server log data.",
+          "The legal basis is legitimate interest in operating, securing, and improving this website under Art. 6(1)(f) GDPR."
+        ]
+      },
+      "contact": {
+        "title": "Contact form and email verification",
+        "paragraphs": [
+          "If you use the contact form, the submitted name, email address, message, verification code, verification status, and timestamps are stored to verify the request, prevent misuse, and respond to the message.",
+          "Email is sent through the configured mail provider. Contact requests are kept only as long as needed for communication, documentation, and abuse prevention."
+        ]
+      },
+      "storage": {
+        "title": "Local storage, cookies, and admin sessions",
+        "body": "The public website stores language and theme preferences in your browser so the site can remember your selected language and visual mode. Admin-only areas use secure session cookies for authentication and account protection."
+      },
+      "analytics": {
+        "title": "Google Analytics",
+        "paragraphs": [
+          "This website uses Google Analytics to understand aggregate website usage and improve the site. Google may process device, browser, interaction, and approximate location data according to its own privacy terms.",
+          "You can reduce tracking by using browser privacy settings, blocking scripts, or using Google's browser add-on where available."
+        ]
+      },
+      "external": {
+        "title": "Maps, weather, media, and external services",
+        "paragraphs": [
+          "Some public sections load third-party services or content. This can include Mapbox maps, Open-Meteo weather data, external webcam images, GitHub project links, LinkedIn links/share URLs, and Koalendar booking links. When those services are loaded or opened, the respective provider may receive technical data such as your IP address and browser information.",
+          "Uploaded post media, site assets, and CV files may be stored with a configured object storage provider and delivered through public asset URLs."
+        ]
+      },
+      "linkedin": {
+        "title": "LinkedIn publishing integration",
+        "paragraphs": [
+          "If a LinkedIn publishing integration is connected in the admin area, LinkedIn OAuth is used to request authorization from the connected LinkedIn member account. The application may store LinkedIn access tokens, account identifiers, selected post text, article links, and publication timestamps for the purpose of publishing or managing posts selected by the admin.",
+          "Access can be revoked through LinkedIn account settings or by disconnecting the integration once that feature is available in the admin area."
+        ]
+      },
+      "ai": {
+        "title": "AI-assisted post editing",
+        "body": "Admin users can choose to send post title, summary, content, and prompt text to an AI provider to draft or improve blog content. This processing only happens when an authenticated admin starts an AI action."
+      },
+      "legalBases": {
+        "title": "Legal bases",
+        "items": [
+          "Art. 6(1)(a) GDPR for consent-based integrations.",
+          "Art. 6(1)(b) GDPR where processing is needed to respond to a request or provide a requested function.",
+          "Art. 6(1)(f) GDPR for secure operation, abuse prevention, analytics, and improvement of the website.",
+          "Art. 6(1)(c) GDPR where retention is required by law."
+        ]
+      },
+      "rights": {
+        "title": "Your rights",
+        "paragraphs": [
+          "Subject to the applicable legal conditions, you may request access, correction, deletion, restriction, portability, or object to processing of your personal data. You may also withdraw consent with effect for the future where processing is based on consent.",
+          "You also have the right to lodge a complaint with a competent data protection supervisory authority."
+        ]
+      },
+      "updates": {
+        "title": "Updates",
+        "body": "This policy may be updated when the website, third-party integrations, or legal requirements change. The date above shows the latest version."
       }
     }
   }

@@ -170,6 +170,10 @@
       "windGusts": "Böen",
       "windDirection": "Windrichtung",
       "temperature": "Temperatur",
+      "waterTemperature": "Wassertemperatur",
+      "waterTemperatureLoading": "GKD wird geladen",
+      "waterTemperatureUnavailable": "GKD nicht verfügbar",
+      "waterTemperatureUpdated": "Stock · {{time}}",
       "airPressure": "Luftdruck",
       "cloudDevelopment": "Wolkenentwicklung",
       "cloudCover": "Bewölkung",
@@ -189,11 +193,14 @@
       },
       "forecast": "Vorhersage",
       "forecastTime": "Zeit",
+      "recentMeasurements": "Letzte Messwerte",
       "noForecast": "Keine Vorhersage verfügbar",
       "updated": "Aktualisiert {{time}}",
       "loading": "Winddaten werden geladen",
       "error": "Winddaten sind gerade nicht verfügbar.",
+      "sources": "Quellen",
       "source": "Open-Meteo",
+      "waterSource": "GKD Bayern",
       "windMapAlt": "Animierte Karte der aktuellen Windmuster rund um den Chiemsee",
       "webcamTitle": "CYC Prien Webcam",
       "webcamSubtitle": "Nahezu Live-Blick vom Steg des Chiemsee Yacht Clubs.",
@@ -382,7 +389,8 @@
     ],
     "empty": "Berufliche Notizen, Segelgeschichten und Küchenexperimente erscheinen hier, sobald sie veröffentlicht sind.",
     "emptyFiltered": "Für diese Kategorie gibt es noch keine veröffentlichten Beiträge.",
-    "readMore": "Weiterlesen"
+    "readMore": "Weiterlesen",
+    "backToBlog": "Zurück zum Blog"
   },
 
   "contact": {
@@ -434,6 +442,136 @@
         "message": "Bitte fügen Sie etwas mehr Details hinzu.",
         "code": "Bitte geben Sie den 6-stelligen Code ein.",
         "codeRequired": "Der Bestätigungscode ist erforderlich."
+      }
+    }
+  },
+  "notFound": {
+    "metaTitle": "Seite nicht gefunden",
+    "eyebrow": "404 / Nicht gefunden",
+    "title": "Diese Seite ist nicht verfügbar.",
+    "lead": "Die Adresse wurde möglicherweise geändert, der Beitrag ist noch nicht veröffentlicht oder der Link enthält einen Tippfehler. Starten Sie auf der Startseite oder springen Sie direkt zu den wichtigsten Bereichen.",
+    "actionsLabel": "Navigation der 404-Seite",
+    "actions": {
+      "home": "Startseite",
+      "blog": "Blog",
+      "contact": "Kontakt"
+    },
+    "visual": {
+      "status": "Route fehlt"
+    }
+  },
+  "footer": {
+    "legalLabel": "Rechtliche Links",
+    "impressum": "Impressum",
+    "privacy": "Datenschutzerklärung"
+  },
+  "legal": {
+    "fields": {
+      "email": "E-Mail",
+      "phone": "Telefon",
+      "website": "Website",
+      "vatId": "Umsatzsteuer-ID",
+      "register": "Register"
+    },
+    "impressum": {
+      "metaTitle": "Impressum - Mathias Krostewitz",
+      "eyebrow": "Rechtliches",
+      "title": "Impressum",
+      "lead": "Anbieterkennzeichnung für {{siteName}} gemäß § 5 Digitale-Dienste-Gesetz (DDG).",
+      "provider": {
+        "title": "Anbieter",
+        "missingAddress": "Die postalische Anschrift muss vor der Veröffentlichung ergänzt werden."
+      },
+      "contact": {
+        "title": "Kontakt"
+      },
+      "business": {
+        "title": "Unternehmensangaben"
+      },
+      "editorial": {
+        "title": "Verantwortlich für redaktionelle Inhalte"
+      },
+      "dispute": {
+        "title": "Verbraucherstreitbeilegung",
+        "body": "Ich bin nicht bereit und nicht verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen."
+      },
+      "liability": {
+        "title": "Haftung für Inhalte und Links",
+        "body": "Ich erstelle die Inhalte dieser Website mit angemessener Sorgfalt. Externe Links führen zu Websites Dritter, auf deren Inhalte ich keinen Einfluss habe. Für verlinkte Inhalte ist der jeweilige Anbieter oder Betreiber verantwortlich."
+      }
+    },
+    "privacy": {
+      "metaTitle": "Datenschutzerklärung - Mathias Krostewitz",
+      "eyebrow": "Datenschutz",
+      "title": "Datenschutzerklärung",
+      "lead": "Diese Datenschutzerklärung erklärt, wie {{siteName}} personenbezogene Daten verarbeitet, wenn Sie die Website besuchen, das Kontaktformular nutzen oder Drittanbieter-Funktionen zum Veröffentlichen verbinden.",
+      "updated": "Stand: 30. Mai 2026",
+      "controller": {
+        "title": "Verantwortlicher",
+        "addressPending": "Adresse noch zu ergänzen"
+      },
+      "visit": {
+        "title": "Datenverarbeitung beim Besuch der Website",
+        "paragraphs": [
+          "Beim Laden der Website können technische Daten verarbeitet werden, um die Website sicher und zuverlässig bereitzustellen. Dazu können IP-Adresse, Zeitpunkt der Anfrage, aufgerufene URL, Referrer, Browsertyp, Geräteinformationen und Server-Logdaten gehören.",
+          "Rechtsgrundlage ist das berechtigte Interesse am Betrieb, an der Sicherheit und an der Verbesserung dieser Website gemäß Art. 6 Abs. 1 lit. f DSGVO."
+        ]
+      },
+      "contact": {
+        "title": "Kontaktformular und E-Mail-Verifizierung",
+        "paragraphs": [
+          "Wenn Sie das Kontaktformular nutzen, werden Name, E-Mail-Adresse, Nachricht, Verifizierungscode, Verifizierungsstatus und Zeitstempel gespeichert, um die Anfrage zu verifizieren, Missbrauch zu verhindern und die Nachricht zu beantworten.",
+          "Der E-Mail-Versand erfolgt über den konfigurierten Mailanbieter. Kontaktanfragen werden nur so lange gespeichert, wie es für Kommunikation, Dokumentation und Missbrauchsprävention erforderlich ist."
+        ]
+      },
+      "storage": {
+        "title": "Local Storage, Cookies und Admin-Sitzungen",
+        "body": "Die öffentliche Website speichert Sprach- und Designpräferenzen im Browser, damit die gewählte Sprache und Darstellung erhalten bleiben. Admin-Bereiche verwenden sichere Session-Cookies für Authentifizierung und Kontoschutz."
+      },
+      "analytics": {
+        "title": "Google Analytics",
+        "paragraphs": [
+          "Diese Website verwendet Google Analytics, um die Nutzung der Website aggregiert auszuwerten und die Website zu verbessern. Google kann Geräte-, Browser-, Interaktions- und ungefähre Standortdaten nach eigenen Datenschutzbedingungen verarbeiten.",
+          "Sie können Tracking durch Datenschutzeinstellungen im Browser, Script-Blocker oder, soweit verfügbar, durch das Browser-Add-on von Google einschränken."
+        ]
+      },
+      "external": {
+        "title": "Karten, Wetter, Medien und externe Dienste",
+        "paragraphs": [
+          "Einige öffentliche Bereiche laden Dienste oder Inhalte Dritter. Dazu können Mapbox-Karten, Open-Meteo-Wetterdaten, externe Webcam-Bilder, GitHub-Projektlinks, LinkedIn-Links/Teilen-URLs und Koalendar-Buchungslinks gehören. Wenn diese Dienste geladen oder geöffnet werden, kann der jeweilige Anbieter technische Daten wie IP-Adresse und Browserinformationen erhalten.",
+          "Hochgeladene Beitragsmedien, Website-Assets und CV-Dateien können bei einem konfigurierten Objektspeicheranbieter gespeichert und über öffentliche Asset-URLs ausgeliefert werden."
+        ]
+      },
+      "linkedin": {
+        "title": "LinkedIn-Veröffentlichungsintegration",
+        "paragraphs": [
+          "Wenn im Admin-Bereich eine LinkedIn-Veröffentlichungsintegration verbunden wird, erfolgt die Autorisierung über LinkedIn OAuth mit dem verbundenen LinkedIn-Mitgliedskonto. Die Anwendung kann LinkedIn-Zugriffstokens, Account-Kennungen, ausgewählte Beitragstexte, Artikellinks und Veröffentlichungszeitpunkte speichern, um vom Admin ausgewählte Beiträge zu veröffentlichen oder zu verwalten.",
+          "Der Zugriff kann in den LinkedIn-Kontoeinstellungen widerrufen oder über die Integration getrennt werden, sobald diese Funktion im Admin-Bereich verfügbar ist."
+        ]
+      },
+      "ai": {
+        "title": "KI-gestützte Beitragsbearbeitung",
+        "body": "Admin-Nutzer können Titel, Zusammenfassung, Inhalt und Prompt eines Beitrags an einen KI-Anbieter senden, um Blog-Inhalte zu entwerfen oder zu verbessern. Diese Verarbeitung erfolgt nur, wenn ein authentifizierter Admin eine KI-Aktion startet."
+      },
+      "legalBases": {
+        "title": "Rechtsgrundlagen",
+        "items": [
+          "Art. 6 Abs. 1 lit. a DSGVO für einwilligungsbasierte Integrationen.",
+          "Art. 6 Abs. 1 lit. b DSGVO, wenn die Verarbeitung zur Beantwortung einer Anfrage oder zur Bereitstellung einer angefragten Funktion erforderlich ist.",
+          "Art. 6 Abs. 1 lit. f DSGVO für sicheren Betrieb, Missbrauchsprävention, Analyse und Verbesserung der Website.",
+          "Art. 6 Abs. 1 lit. c DSGVO, wenn eine gesetzliche Aufbewahrungspflicht besteht."
+        ]
+      },
+      "rights": {
+        "title": "Ihre Rechte",
+        "paragraphs": [
+          "Vorbehaltlich der gesetzlichen Voraussetzungen können Sie Auskunft, Berichtigung, Löschung, Einschränkung, Datenübertragbarkeit oder Widerspruch gegen die Verarbeitung Ihrer personenbezogenen Daten verlangen. Eine erteilte Einwilligung können Sie mit Wirkung für die Zukunft widerrufen.",
+          "Außerdem haben Sie das Recht, sich bei einer zuständigen Datenschutzaufsichtsbehörde zu beschweren."
+        ]
+      },
+      "updates": {
+        "title": "Aktualisierungen",
+        "body": "Diese Datenschutzerklärung kann angepasst werden, wenn sich die Website, Drittanbieter-Integrationen oder rechtliche Anforderungen ändern. Das oben genannte Datum zeigt die aktuelle Fassung."
       }
     }
   }
