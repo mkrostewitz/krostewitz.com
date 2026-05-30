@@ -1,13 +1,23 @@
 "use client";
 
+/* eslint-disable @next/next/no-img-element */
+
 import Link from "next/link";
 import {useRouter} from "next/navigation";
+import {useEffect, useState} from "react";
 
 import ThemeToggle from "../components/theme/ThemeToggle";
 import styles from "./admin.module.css";
 
+const DEFAULT_LOGO_URL = "/logo.svg";
+const DEFAULT_SITE_TITLE = process.env.NEXT_PUBLIC_SITE_NAME || "Site";
+
 export default function AdminHeader({active, user}) {
   const router = useRouter();
+  const [siteMetadata, setSiteMetadata] = useState({
+    logoUrl: DEFAULT_LOGO_URL,
+    title: DEFAULT_SITE_TITLE,
+  });
 
   async function logout() {
     await fetch("/api/admin/auth/logout", {method: "POST"});
@@ -15,11 +25,62 @@ export default function AdminHeader({active, user}) {
     router.refresh();
   }
 
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function loadSiteMetadata() {
+      try {
+        const response = await fetch("/api/content/profile", {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error("Unable to load site metadata.");
+        }
+
+        const metadata = data.profile?.metadata || {};
+        setSiteMetadata({
+          logoUrl: metadata.logoUrl || DEFAULT_LOGO_URL,
+          title: metadata.title || DEFAULT_SITE_TITLE,
+        });
+      } catch (error) {
+        if (error?.name !== "AbortError") {
+          setSiteMetadata({
+            logoUrl: DEFAULT_LOGO_URL,
+            title: DEFAULT_SITE_TITLE,
+          });
+        }
+      }
+    }
+
+    void loadSiteMetadata();
+
+    return () => {
+      controller.abort();
+    };
+  }, []);
+
+  const siteAbbreviation =
+    process.env.NEXT_PUBLIC_SITE_ABBREVIATION || siteMetadata.title;
+
   return (
     <header className={styles.header}>
       <div className={styles.brand}>
-        <strong>{process.env.NEXT_PUBLIC_SITE_ABBREVIATION}</strong>
-        <span className={styles.muted}>{user?.email}</span>
+        <Link href="/admin" className={styles.brandLogoLink}>
+          <img
+            src={siteMetadata.logoUrl}
+            alt={`${siteMetadata.title} logo`}
+            width="44"
+            height="44"
+            className={styles.brandLogo}
+          />
+        </Link>
+        <div className={styles.brandText}>
+          <strong>{siteAbbreviation}</strong>
+          <span className={styles.muted}>{user?.email}</span>
+        </div>
       </div>
 
       <div className={styles.headerActions}>

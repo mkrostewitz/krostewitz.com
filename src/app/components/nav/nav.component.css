@@ -84,7 +84,7 @@
   transition: all 0.2s ease;
 }
 
-.langButton:hover {
+.langButton:not(.langActive):hover {
   color: var(--foreground);
   border-color: var(--foreground);
 }
@@ -93,6 +93,10 @@
   background: var(--foreground);
   color: var(--background);
   border-color: transparent;
+}
+
+.langActive:hover {
+  color: var(--background);
 }
 
 .navLangSwitch {
