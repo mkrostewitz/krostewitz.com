@@ -5,11 +5,28 @@ import {isLinkedInSignInAvailable} from "../../lib/linkedinAuth";
 import styles from "../admin.module.css";
 import LoginForm from "./LoginForm";
 
-export default async function AdminLoginPage() {
+function firstSearchParam(value) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+export default async function AdminLoginPage({searchParams} = {}) {
   const user = await getCurrentAdminUser();
 
   if (user) {
     redirect("/admin/posts");
+  }
+
+  const params = await searchParams;
+  const code = firstSearchParam(params?.code);
+  const state = firstSearchParam(params?.state);
+
+  if (code && state) {
+    const callbackParams = new URLSearchParams({
+      code: String(code),
+      state: String(state),
+    });
+
+    redirect(`/api/admin/auth/linkedin/callback?${callbackParams.toString()}`);
   }
 
   return (

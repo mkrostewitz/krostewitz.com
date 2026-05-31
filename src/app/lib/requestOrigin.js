@@ -61,6 +61,18 @@ function getConfiguredOrigin() {
   );
 }
 
+export function getConfiguredSiteOrigin() {
+  return getConfiguredOrigin();
+}
+
+export function isLocalOrigin(value) {
+  try {
+    return LOCAL_HOST_PATTERN.test(new URL(normalizeOrigin(value)).host);
+  } catch {
+    return LOCAL_HOST_PATTERN.test(normalizeHost(value));
+  }
+}
+
 function getFallbackOrigin(fallbackUrl) {
   return normalizeOrigin(fallbackUrl) || getConfiguredOrigin() || "http://localhost:3000";
 }

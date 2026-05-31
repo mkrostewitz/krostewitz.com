@@ -3,6 +3,7 @@ import {NextResponse} from "next/server";
 import {getCurrentAdminUser} from "../../../../lib/adminAuth";
 import {
   createLinkedInAuthorizationRequest,
+  getCanonicalLinkedInStartUrl,
   LINKEDIN_PUBLISHING_SCOPES,
   setLinkedInStateCookie,
 } from "../../../../lib/linkedinAuth";
@@ -20,6 +21,15 @@ function redirectToPosts(request, params = {}) {
 }
 
 export async function GET(request) {
+  const canonicalStartUrl = getCanonicalLinkedInStartUrl(
+    request,
+    "/api/admin/linkedin/connect",
+  );
+
+  if (canonicalStartUrl) {
+    return NextResponse.redirect(canonicalStartUrl);
+  }
+
   const user = await getCurrentAdminUser();
 
   if (!user) {

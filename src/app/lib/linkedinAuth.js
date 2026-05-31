@@ -2,7 +2,11 @@ import "server-only";
 
 import crypto from "crypto";
 
-import {getRequestOrigin} from "./requestOrigin";
+import {
+  getConfiguredSiteOrigin,
+  getRequestOrigin,
+  isLocalOrigin,
+} from "./requestOrigin";
 
 const AUTHORIZATION_URL = "https://www.linkedin.com/oauth/v2/authorization";
 const ACCESS_TOKEN_URL = "https://www.linkedin.com/oauth/v2/accessToken";
@@ -96,6 +100,30 @@ function getLinkedInScopes(extraScopes = []) {
 
 function getRedirectUri(request) {
   return `${getRequestOrigin(request)}${CALLBACK_PATH}`;
+}
+
+function getHost(origin) {
+  try {
+    return new URL(origin).host;
+  } catch {
+    return "";
+  }
+}
+
+export function getCanonicalLinkedInStartUrl(request, pathname) {
+  const currentOrigin = getRequestOrigin(request);
+  const configuredOrigin = getConfiguredSiteOrigin();
+
+  if (
+    !configuredOrigin ||
+    isLocalOrigin(currentOrigin) ||
+    isLocalOrigin(configuredOrigin) ||
+    getHost(currentOrigin) === getHost(configuredOrigin)
+  ) {
+    return null;
+  }
+
+  return new URL(pathname, configuredOrigin);
 }
 
 function signValue(value) {

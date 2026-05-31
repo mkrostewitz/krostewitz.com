@@ -27,10 +27,7 @@ function redirectToLogin(request, error) {
 }
 
 function redirectToAdmin(request, sessionToken) {
-  const response = NextResponse.redirect(new URL("/admin/posts", request.url));
-  clearLinkedInStateCookie(response);
-  setSessionCookie(response, sessionToken);
-  return response;
+  return completeWithClientRedirect(request, "/admin/posts", {}, sessionToken);
 }
 
 function redirectToPosts(request, params = {}) {
@@ -40,8 +37,48 @@ function redirectToPosts(request, params = {}) {
     if (value) url.searchParams.set(key, value);
   }
 
-  const response = NextResponse.redirect(url);
+  return completeWithClientRedirect(request, url.pathname, params);
+}
+
+function completeWithClientRedirect(
+  request,
+  pathname,
+  params = {},
+  sessionToken = "",
+) {
+  const url = new URL(pathname, request.url);
+
+  for (const [key, value] of Object.entries(params)) {
+    if (value) url.searchParams.set(key, value);
+  }
+
+  const destination = `${url.pathname}${url.search}`;
+  const response = new NextResponse(
+    `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="robots" content="noindex" />
+    <title>LinkedIn authorization complete</title>
+  </head>
+  <body>
+    <p>Completing LinkedIn authorization...</p>
+    <script>window.location.replace(${JSON.stringify(destination)});</script>
+    <noscript><a href="${destination}">Continue</a></noscript>
+  </body>
+</html>`,
+    {
+      headers: {
+        "Cache-Control": "no-store",
+        "Content-Type": "text/html; charset=utf-8",
+      },
+    },
+  );
+
   clearLinkedInStateCookie(response);
+  if (sessionToken) {
+    setSessionCookie(response, sessionToken);
+  }
   return response;
 }
 

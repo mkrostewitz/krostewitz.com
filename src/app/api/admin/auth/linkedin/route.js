@@ -2,6 +2,7 @@ import {NextResponse} from "next/server";
 
 import {
   createLinkedInAuthorizationRequest,
+  getCanonicalLinkedInStartUrl,
   setLinkedInStateCookie,
 } from "../../../../lib/linkedinAuth";
 
@@ -14,6 +15,15 @@ function redirectToLogin(request, error) {
 }
 
 export async function GET(request) {
+  const canonicalStartUrl = getCanonicalLinkedInStartUrl(
+    request,
+    "/api/admin/auth/linkedin",
+  );
+
+  if (canonicalStartUrl) {
+    return NextResponse.redirect(canonicalStartUrl);
+  }
+
   let authorization;
 
   try {
