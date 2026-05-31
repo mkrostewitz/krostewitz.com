@@ -69,6 +69,14 @@ function storeLanguage(language) {
   } catch {
     // Ignore unavailable storage and still switch for the current session.
   }
+
+  try {
+    window.document.cookie = `${MANUAL_LANGUAGE_STORAGE_KEY}=${encodeURIComponent(
+      language,
+    )}; Path=/; Max-Age=31536000; SameSite=Lax`;
+  } catch {
+    // Ignore unavailable cookies and still switch for the current session.
+  }
 }
 
 const NavBar = () => {
