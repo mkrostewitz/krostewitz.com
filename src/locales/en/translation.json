@@ -375,7 +375,35 @@
   "cv": {
     "title": "Download my CV",
     "subtitle": "Grab the latest PDF with roles, outcomes, and highlights.",
-    "download": "Download CV"
+    "download": "Download CV",
+    "form": {
+      "eyebrow": "CV request",
+      "title": "Request CV access",
+      "intro": "Please leave your details before downloading the full CV. I use this to keep sensitive career details out of anonymous circulation.",
+      "phone": "Phone",
+      "placeholderPhone": "+1 650 555 1234",
+      "requestType": "Nature of request",
+      "placeholderRequestType": "Select one",
+      "requestTypes": {
+        "headhunter": "Headhunter",
+        "employer": "Employer",
+        "potential_client": "Potential client",
+        "fan": "Fan",
+        "other": "Other"
+      },
+      "submit": "Request CV",
+      "sending": "Sending...",
+      "verifySent": "Check your email for a 6-digit code to unlock the CV download.",
+      "verifySuccess": "Email confirmed. Your CV download is ready.",
+      "successEyebrow": "Access confirmed",
+      "successTitle": "Your CV download is ready",
+      "downloadReady": "Download CV",
+      "validation": {
+        "phone": "Please enter a valid phone number.",
+        "phoneRequired": "Please enter your phone number.",
+        "requestType": "Please select the nature of your request."
+      }
+    }
   },
   "portfolio": {
     "eyebrow": "Lab",
@@ -535,10 +563,10 @@
         ]
       },
       "contact": {
-        "title": "Contact form and email verification",
+        "title": "Contact, lead capture, and email verification",
         "paragraphs": [
-          "If you use the contact form, the submitted name, email address, message, verification code, verification status, and timestamps are stored to verify the request, prevent misuse, and respond to the message.",
-          "Email is sent through the configured mail provider. Contact requests are kept only as long as needed for communication, documentation, and abuse prevention."
+          "If you use the contact form or request a CV download, the submitted name, email address, phone number where requested, request type, message, source type, verification status, timestamps, and technical request data such as IP address, approximate country, state, address, browser, referrer, and page URL may be stored as a lead record.",
+          "Email is sent through the configured mail provider. Lead records are kept only as long as needed for communication, documentation, download protection, and abuse prevention."
         ]
       },
       "storage": {

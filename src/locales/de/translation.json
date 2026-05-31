@@ -375,7 +375,35 @@
   "cv": {
     "title": "Lebenslauf",
     "subtitle": "Aktuelle PDF-Version mit Rollen, Ergebnissen und ausgewählten Highlights.",
-    "download": "Lebenslauf herunterladen"
+    "download": "Lebenslauf herunterladen",
+    "form": {
+      "eyebrow": "CV-Anfrage",
+      "title": "Zugriff auf den Lebenslauf anfragen",
+      "intro": "Bitte hinterlassen Sie Ihre Kontaktdaten, bevor Sie den vollständigen Lebenslauf herunterladen. So bleiben sensible Karrieredetails außerhalb anonymer Verteilung.",
+      "phone": "Telefon",
+      "placeholderPhone": "+49 157 12345678",
+      "requestType": "Art der Anfrage",
+      "placeholderRequestType": "Bitte auswählen",
+      "requestTypes": {
+        "headhunter": "Headhunter",
+        "employer": "Arbeitgeber",
+        "potential_client": "Potenzieller Kunde",
+        "fan": "Fan",
+        "other": "Sonstiges"
+      },
+      "submit": "CV anfragen",
+      "sending": "Wird gesendet...",
+      "verifySent": "Bitte prüfen Sie Ihre E-Mails und geben Sie den 6-stelligen Code ein, um den Download freizuschalten.",
+      "verifySuccess": "E-Mail bestätigt. Ihr CV-Download ist bereit.",
+      "successEyebrow": "Zugriff bestätigt",
+      "successTitle": "Ihr CV-Download ist bereit",
+      "downloadReady": "Lebenslauf herunterladen",
+      "validation": {
+        "phone": "Bitte geben Sie eine gültige Telefonnummer ein.",
+        "phoneRequired": "Bitte geben Sie Ihre Telefonnummer ein.",
+        "requestType": "Bitte wählen Sie die Art Ihrer Anfrage aus."
+      }
+    }
   },
   "portfolio": {
     "eyebrow": "Labor",
@@ -536,10 +564,10 @@
         ]
       },
       "contact": {
-        "title": "Kontaktformular und E-Mail-Verifizierung",
+        "title": "Kontakt, Lead-Erfassung und E-Mail-Verifizierung",
         "paragraphs": [
-          "Wenn Sie das Kontaktformular nutzen, werden Name, E-Mail-Adresse, Nachricht, Verifizierungscode, Verifizierungsstatus und Zeitstempel gespeichert, um die Anfrage zu verifizieren, Missbrauch zu verhindern und die Nachricht zu beantworten.",
-          "Der E-Mail-Versand erfolgt über den konfigurierten Mailanbieter. Kontaktanfragen werden nur so lange gespeichert, wie es für Kommunikation, Dokumentation und Missbrauchsprävention erforderlich ist."
+          "Wenn Sie das Kontaktformular nutzen oder einen CV-Download anfragen, können Name, E-Mail-Adresse, Telefonnummer soweit abgefragt, Art der Anfrage, Nachricht, Quellentyp, Verifizierungsstatus, Zeitstempel und technische Anfragedaten wie IP-Adresse, ungefähres Land, Bundesland, Adresse, Browser, Referrer und Seiten-URL als Lead gespeichert werden.",
+          "Der E-Mail-Versand erfolgt über den konfigurierten Mailanbieter. Leads werden nur so lange gespeichert, wie es für Kommunikation, Dokumentation, Download-Schutz und Missbrauchsprävention erforderlich ist."
         ]
       },
       "storage": {
