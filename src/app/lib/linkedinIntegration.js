@@ -3,16 +3,26 @@ import "server-only";
 import crypto from "crypto";
 import sanitizeHtml from "sanitize-html";
 
+import {FALLBACK_LANGUAGE} from "../../lib/languageDetection";
+import {getSupportedSiteLanguage} from "../../lib/siteLanguages";
 import {getDb} from "./mongo";
-import {getAdminPostById, recordPostLinkedInShare} from "./posts";
+import {
+  getAdminPostById,
+  recordPostLinkedInShare,
+  recordPostLinkedInShareSchedule,
+  updatePostLinkedInShareSchedule,
+} from "./posts";
 import {getConfiguredSiteOrigin} from "./requestOrigin";
 
 const CONTENT_COLLECTION = "site_content";
+const LINKEDIN_SHARE_JOBS_COLLECTION = "linkedin_share_jobs";
 const LINKEDIN_INTEGRATION_ID = "linkedin_integration";
 const LINKEDIN_POSTS_URL = "https://api.linkedin.com/rest/posts";
 const DEFAULT_LINKEDIN_API_VERSION = "202605";
 const DEFAULT_LINKEDIN_REQUEST_TIMEOUT_MS = 20000;
 const TOKEN_FORMAT = "v1";
+
+let shareJobsIndexPromise = null;
 
 export class LinkedInIntegrationError extends Error {
   constructor(message, status = 400) {
@@ -24,6 +34,24 @@ export class LinkedInIntegrationError extends Error {
 
 function getIntegrationCollection(db) {
   return db.collection(CONTENT_COLLECTION);
+}
+
+function getShareJobsCollection(db) {
+  return db.collection(LINKEDIN_SHARE_JOBS_COLLECTION);
+}
+
+async function ensureShareJobsIndexes(db) {
+  if (!shareJobsIndexPromise) {
+    shareJobsIndexPromise = Promise.all([
+      getShareJobsCollection(db).createIndex({status: 1, scheduledAt: 1}),
+      getShareJobsCollection(db).createIndex({postId: 1, createdAt: -1}),
+    ]).catch((error) => {
+      shareJobsIndexPromise = null;
+      throw error;
+    });
+  }
+
+  await shareJobsIndexPromise;
 }
 
 function getLinkedInApiVersion() {
@@ -127,6 +155,46 @@ function cleanText(value, maxLength = 3000) {
     .slice(0, maxLength);
 }
 
+function normalizeShareTarget(value) {
+  const target = String(value || "personal_profile").trim();
+
+  if (target !== "personal_profile") {
+    throw new LinkedInIntegrationError(
+      "Company page publishing is not configured yet.",
+      501,
+    );
+  }
+
+  return target;
+}
+
+function normalizeShareLanguage(value) {
+  return getSupportedSiteLanguage(value) || FALLBACK_LANGUAGE;
+}
+
+function getLocalizedPostTranslation(post, language) {
+  const supportedLanguage = normalizeShareLanguage(language);
+  const translation = post?.translations?.[supportedLanguage];
+
+  if (translation?.title || translation?.summary || translation?.contentHtml) {
+    return {
+      language: supportedLanguage,
+      title: translation.title || post.title || "",
+      summary: translation.summary || post.summary || "",
+      contentHtml: translation.contentHtml || post.contentHtml || "",
+    };
+  }
+
+  const fallback = post?.translations?.[FALLBACK_LANGUAGE];
+
+  return {
+    language: FALLBACK_LANGUAGE,
+    title: fallback?.title || post.title || "",
+    summary: fallback?.summary || post.summary || "",
+    contentHtml: fallback?.contentHtml || post.contentHtml || "",
+  };
+}
+
 function normalizeProfile(profile = {}) {
   const sub = cleanText(profile.sub, 120);
   const email = cleanText(profile.email, 180).toLowerCase();
@@ -166,9 +234,12 @@ function serializeConnection(document, options = {}) {
       document?.encryptedAccessToken,
   );
   const expiresAt = toIsoDate(document?.accessTokenExpiresAt);
+  const tokenInvalidatedAt = toIsoDate(document?.tokenInvalidatedAt);
   const connection = {
     connected,
-    needsReconnect: connected && isExpired(document.accessTokenExpiresAt),
+    needsReconnect:
+      connected &&
+      (isExpired(document.accessTokenExpiresAt) || Boolean(tokenInvalidatedAt)),
     profile: connected
       ? {
           sub: document.profile.sub,
@@ -180,6 +251,8 @@ function serializeConnection(document, options = {}) {
     authorUrn: connected ? document.authorUrn || "" : "",
     scopes: Array.isArray(document?.scopes) ? document.scopes : [],
     accessTokenExpiresAt: expiresAt,
+    tokenInvalidatedAt,
+    tokenInvalidationReason: document?.tokenInvalidationReason || "",
     lastPublishedAt: toIsoDate(document?.lastPublishedAt),
     updatedAt: toIsoDate(document?.updatedAt),
     updatedBy: document?.updatedBy || null,
@@ -232,7 +305,11 @@ export async function saveLinkedInConnection({
     {
       $set: document,
       $setOnInsert: {createdAt: now},
-      $unset: {disconnectedAt: ""},
+      $unset: {
+        disconnectedAt: "",
+        tokenInvalidatedAt: "",
+        tokenInvalidationReason: "",
+      },
     },
     {upsert: true},
   );
@@ -261,6 +338,8 @@ export async function disconnectLinkedInConnection(user) {
         lastPublishedAt: "",
         profile: "",
         scopes: "",
+        tokenInvalidatedAt: "",
+        tokenInvalidationReason: "",
       },
     },
     {upsert: true},
@@ -269,12 +348,37 @@ export async function disconnectLinkedInConnection(user) {
   return getLinkedInConnection();
 }
 
-function buildPostUrl(post, origin) {
+async function markLinkedInConnectionNeedsReconnect(reason, user) {
+  const now = new Date();
+  const db = await getDb();
+
+  await getIntegrationCollection(db).updateOne(
+    {_id: LINKEDIN_INTEGRATION_ID},
+    {
+      $set: {
+        tokenInvalidatedAt: now,
+        tokenInvalidationReason: cleanText(reason, 300),
+        accessTokenExpiresAt: new Date(0),
+        updatedAt: now,
+        updatedBy: user?.email || null,
+      },
+    },
+  );
+}
+
+function buildPostUrl(post, origin, language) {
   if (!post?.slug) {
     throw new LinkedInIntegrationError("Only saved posts with a slug can be shared.");
   }
 
-  return new URL(`/blog/${post.slug}`, origin).toString();
+  const url = new URL(`/blog/${post.slug}`, origin);
+  const supportedLanguage = normalizeShareLanguage(language);
+
+  if (supportedLanguage !== FALLBACK_LANGUAGE) {
+    url.searchParams.set("lng", supportedLanguage);
+  }
+
+  return url.toString();
 }
 
 function buildLinkedInPostUrl(postUrn) {
@@ -282,9 +386,18 @@ function buildLinkedInPostUrl(postUrn) {
   return `https://www.linkedin.com/feed/update/${postUrn}/`;
 }
 
-function createCommentary(post, postUrl) {
-  const title = cleanText(post.title, 140);
-  const summary = cleanText(post.summary, 600);
+function createCommentary(post, postUrl, options = {}) {
+  const customCommentary = cleanText(options.commentary, 2800);
+
+  if (customCommentary) {
+    return customCommentary.includes(postUrl)
+      ? customCommentary
+      : `${customCommentary}\n\n${postUrl}`;
+  }
+
+  const translation = getLocalizedPostTranslation(post, options.language);
+  const title = cleanText(translation.title, 140);
+  const summary = cleanText(translation.summary, 600);
   const lines = [title, summary, postUrl].filter(Boolean);
 
   return lines.join("\n\n").slice(0, 2900);
@@ -361,17 +474,16 @@ async function createLinkedInPost({connection, commentary}) {
 }
 
 export async function publishPostToLinkedIn({
+  commentary,
+  language,
   postId,
   origin,
+  scheduledJobId = "",
   target = "personal_profile",
   user,
 }) {
-  if (target !== "personal_profile") {
-    throw new LinkedInIntegrationError(
-      "Company page publishing is not configured yet.",
-      501,
-    );
-  }
+  const normalizedTarget = normalizeShareTarget(target);
+  const normalizedLanguage = normalizeShareLanguage(language);
 
   const post = await getAdminPostById(postId);
 
@@ -394,16 +506,40 @@ export async function publishPostToLinkedIn({
   }
 
   const publicOrigin = getConfiguredSiteOrigin() || origin;
-  const postUrl = buildPostUrl(post, publicOrigin);
-  const commentary = createCommentary(post, postUrl);
-  const linkedInPostUrn = await createLinkedInPost({connection, commentary});
+  const postUrl = buildPostUrl(post, publicOrigin, normalizedLanguage);
+  const finalCommentary = createCommentary(post, postUrl, {
+    commentary,
+    language: normalizedLanguage,
+  });
+  let linkedInPostUrn;
+
+  try {
+    linkedInPostUrn = await createLinkedInPost({
+      connection,
+      commentary: finalCommentary,
+    });
+  } catch (error) {
+    if (error instanceof LinkedInIntegrationError && error.status === 401) {
+      await markLinkedInConnectionNeedsReconnect(error.message, user);
+      throw new LinkedInIntegrationError(
+        "LinkedIn publishing access was revoked. Reconnect LinkedIn before sharing posts.",
+        401,
+      );
+    }
+
+    throw error;
+  }
+
   const sharedAt = new Date();
   const share = {
     provider: "linkedin",
+    target: normalizedTarget,
+    language: normalizedLanguage,
+    scheduledJobId,
     postUrn: linkedInPostUrn,
     postUrl: buildLinkedInPostUrl(linkedInPostUrn),
     sharedPostUrl: postUrl,
-    commentary,
+    commentary: finalCommentary,
     account: connection.profile,
     sharedAt,
   };
@@ -427,5 +563,202 @@ export async function publishPostToLinkedIn({
       ...share,
       sharedAt: sharedAt.toISOString(),
     },
+  };
+}
+
+function normalizeScheduledAt(value) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    throw new LinkedInIntegrationError("Scheduled time is invalid.");
+  }
+
+  if (date.getTime() <= Date.now() + 30000) {
+    throw new LinkedInIntegrationError(
+      "Scheduled time must be at least 30 seconds in the future.",
+    );
+  }
+
+  return date;
+}
+
+export async function schedulePostToLinkedIn({
+  commentary,
+  language,
+  postId,
+  origin,
+  scheduledAt,
+  target = "personal_profile",
+  user,
+}) {
+  const normalizedTarget = normalizeShareTarget(target);
+  const normalizedLanguage = normalizeShareLanguage(language);
+  const scheduleDate = normalizeScheduledAt(scheduledAt);
+  const post = await getAdminPostById(postId);
+
+  if (!post) {
+    throw new LinkedInIntegrationError("Post not found.", 404);
+  }
+
+  if (post.status !== "published") {
+    throw new LinkedInIntegrationError("Only published posts can be scheduled.");
+  }
+
+  const connection = await getLinkedInConnection();
+
+  if (!connection.connected) {
+    throw new LinkedInIntegrationError("Connect LinkedIn before scheduling posts.", 409);
+  }
+
+  if (connection.needsReconnect) {
+    throw new LinkedInIntegrationError("Reconnect LinkedIn before scheduling posts.", 401);
+  }
+
+  const publicOrigin = getConfiguredSiteOrigin() || origin;
+  const postUrl = buildPostUrl(post, publicOrigin, normalizedLanguage);
+  const finalCommentary = createCommentary(post, postUrl, {
+    commentary,
+    language: normalizedLanguage,
+  });
+  const now = new Date();
+  const job = {
+    _id: crypto.randomUUID(),
+    provider: "linkedin",
+    status: "scheduled",
+    postId: post.id,
+    target: normalizedTarget,
+    language: normalizedLanguage,
+    commentary: finalCommentary,
+    origin: publicOrigin,
+    account: connection.profile,
+    scheduledAt: scheduleDate,
+    createdAt: now,
+    createdBy: user?.email || null,
+    updatedAt: now,
+  };
+  const db = await getDb();
+
+  await ensureShareJobsIndexes(db);
+  await getShareJobsCollection(db).insertOne(job);
+
+  const updatedPost = await recordPostLinkedInShareSchedule(
+    post.id,
+    {
+      jobId: job._id,
+      target: normalizedTarget,
+      language: normalizedLanguage,
+      account: connection.profile,
+      scheduledAt: scheduleDate,
+    },
+    user,
+  );
+
+  return {
+    scheduled: true,
+    post: updatedPost,
+    linkedin: {
+      jobId: job._id,
+      target: normalizedTarget,
+      language: normalizedLanguage,
+      scheduledAt: scheduleDate.toISOString(),
+      commentary: finalCommentary,
+    },
+  };
+}
+
+async function claimLinkedInShareJob(job) {
+  const db = await getDb();
+  const now = new Date();
+  const result = await getShareJobsCollection(db).findOneAndUpdate(
+    {_id: job._id, status: "scheduled"},
+    {
+      $set: {
+        status: "processing",
+        processingStartedAt: now,
+        updatedAt: now,
+      },
+    },
+    {returnDocument: "after"},
+  );
+
+  return result?.value || result;
+}
+
+export async function publishDueLinkedInShares({limit = 5} = {}) {
+  const db = await getDb();
+
+  await ensureShareJobsIndexes(db);
+
+  const jobs = await getShareJobsCollection(db)
+    .find({
+      status: "scheduled",
+      scheduledAt: {$lte: new Date()},
+    })
+    .sort({scheduledAt: 1})
+    .limit(Math.min(20, Math.max(1, Number(limit) || 5)))
+    .toArray();
+  const results = [];
+
+  for (const job of jobs) {
+    const claimedJob = await claimLinkedInShareJob(job);
+    if (!claimedJob) continue;
+
+    try {
+      const result = await publishPostToLinkedIn({
+        commentary: claimedJob.commentary,
+        language: claimedJob.language,
+        postId: claimedJob.postId,
+        origin: claimedJob.origin || getConfiguredSiteOrigin(),
+        scheduledJobId: claimedJob._id,
+        target: claimedJob.target,
+        user: {email: claimedJob.createdBy},
+      });
+      const now = new Date();
+
+      await getShareJobsCollection(db).updateOne(
+        {_id: claimedJob._id},
+        {
+          $set: {
+            status: "published",
+            publishedAt: now,
+            linkedInPostUrn: result.linkedin.postUrn,
+            linkedInPostUrl: result.linkedin.postUrl,
+            updatedAt: now,
+          },
+        },
+      );
+      await updatePostLinkedInShareSchedule(claimedJob.postId, claimedJob._id, {
+        status: "published",
+        publishedAt: now,
+        failure: "",
+      });
+      results.push({jobId: claimedJob._id, status: "published"});
+    } catch (error) {
+      const now = new Date();
+      const failure = error?.message || "Unable to publish scheduled share.";
+
+      await getShareJobsCollection(db).updateOne(
+        {_id: claimedJob._id},
+        {
+          $set: {
+            status: "failed",
+            failedAt: now,
+            failure,
+            updatedAt: now,
+          },
+        },
+      );
+      await updatePostLinkedInShareSchedule(claimedJob.postId, claimedJob._id, {
+        status: "failed",
+        failedAt: now,
+        failure,
+      });
+      results.push({jobId: claimedJob._id, status: "failed", error: failure});
+    }
+  }
+
+  return {
+    checked: jobs.length,
+    results,
   };
 }

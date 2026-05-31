@@ -8,6 +8,7 @@ import {
 import {
   LinkedInIntegrationError,
   publishPostToLinkedIn,
+  schedulePostToLinkedIn,
 } from "../../../../../lib/linkedinIntegration";
 import {getRequestOrigin} from "../../../../../lib/requestOrigin";
 
@@ -36,12 +37,17 @@ export async function POST(request, context) {
   try {
     const {postId} = await context.params;
     const body = await request.json().catch(() => ({}));
-    const result = await publishPostToLinkedIn({
+    const payload = {
+      commentary: body.commentary,
+      language: body.language,
       postId,
       origin: getRequestOrigin(request),
       target: body.target || "personal_profile",
       user,
-    });
+    };
+    const result = body.scheduledAt
+      ? await schedulePostToLinkedIn({...payload, scheduledAt: body.scheduledAt})
+      : await publishPostToLinkedIn(payload);
 
     return NextResponse.json(result);
   } catch (error) {

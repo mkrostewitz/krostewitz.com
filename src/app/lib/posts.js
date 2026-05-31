@@ -431,6 +431,9 @@ function serializeLinkedInShares(value) {
     .filter((share) => share && typeof share === "object")
     .map((share) => ({
       provider: "linkedin",
+      target: share.target || "personal_profile",
+      language: share.language || null,
+      scheduledJobId: share.scheduledJobId || "",
       postUrn: share.postUrn || "",
       postUrl: share.postUrl || "",
       sharedPostUrl: share.sharedPostUrl || "",
@@ -450,6 +453,39 @@ function serializeLinkedInShares(value) {
       const leftTime = left.sharedAt ? new Date(left.sharedAt).getTime() : 0;
       const rightTime = right.sharedAt ? new Date(right.sharedAt).getTime() : 0;
       return rightTime - leftTime;
+    });
+}
+
+function serializeLinkedInShareSchedules(value) {
+  return (Array.isArray(value) ? value : [])
+    .filter((schedule) => schedule && typeof schedule === "object")
+    .map((schedule) => ({
+      provider: "linkedin",
+      jobId: schedule.jobId || "",
+      target: schedule.target || "personal_profile",
+      language: schedule.language || null,
+      status: schedule.status || "scheduled",
+      scheduledAt: toIsoDate(schedule.scheduledAt),
+      publishedAt: toIsoDate(schedule.publishedAt),
+      failedAt: toIsoDate(schedule.failedAt),
+      failure: schedule.failure || "",
+      createdAt: toIsoDate(schedule.createdAt),
+      createdBy: schedule.createdBy || null,
+      account: schedule.account
+        ? {
+            sub: schedule.account.sub || "",
+            email: schedule.account.email || "",
+            name: schedule.account.name || "",
+            picture: schedule.account.picture || "",
+          }
+        : null,
+    }))
+    .sort((left, right) => {
+      const leftTime = left.scheduledAt ? new Date(left.scheduledAt).getTime() : 0;
+      const rightTime = right.scheduledAt
+        ? new Date(right.scheduledAt).getTime()
+        : 0;
+      return leftTime - rightTime;
     });
 }
 
@@ -520,6 +556,9 @@ export function serializePost(document, options = {}) {
     post.updatedBy = document.updatedBy || null;
     post.translations = translations;
     post.linkedinShares = serializeLinkedInShares(document.linkedinShares);
+    post.linkedinShareSchedules = serializeLinkedInShareSchedules(
+      document.linkedinShareSchedules
+    );
   }
 
   return post;
@@ -654,6 +693,9 @@ export async function recordPostLinkedInShare(postId, share = {}, user) {
   const now = new Date();
   const document = {
     provider: "linkedin",
+    target: String(share.target || "personal_profile"),
+    language: share.language ? String(share.language) : null,
+    scheduledJobId: share.scheduledJobId ? String(share.scheduledJobId) : "",
     postUrn: String(share.postUrn || ""),
     postUrl: String(share.postUrl || ""),
     sharedPostUrl: String(share.sharedPostUrl || ""),
@@ -694,6 +736,81 @@ export async function recordPostLinkedInShare(postId, share = {}, user) {
   }
 
   return serializePost(post, {includeContent: true, includeAdmin: true});
+}
+
+export async function recordPostLinkedInShareSchedule(postId, schedule = {}, user) {
+  const db = await getDb();
+  await ensurePostIndexes(db);
+
+  const _id = toObjectId(postId);
+  const now = new Date();
+  const document = {
+    provider: "linkedin",
+    jobId: String(schedule.jobId || ""),
+    target: String(schedule.target || "personal_profile"),
+    language: schedule.language ? String(schedule.language) : null,
+    status: "scheduled",
+    scheduledAt:
+      schedule.scheduledAt instanceof Date ? schedule.scheduledAt : now,
+    account: schedule.account
+      ? {
+          sub: String(schedule.account.sub || ""),
+          email: String(schedule.account.email || ""),
+          name: String(schedule.account.name || ""),
+          picture: String(schedule.account.picture || ""),
+        }
+      : null,
+    createdAt: now,
+    createdBy: user?.email || null,
+  };
+  const result = await getPostsCollection(db).findOneAndUpdate(
+    {_id},
+    {
+      $set: {
+        updatedAt: now,
+        updatedBy: user?.email || null,
+        lastLinkedInShareSchedule: document,
+      },
+      $push: {
+        linkedinShareSchedules: {
+          $each: [document],
+          $position: 0,
+          $slice: 20,
+        },
+      },
+    },
+    {returnDocument: "after"}
+  );
+  const post = result?.value || result;
+
+  if (!post) {
+    throw new PostValidationError("Post not found.", 404);
+  }
+
+  return serializePost(post, {includeContent: true, includeAdmin: true});
+}
+
+export async function updatePostLinkedInShareSchedule(
+  postId,
+  jobId,
+  updates = {},
+) {
+  const db = await getDb();
+  await ensurePostIndexes(db);
+
+  const _id = toObjectId(postId);
+  const set = {};
+
+  for (const [key, value] of Object.entries(updates)) {
+    set[`linkedinShareSchedules.$.${key}`] = value;
+  }
+
+  if (Object.keys(set).length === 0) return;
+
+  await getPostsCollection(db).updateOne(
+    {_id, "linkedinShareSchedules.jobId": String(jobId || "")},
+    {$set: set}
+  );
 }
 
 export async function getPublishedPosts(filters = {}) {

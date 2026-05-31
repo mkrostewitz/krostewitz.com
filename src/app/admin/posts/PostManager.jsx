@@ -5,6 +5,11 @@ import Link from "next/link";
 import {useEffect, useMemo, useState} from "react";
 
 import {useSnackbar} from "../../components/snackbar/SnackbarProvider";
+import {FALLBACK_LANGUAGE} from "@/lib/languageDetection";
+import {
+  getSiteLanguageLabel,
+  SITE_LANGUAGES,
+} from "@/lib/siteLanguages";
 import AdminHeader from "../AdminHeader";
 import styles from "../admin.module.css";
 
@@ -24,6 +29,18 @@ function formatDate(value) {
   }).format(new Date(value));
 }
 
+function formatDateTime(value) {
+  if (!value) return "Not scheduled";
+
+  return new Intl.DateTimeFormat("en", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
 function normalizeListCategories(value) {
   return (Array.isArray(value) ? value : [])
     .map((category) => ({
@@ -35,6 +52,72 @@ function normalizeListCategories(value) {
 
 function getCategoryKey(category) {
   return category.slug || category.label.toLowerCase();
+}
+
+function normalizeTranslation(value = {}) {
+  return {
+    title: String(value.title || ""),
+    summary: String(value.summary || ""),
+    contentHtml: String(value.contentHtml || ""),
+  };
+}
+
+function translationHasContent(translation) {
+  const normalized = normalizeTranslation(translation);
+
+  return Boolean(
+    normalized.title.trim() ||
+      normalized.summary.trim() ||
+      normalized.contentHtml.replace(/<[^>]*>/g, " ").trim()
+  );
+}
+
+function getShareableLanguages(post) {
+  const translations = post?.translations || {};
+  const languages = SITE_LANGUAGES.filter((language) =>
+    translationHasContent(translations[language.code])
+  );
+
+  return languages.length > 0 ? languages : SITE_LANGUAGES;
+}
+
+function getDefaultShareLanguage(post) {
+  const languages = getShareableLanguages(post);
+
+  return languages.some((language) => language.code === FALLBACK_LANGUAGE)
+    ? FALLBACK_LANGUAGE
+    : languages[0]?.code || FALLBACK_LANGUAGE;
+}
+
+function getPostTranslation(post, language) {
+  const requested = normalizeTranslation(post?.translations?.[language]);
+
+  if (translationHasContent(requested)) return requested;
+
+  return normalizeTranslation(
+    post?.translations?.[FALLBACK_LANGUAGE] || {
+      title: post?.title,
+      summary: post?.summary,
+      contentHtml: post?.contentHtml,
+    }
+  );
+}
+
+function toDateTimeLocalValue(value) {
+  if (!value) return "";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  const offsetDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return offsetDate.toISOString().slice(0, 16);
+}
+
+function toIsoDateTimeValue(value) {
+  if (!value) return "";
+
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "" : date.toISOString();
 }
 
 export default function PostManager({user}) {
@@ -51,6 +134,10 @@ export default function PostManager({user}) {
   const [sharingPostId, setSharingPostId] = useState("");
   const [pendingSharePost, setPendingSharePost] = useState(null);
   const [shareTarget, setShareTarget] = useState("personal_profile");
+  const [shareLanguage, setShareLanguage] = useState(FALLBACK_LANGUAGE);
+  const [shareCommentary, setShareCommentary] = useState("");
+  const [shareTiming, setShareTiming] = useState("now");
+  const [shareScheduledAt, setShareScheduledAt] = useState("");
 
   const counts = useMemo(
     () =>
@@ -166,6 +253,10 @@ export default function PostManager({user}) {
 
   function openShareDialog(post) {
     setShareTarget("personal_profile");
+    setShareLanguage(getDefaultShareLanguage(post));
+    setShareCommentary("");
+    setShareTiming("now");
+    setShareScheduledAt("");
     setPendingSharePost(post);
   }
 
@@ -174,12 +265,22 @@ export default function PostManager({user}) {
     setPendingSharePost(null);
   }
 
-  async function sharePostToLinkedIn(post, target = "personal_profile") {
+  async function sharePostToLinkedIn(post, options = {}) {
     if (!linkedin.connected || linkedin.needsReconnect) {
       showSnackbar({
         type: "error",
         message: "Connect LinkedIn before sharing posts.",
       });
+      return;
+    }
+
+    const scheduledAt =
+      options.timing === "scheduled"
+        ? toIsoDateTimeValue(options.scheduledAt)
+        : "";
+
+    if (options.timing === "scheduled" && !scheduledAt) {
+      showSnackbar({type: "error", message: "Choose a valid schedule time."});
       return;
     }
 
@@ -190,11 +291,23 @@ export default function PostManager({user}) {
       const response = await fetch(`/api/admin/posts/${post.id}/linkedin`, {
         method: "POST",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({target}),
+        body: JSON.stringify({
+          commentary: options.commentary,
+          language: options.language,
+          scheduledAt,
+          target: options.target,
+        }),
       });
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
+        if (response.status === 401) {
+          setLinkedin((current) => ({
+            ...current,
+            needsReconnect: true,
+          }));
+        }
+
         throw new Error(data.error || "Unable to share post to LinkedIn.");
       }
 
@@ -205,10 +318,19 @@ export default function PostManager({user}) {
         ...current,
         lastPublishedAt: data.linkedin?.sharedAt || current.lastPublishedAt,
       }));
-      showSnackbar({
-        type: "success",
-        message: "Post shared to LinkedIn.",
-      });
+      showSnackbar(
+        data.scheduled
+          ? {
+              type: "success",
+              message: `LinkedIn share scheduled for ${formatDateTime(
+                data.linkedin?.scheduledAt
+              )}.`,
+            }
+          : {
+              type: "success",
+              message: "Post shared to LinkedIn.",
+            }
+      );
       setPendingSharePost(null);
     } catch (error) {
       showSnackbar({type: "error", message: error.message});
@@ -265,7 +387,11 @@ export default function PostManager({user}) {
                 </span>
                 {linkedin.accessTokenExpiresAt && (
                   <span>
-                    Token expires {formatDate(linkedin.accessTokenExpiresAt)}
+                    {linkedin.needsReconnect
+                      ? "Reconnect LinkedIn before sharing posts."
+                      : `Token expires ${formatDate(
+                          linkedin.accessTokenExpiresAt
+                        )}`}
                   </span>
                 )}
               </div>
@@ -327,6 +453,12 @@ export default function PostManager({user}) {
                 const extraCategoryCount = categories.length - visibleCategories.length;
                 const editHref = `/admin/posts/${post.id}`;
                 const latestLinkedInShare = post.linkedinShares?.[0];
+                const nextLinkedInSchedule = post.linkedinShareSchedules?.find(
+                  (schedule) =>
+                    schedule.status === "scheduled" &&
+                    schedule.scheduledAt &&
+                    new Date(schedule.scheduledAt).getTime() > Date.now()
+                );
                 const canShareToLinkedIn =
                   linkedin.connected &&
                   !linkedin.needsReconnect &&
@@ -394,6 +526,11 @@ export default function PostManager({user}) {
                       {latestLinkedInShare?.sharedAt && (
                         <span className={styles.postListShareMeta}>
                           LinkedIn {formatDate(latestLinkedInShare.sharedAt)}
+                        </span>
+                      )}
+                      {nextLinkedInSchedule?.scheduledAt && (
+                        <span className={styles.postListShareMeta}>
+                          Scheduled {formatDateTime(nextLinkedInSchedule.scheduledAt)}
                         </span>
                       )}
                     </span>
@@ -475,6 +612,101 @@ export default function PostManager({user}) {
               </label>
             </fieldset>
 
+            <div className={styles.shareComposerGrid}>
+              <label className={styles.field}>
+                Language
+                <select
+                  value={shareLanguage}
+                  onChange={(event) => setShareLanguage(event.target.value)}
+                >
+                  {getShareableLanguages(pendingSharePost).map((language) => (
+                    <option key={language.code} value={language.code}>
+                      {language.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <div className={styles.field}>
+                <span>Selected post text</span>
+                <div className={styles.sharePreview}>
+                  <strong>
+                    {getPostTranslation(pendingSharePost, shareLanguage).title ||
+                      pendingSharePost.title}
+                  </strong>
+                  <span>
+                    {getPostTranslation(pendingSharePost, shareLanguage).summary ||
+                      "No summary saved for this language."}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <label className={styles.field}>
+              Thoughts
+              <textarea
+                maxLength={2800}
+                placeholder={`Optional note for your ${getSiteLanguageLabel(
+                  shareLanguage
+                )} LinkedIn post. If empty, the post title and summary are used.`}
+                rows={5}
+                value={shareCommentary}
+                onChange={(event) => setShareCommentary(event.target.value)}
+              />
+              <span className={styles.muted}>
+                The blog link is added automatically if it is not included.
+              </span>
+            </label>
+
+            <fieldset className={styles.shareTargetList}>
+              <legend>Timing</legend>
+              <label className={styles.shareTargetOption}>
+                <input
+                  checked={shareTiming === "now"}
+                  name="linkedin-share-timing"
+                  type="radio"
+                  value="now"
+                  onChange={(event) => setShareTiming(event.target.value)}
+                />
+                <span>
+                  <strong>Share now</strong>
+                  <small>Publish immediately after confirmation.</small>
+                </span>
+              </label>
+
+              <label className={styles.shareTargetOption}>
+                <input
+                  checked={shareTiming === "scheduled"}
+                  name="linkedin-share-timing"
+                  type="radio"
+                  value="scheduled"
+                  onChange={(event) => {
+                    setShareTiming(event.target.value);
+                    if (!shareScheduledAt) {
+                      setShareScheduledAt(
+                        toDateTimeLocalValue(Date.now() + 60 * 60 * 1000)
+                      );
+                    }
+                  }}
+                />
+                <span>
+                  <strong>Schedule</strong>
+                  <small>Publish during the next scheduler run after this time.</small>
+                </span>
+              </label>
+
+              {shareTiming === "scheduled" && (
+                <label className={styles.field}>
+                  Scheduled time
+                  <input
+                    type="datetime-local"
+                    value={shareScheduledAt}
+                    onChange={(event) => setShareScheduledAt(event.target.value)}
+                  />
+                </label>
+              )}
+            </fieldset>
+
             <div className={styles.modalFooter}>
               <button
                 className={styles.secondaryButton}
@@ -488,9 +720,23 @@ export default function PostManager({user}) {
                 className={styles.button}
                 disabled={Boolean(sharingPostId)}
                 type="button"
-                onClick={() => sharePostToLinkedIn(pendingSharePost, shareTarget)}
+                onClick={() =>
+                  sharePostToLinkedIn(pendingSharePost, {
+                    commentary: shareCommentary,
+                    language: shareLanguage,
+                    scheduledAt: shareScheduledAt,
+                    target: shareTarget,
+                    timing: shareTiming,
+                  })
+                }
               >
-                {sharingPostId ? "Sharing..." : "Share"}
+                {sharingPostId
+                  ? shareTiming === "scheduled"
+                    ? "Scheduling..."
+                    : "Sharing..."
+                  : shareTiming === "scheduled"
+                  ? "Schedule"
+                  : "Share"}
               </button>
             </div>
           </section>
