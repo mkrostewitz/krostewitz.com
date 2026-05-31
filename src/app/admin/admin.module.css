@@ -883,6 +883,20 @@
   white-space: nowrap;
 }
 
+.integrationPanel {
+  display: grid;
+  gap: 12px;
+  border-top: 1px solid var(--border-muted);
+  padding-top: 14px;
+}
+
+.integrationFields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+}
+
 .autocompleteField {
   display: grid;
   gap: 8px;
@@ -1488,6 +1502,7 @@
   .aiGrid,
   .settingsGrid,
   .aiSettingsFields,
+  .integrationFields,
   .categoryInputRow,
   .mediaPreview {
     grid-template-columns: 1fr;
