@@ -13,6 +13,7 @@ import {
   getDefaultSender,
   isAppleMailConfigured,
 } from "../../../../lib/mail";
+import {getOriginHost, getRequestOrigin} from "../../../../lib/requestOrigin";
 
 export const runtime = "nodejs";
 
@@ -94,11 +95,13 @@ export async function POST(request) {
       );
     }
 
+    const siteHost = getOriginHost(getRequestOrigin(request));
+
     try {
       await transporter.sendMail({
         from: getDefaultSender(),
         to: admin.email,
-        subject: `Your ${process.env.NEXT_PUBLIC_SITE_URL} admin sign-in code`,
+        subject: `Your ${siteHost} admin sign-in code`,
         text: `Your admin sign-in code is ${challenge.code}.\n\nThis code expires in 10 minutes. If you did not request it, change your password immediately.`,
       });
     } catch (error) {

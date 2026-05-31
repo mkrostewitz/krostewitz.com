@@ -5,6 +5,7 @@ import {notFound} from "next/navigation";
 import NavBar from "../../components/nav/nav";
 import PublicFooter from "../../components/footer/PublicFooter";
 import {getPublishedPostBySlug} from "../../lib/posts";
+import {getCurrentRequestOrigin} from "../../lib/requestOrigin";
 import {
   getDefaultSiteMetadata,
   getSiteMetadata,
@@ -24,12 +25,6 @@ function formatDate(value) {
     month: "long",
     day: "numeric",
   }).format(new Date(value));
-}
-
-function getSiteUrl() {
-  return (
-    process.env.NEXT_PUBLIC_SITE_URL || process.env.AUTH_BASE_URL
-  ).replace(/\/+$/, "");
 }
 
 async function getSiteTitle() {
@@ -61,7 +56,8 @@ export async function generateMetadata({params}) {
 
   const title = `${post.title} - ${siteTitle}`;
   const description = post.summary;
-  const url = `${getSiteUrl()}/blog/${post.slug}`;
+  const siteUrl = await getCurrentRequestOrigin();
+  const url = new URL(`/blog/${post.slug}`, siteUrl).toString();
   const image =
     post.media?.type === "image" && post.media.url ? post.media.url : undefined;
   const keywords = Array.isArray(post.categories)
@@ -106,7 +102,8 @@ export default async function BlogPostPage({params}) {
     notFound();
   }
 
-  const postUrl = `${getSiteUrl()}/blog/${post.slug}`;
+  const siteUrl = await getCurrentRequestOrigin();
+  const postUrl = new URL(`/blog/${post.slug}`, siteUrl).toString();
 
   return (
     <div className={styles.page} id="top">

@@ -9,6 +9,7 @@ import {
 import {getAiSettings} from "../../../../lib/aiSettings";
 import {getCvDownloads} from "../../../../lib/cvFiles";
 import {sanitizePostHtml} from "../../../../lib/posts";
+import {getRequestOrigin} from "../../../../lib/requestOrigin";
 
 export const runtime = "nodejs";
 
@@ -124,14 +125,6 @@ function getTargetFieldNames(targetFields) {
   ]
     .filter(Boolean)
     .join(", ");
-}
-
-function getRequestOrigin(request) {
-  return (
-    process.env.NEXT_PUBLIC_SITE_URL ||
-    process.env.AUTH_BASE_URL ||
-    new URL(request.url).origin
-  ).replace(/\/+$/, "");
 }
 
 function getAbsoluteUrl(url, origin) {

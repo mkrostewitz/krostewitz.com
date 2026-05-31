@@ -9,6 +9,7 @@ import {
   verifyMagicLinkChallenge,
 } from "../../../../lib/adminAuth";
 import {getAppleMailTransport, getDefaultSender} from "../../../../lib/mail";
+import {getOriginHost, getRequestOrigin} from "../../../../lib/requestOrigin";
 
 export const runtime = "nodejs";
 
@@ -18,27 +19,8 @@ function normalizeEmail(email) {
     .toLowerCase();
 }
 
-function getAuthBaseUrl(request) {
-  const configured =
-    process.env.AUTH_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL;
-
-  if (configured) {
-    const value = configured.trim().replace(/\/+$/, "");
-    if (/^https?:\/\//i.test(value)) return value;
-
-    const requestUrl = new URL(request.url);
-    const protocol = /^(localhost|127\.0\.0\.1|\[::1\])(?::|$)/i.test(value)
-      ? requestUrl.protocol
-      : "https:";
-
-    return `${protocol}//${value}`;
-  }
-
-  return new URL(request.url).origin;
-}
-
 function createMagicLink(request, challenge) {
-  const url = new URL("/api/admin/auth/magic-link", getAuthBaseUrl(request));
+  const url = new URL("/api/admin/auth/magic-link", getRequestOrigin(request));
   url.searchParams.set("challenge", challenge.challengeId);
   url.searchParams.set("token", challenge.token);
   return url.toString();
@@ -74,14 +56,16 @@ export async function POST(request) {
     );
   }
 
+  const origin = getRequestOrigin(request);
+  const siteHost = getOriginHost(origin);
   const link = createMagicLink(request, challenge);
 
   try {
     await transporter.sendMail({
       from: getDefaultSender(),
       to: admin.email,
-      subject: `Your ${process.env.AUTH_BASE_URL} admin sign-in link`,
-      text: `Open this link to sign in to ${process.env.AUTH_BASE_URL} admin:\n\n${link}\n\nThis link expires in 15 minutes and can only be used once. If you did not request it, change your password immediately.`,
+      subject: `Your ${siteHost} admin sign-in link`,
+      text: `Open this link to sign in to ${siteHost} admin:\n\n${link}\n\nThis link expires in 15 minutes and can only be used once. If you did not request it, change your password immediately.`,
     });
   } catch (error) {
     console.error("Admin magic link email error", error);
