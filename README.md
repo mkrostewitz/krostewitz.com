@@ -58,7 +58,8 @@ LinkedIn admin sign-in:
 - The app builds the callback URL from the current request origin, so `localhost`, `127.0.0.1`, tunnels, and the production domain each use their own matching `/api/admin/auth/linkedin/callback` URL. Add every origin you use to the LinkedIn app's allowed redirect URLs.
 - There is no public sign-up flow. The LinkedIn account must return the same email address as an existing configured admin user in MongoDB, otherwise sign-in is rejected.
 - To publish posts from `/admin/posts`, add the `Share on LinkedIn` product to the LinkedIn app. The admin publishing connect action requests `w_member_social` and stores the access token encrypted in MongoDB.
-- `LINKEDIN_OAUTH_SCOPES` is optional and defaults to `openid profile email` for admin sign-in. `LINKEDIN_API_VERSION` is optional and defaults to `202605` for the LinkedIn Posts API.
+- The current publishing flow supports the connected member profile. Company page publishing requires separate LinkedIn organization permissions and organization selection before it can be enabled.
+- `LINKEDIN_OAUTH_SCOPES` is optional and defaults to `openid profile email` for admin sign-in. `LINKEDIN_API_VERSION` is optional and defaults to `202605` for the LinkedIn Posts API. `LINKEDIN_REQUEST_TIMEOUT_MS` is optional and defaults to `20000`.
 
 ## Language detection
 
