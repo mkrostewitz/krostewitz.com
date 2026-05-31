@@ -155,6 +155,15 @@ export default function ProfileSettings({user}) {
     koalendarBookingUrl
   );
   const koalendarConnected = koalendarForm.enabled && koalendarCanOpen;
+  const profileTranslationValues = useMemo(() => {
+    const firstName = nameForm.firstName || t("fields.firstName");
+    const lastName = nameForm.lastName || t("fields.lastName");
+    const profileName =
+      [nameForm.firstName, nameForm.lastName].filter(Boolean).join(" ") ||
+      [firstName, lastName].filter(Boolean).join(" ");
+
+    return {firstName, lastName, profileName};
+  }, [nameForm.firstName, nameForm.lastName, t]);
 
   useEffect(() => {
     void loadRuntimeTranslations();
@@ -538,7 +547,10 @@ export default function ProfileSettings({user}) {
                 <input
                   autoComplete="given-name"
                   maxLength={80}
-                  placeholder={t("fields.firstNamePlaceholder")}
+                  placeholder={t(
+                    "fields.firstNamePlaceholder",
+                    profileTranslationValues
+                  )}
                   value={nameForm.firstName}
                   onChange={(event) =>
                     handleNameInput("firstName", event.target.value)
@@ -551,7 +563,10 @@ export default function ProfileSettings({user}) {
                 <input
                   autoComplete="family-name"
                   maxLength={80}
-                  placeholder={t("fields.lastNamePlaceholder")}
+                  placeholder={t(
+                    "fields.lastNamePlaceholder",
+                    profileTranslationValues
+                  )}
                   value={nameForm.lastName}
                   onChange={(event) =>
                     handleNameInput("lastName", event.target.value)
@@ -772,8 +787,14 @@ export default function ProfileSettings({user}) {
                   <strong>{t("koalendar.title")}</strong>
                   <small>
                     {koalendarConnected
-                      ? t("koalendar.connectedDescription")
-                      : t("koalendar.disconnectedDescription")}
+                      ? t(
+                          "koalendar.connectedDescription",
+                          profileTranslationValues
+                        )
+                      : t(
+                          "koalendar.disconnectedDescription",
+                          profileTranslationValues
+                        )}
                   </small>
                 </span>
                 <span className={styles.featureStatus}>

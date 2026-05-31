@@ -11,7 +11,7 @@ import pageStyles from "../../page.module.css";
 import "../../buttons.css";
 import styles from "./contact-section.module.css";
 
-const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL;
+const CONTACT_EMAIL = String(process.env.NEXT_PUBLIC_CONTACT_EMAIL || "").trim();
 
 const ContactSection = () => {
   const {i18n, t} = useTranslation();
@@ -25,6 +25,10 @@ const ContactSection = () => {
     console.warn("Contact API error", {endpoint, status: res.status, data});
   };
   const address = profile.address?.label ? profile.address : null;
+  const bookingUrl =
+    profile.koalendar?.enabled && profile.koalendar?.bookingUrl
+      ? profile.koalendar.bookingUrl
+      : "";
   const addressLabelDefault = i18n.language?.toLowerCase().startsWith("de")
     ? "Adresse"
     : "Address";
@@ -132,13 +136,15 @@ const ContactSection = () => {
                 <span>{t("contact.phoneLabel")}</span>
                 <strong>{t("contact.phoneNumber")}</strong>
               </a>
-              <a
-                className={styles.contactLink}
-                href={`mailto:${CONTACT_EMAIL}`}
-              >
-                <span>{t("contact.emailLabel")}</span>
-                <strong>{CONTACT_EMAIL}</strong>
-              </a>
+              {CONTACT_EMAIL && (
+                <a
+                  className={styles.contactLink}
+                  href={`mailto:${CONTACT_EMAIL}`}
+                >
+                  <span>{t("contact.emailLabel")}</span>
+                  <strong>{CONTACT_EMAIL}</strong>
+                </a>
+              )}
               {address && (
                 <address className={styles.contactAddress}>
                   <span>
@@ -153,14 +159,16 @@ const ContactSection = () => {
           </div>
 
           <div className={styles.contactActions}>
-            <Link
-              className={`primary ${styles.actionButton}`}
-              href="https://koalendar.com/e/meet-with-mathias-krostewitz"
-              target="_blank"
-              rel="noreferrer"
-            >
-              {t("buttons.booking")}
-            </Link>
+            {bookingUrl && (
+              <Link
+                className={`primary ${styles.actionButton}`}
+                href={bookingUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {t("buttons.booking")}
+              </Link>
+            )}
             <button
               type="button"
               className={`secondary ${styles.actionButton}`}
