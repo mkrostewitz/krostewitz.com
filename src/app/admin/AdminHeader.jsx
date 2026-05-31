@@ -4,25 +4,47 @@
 
 import Link from "next/link";
 import {useRouter} from "next/navigation";
-import {useEffect, useState} from "react";
+import {Menu, X} from "lucide-react";
+import {useEffect, useRef, useState} from "react";
 
 import ThemeToggle from "../components/theme/ThemeToggle";
 import styles from "./admin.module.css";
 
 const DEFAULT_LOGO_URL = "/logo.svg";
 const DEFAULT_SITE_TITLE = process.env.NEXT_PUBLIC_SITE_NAME || "Site";
+const ADMIN_MENU_ID = "admin-menu-panel";
+const ADMIN_NAV_ITEMS = [
+  {active: "profile", href: "/admin/profile", label: "Profile"},
+  {active: "posts", href: "/admin/posts", label: "Posts"},
+  {
+    active: "githubPortfolio",
+    href: "/admin/github-portfolio",
+    label: "GitHub Portfolio",
+  },
+  {active: "aiSettings", href: "/admin/ai-settings", label: "AI Settings"},
+  {active: "leads", href: "/admin/leads", label: "Leads"},
+  {active: "cv", href: "/admin/cv", label: "CV"},
+  {active: "security", href: "/admin/security", label: "Security"},
+];
 
 export default function AdminHeader({active, user}) {
   const router = useRouter();
+  const menuRef = useRef(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [siteMetadata, setSiteMetadata] = useState({
     logoUrl: DEFAULT_LOGO_URL,
     title: DEFAULT_SITE_TITLE,
   });
 
   async function logout() {
+    setIsMenuOpen(false);
     await fetch("/api/admin/auth/logout", {method: "POST"});
     router.replace("/admin/login");
     router.refresh();
+  }
+
+  function closeMenu() {
+    setIsMenuOpen(false);
   }
 
   useEffect(() => {
@@ -62,6 +84,30 @@ export default function AdminHeader({active, user}) {
     };
   }, []);
 
+  useEffect(() => {
+    if (!isMenuOpen) return undefined;
+
+    function handlePointerDown(event) {
+      if (!menuRef.current?.contains(event.target)) {
+        setIsMenuOpen(false);
+      }
+    }
+
+    function handleKeyDown(event) {
+      if (event.key === "Escape") {
+        setIsMenuOpen(false);
+      }
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isMenuOpen]);
+
   const siteAbbreviation =
     process.env.NEXT_PUBLIC_SITE_ABBREVIATION || siteMetadata.title;
 
@@ -84,62 +130,55 @@ export default function AdminHeader({active, user}) {
       </div>
 
       <div className={styles.headerActions}>
-        <nav className={styles.adminNav} aria-label="Admin">
-          <Link
-            className={`${styles.navLink} ${
-              active === "profile" ? styles.navLinkActive : ""
-            }`}
-            href="/admin/profile"
-          >
-            Profile
-          </Link>
-          <Link
-            className={`${styles.navLink} ${
-              active === "posts" ? styles.navLinkActive : ""
-            }`}
-            href="/admin/posts"
-          >
-            Posts
-          </Link>
-          <Link
-            className={`${styles.navLink} ${
-              active === "githubPortfolio" ? styles.navLinkActive : ""
-            }`}
-            href="/admin/github-portfolio"
-          >
-            GitHub Portfolio
-          </Link>
-          <Link
-            className={`${styles.navLink} ${
-              active === "aiSettings" ? styles.navLinkActive : ""
-            }`}
-            href="/admin/ai-settings"
-          >
-            AI Settings
-          </Link>
-          <Link
-            className={`${styles.navLink} ${
-              active === "cv" ? styles.navLinkActive : ""
-            }`}
-            href="/admin/cv"
-          >
-            CV
-          </Link>
-          <Link
-            className={`${styles.navLink} ${
-              active === "security" ? styles.navLinkActive : ""
-            }`}
-            href="/admin/security"
-          >
-            Security
-          </Link>
-        </nav>
-
         <ThemeToggle />
 
-        <button className={styles.ghostButton} onClick={logout}>
-          Sign out
-        </button>
+        <div className={styles.adminMenu} ref={menuRef}>
+          <button
+            type="button"
+            className={`${styles.iconButton} ${styles.menuButton}`}
+            aria-label={isMenuOpen ? "Close admin menu" : "Open admin menu"}
+            aria-controls={ADMIN_MENU_ID}
+            aria-expanded={isMenuOpen}
+            title={isMenuOpen ? "Close admin menu" : "Open admin menu"}
+            onClick={() => setIsMenuOpen((current) => !current)}
+          >
+            {isMenuOpen ? (
+              <X aria-hidden="true" size={20} strokeWidth={2.2} />
+            ) : (
+              <Menu aria-hidden="true" size={20} strokeWidth={2.2} />
+            )}
+          </button>
+
+          <div
+            id={ADMIN_MENU_ID}
+            className={`${styles.adminMenuPanel} ${
+              isMenuOpen ? styles.adminMenuPanelOpen : ""
+            }`}
+          >
+            <nav className={styles.adminNav} aria-label="Admin">
+              {ADMIN_NAV_ITEMS.map((item) => (
+                <Link
+                  key={item.href}
+                  className={`${styles.navLink} ${
+                    active === item.active ? styles.navLinkActive : ""
+                  }`}
+                  href={item.href}
+                  onClick={closeMenu}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+
+            <button
+              type="button"
+              className={`${styles.ghostButton} ${styles.menuLogoutButton}`}
+              onClick={logout}
+            >
+              Sign out
+            </button>
+          </div>
+        </div>
       </div>
     </header>
   );
