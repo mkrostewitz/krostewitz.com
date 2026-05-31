@@ -1,6 +1,8 @@
 import {NextResponse} from "next/server";
 
 import {
+  getDefaultKoalendarIntegration,
+  getDefaultProfileName,
   getDefaultSiteMetadata,
   getSiteProfile,
 } from "../../../lib/siteProfile";
@@ -17,7 +19,9 @@ export async function GET() {
       profile: {
         address: null,
         blogEnabled: true,
+        koalendar: getDefaultKoalendarIntegration(),
         metadata: getDefaultSiteMetadata(),
+        name: getDefaultProfileName(),
         updatedAt: null,
         updatedBy: null,
       },

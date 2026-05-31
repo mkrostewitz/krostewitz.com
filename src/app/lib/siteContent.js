@@ -6,6 +6,7 @@ import {
   supportedLanguages,
 } from "../../lib/translationResources";
 import {getDb} from "./mongo";
+import {getSiteProfile} from "./siteProfile";
 
 const CONTENT_COLLECTION = "site_content";
 const TRANSLATIONS_ID = "translations";
@@ -21,6 +22,44 @@ function isPlainObject(value) {
     !Array.isArray(value) &&
     Object.getPrototypeOf(value) === Object.prototype
   );
+}
+
+function getProfilePlaceholders(profile = {}) {
+  const firstName = String(profile.name?.firstName || "").trim();
+  const lastName = String(profile.name?.lastName || "").trim();
+  const profileName =
+    String(profile.name?.fullName || "").trim() ||
+    [firstName, lastName].filter(Boolean).join(" ");
+
+  return {
+    firstName,
+    lastName,
+    profileName,
+  };
+}
+
+function hydrateProfilePlaceholders(value, placeholders) {
+  if (typeof value === "string") {
+    return value.replace(
+      /\{\{\s*(firstName|lastName|profileName)\s*\}\}/g,
+      (match, key) => placeholders[key] || match
+    );
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => hydrateProfilePlaceholders(item, placeholders));
+  }
+
+  if (isPlainObject(value)) {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, item]) => [
+        key,
+        hydrateProfilePlaceholders(item, placeholders),
+      ])
+    );
+  }
+
+  return value;
 }
 
 export function getDefaultTranslations() {
@@ -69,7 +108,13 @@ export async function getMergedTranslations() {
 
 export async function getRuntimeTranslationResources() {
   const translations = await getMergedTranslations();
-  return buildResourcesFromTranslations(translations);
+  const profile = await getSiteProfile();
+  const hydratedTranslations = hydrateProfilePlaceholders(
+    translations,
+    getProfilePlaceholders(profile)
+  );
+
+  return buildResourcesFromTranslations(hydratedTranslations);
 }
 
 export async function saveTranslations(translations, user) {

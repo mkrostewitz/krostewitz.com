@@ -11,6 +11,8 @@ import pageStyles from "../../page.module.css";
 import "../../buttons.css";
 import styles from "./contact-section.module.css";
 
+const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL;
+
 const ContactSection = () => {
   const {i18n, t} = useTranslation();
   const {closeSnackbar, showSnackbar} = useSnackbar();
@@ -132,10 +134,10 @@ const ContactSection = () => {
               </a>
               <a
                 className={styles.contactLink}
-                href={`mailto:${process.env.APPLE_MAIL_TO}`}
+                href={`mailto:${CONTACT_EMAIL}`}
               >
                 <span>{t("contact.emailLabel")}</span>
-                <strong>{process.env.APPLE_MAIL_TO}</strong>
+                <strong>{CONTACT_EMAIL}</strong>
               </a>
               {address && (
                 <address className={styles.contactAddress}>
@@ -231,10 +233,7 @@ const ContactSection = () => {
               <Formik
                 initialValues={{name: "", email: "", message: ""}}
                 validationSchema={contactSchema}
-                onSubmit={async (
-                  values,
-                  {setSubmitting, resetForm},
-                ) => {
+                onSubmit={async (values, {setSubmitting, resetForm}) => {
                   closeSnackbar();
                   try {
                     const res = await fetch("/api/contact", {

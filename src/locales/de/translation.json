@@ -52,7 +52,18 @@
         "visibleDescription": "In Navigation, Startseite und öffentlichen Beitragsseiten sichtbar. Der Schalter speichert sofort.",
         "hiddenDescription": "Aus Navigation, Startseite, Beitrags-API und öffentlichen Beitragsseiten ausgeblendet. Der Schalter speichert sofort."
       },
+      "koalendar": {
+        "title": "Koalendar-Buchung",
+        "connected": "Verbunden",
+        "disconnected": "Aus",
+        "connectedDescription": "Die Buchungsbuttons von {{profileName}} öffnen diese Koalendar-Seite.",
+        "disconnectedDescription": "Die Buchungsbuttons von {{profileName}} bleiben ausgeblendet, bis die Integration aktiviert und gespeichert ist."
+      },
       "fields": {
+        "firstName": "Vorname",
+        "firstNamePlaceholder": "{{firstName}}",
+        "lastName": "Nachname",
+        "lastNamePlaceholder": "{{lastName}}",
         "browserTitle": "Browser-Titel",
         "siteTitlePlaceholder": "Website-Titel",
         "logoUrl": "Logo-URL",
@@ -63,7 +74,8 @@
         "iconMimeType": "Icon-MIME-Typ",
         "lastSaved": "Zuletzt gespeichert: {{date}}",
         "address": "Adresse",
-        "addressPlaceholder": "Adresse eingeben"
+        "addressPlaceholder": "Adresse eingeben",
+        "koalendarUrl": "Koalendar-Buchungs-URL"
       },
       "actions": {
         "saving": "Speichert...",
@@ -71,7 +83,9 @@
         "uploadAsset": "Hochladen",
         "saveMetadata": "Website-Metadaten speichern",
         "clearAddress": "Adresse löschen",
-        "saveProfile": "Profil speichern"
+        "saveProfile": "Profil speichern",
+        "openKoalendar": "Koalendar öffnen",
+        "saveKoalendar": "Koalendar speichern"
       },
       "status": {
         "notSaved": "Nicht gespeichert",
@@ -83,7 +97,8 @@
         "blogHidden": "Der Blog ist auf der öffentlichen Website ausgeblendet.",
         "blogVisible": "Der Blog ist auf der öffentlichen Website sichtbar.",
         "profileSaved": "Profileinstellungen gespeichert.",
-        "assetUploaded": "{{asset}} hochgeladen und veröffentlicht."
+        "assetUploaded": "{{asset}} hochgeladen und veröffentlicht.",
+        "koalendarSaved": "Koalendar-Integration gespeichert."
       },
       "errors": {
         "loadProfile": "Profileinstellungen konnten nicht geladen werden.",
@@ -91,7 +106,8 @@
         "saveBlogVisibility": "Blog-Sichtbarkeit konnte nicht gespeichert werden.",
         "uploadAsset": "{{asset}} konnte nicht hochgeladen werden.",
         "chooseAddress": "Bitte vor dem Speichern eine Adresse aus den Mapbox-Ergebnissen auswählen.",
-        "saveProfile": "Profileinstellungen konnten nicht gespeichert werden."
+        "saveProfile": "Profileinstellungen konnten nicht gespeichert werden.",
+        "saveKoalendar": "Koalendar-Integration konnte nicht gespeichert werden."
       },
       "preview": {
         "mapLabel": "Karte der ausgewählten Adresse",
@@ -109,7 +125,8 @@
       "<strong>Prozessautomatisierung & Operations</strong>. Schlanke Strukturen, klare Verantwortlichkeiten und skalierbare Abläufe für wachsende Auftragsvolumina."
     ],
     "cta": "Gespräch vereinbaren",
-    "alt": "Portrait von Mathias Krostewitz"
+    "alt": "Portrait von {{profileName}}",
+    "altFallback": "Portrait"
   },
   "executiveSummary": {
     "eyebrow": "Kurzprofil",
@@ -194,6 +211,7 @@
       "forecast": "Vorhersage",
       "forecastTime": "Zeit",
       "recentMeasurements": "Letzte Messwerte",
+      "waterMeasurements": "GKD-Messwerte",
       "noForecast": "Keine Vorhersage verfügbar",
       "updated": "Aktualisiert {{time}}",
       "loading": "Winddaten werden geladen",
@@ -474,7 +492,7 @@
       "register": "Register"
     },
     "impressum": {
-      "metaTitle": "Impressum - Mathias Krostewitz",
+      "metaTitle": "Impressum - {{profileName}}",
       "eyebrow": "Rechtliches",
       "title": "Impressum",
       "lead": "Anbieterkennzeichnung für {{siteName}} gemäß § 5 Digitale-Dienste-Gesetz (DDG).",
@@ -501,7 +519,7 @@
       }
     },
     "privacy": {
-      "metaTitle": "Datenschutzerklärung - Mathias Krostewitz",
+      "metaTitle": "Datenschutzerklärung - {{profileName}}",
       "eyebrow": "Datenschutz",
       "title": "Datenschutzerklärung",
       "lead": "Diese Datenschutzerklärung erklärt, wie {{siteName}} personenbezogene Daten verarbeitet, wenn Sie die Website besuchen, das Kontaktformular nutzen oder Drittanbieter-Funktionen zum Veröffentlichen verbinden.",

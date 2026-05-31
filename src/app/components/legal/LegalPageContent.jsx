@@ -23,10 +23,11 @@ function ListItems({items}) {
 
 export function ImpressumContent({legal}) {
   const {t} = useTranslation();
+  const profileName = legal.ownerName || legal.siteName;
 
   useEffect(() => {
-    document.title = t("legal.impressum.metaTitle");
-  }, [t]);
+    document.title = t("legal.impressum.metaTitle", {profileName});
+  }, [profileName, t]);
 
   return (
     <main className={styles.main}>
@@ -124,11 +125,12 @@ export function ImpressumContent({legal}) {
 
 export function PrivacyContent({legal}) {
   const {t} = useTranslation();
+  const profileName = legal.ownerName || legal.siteName;
   const legalBases = t("legal.privacy.legalBases.items", {returnObjects: true});
 
   useEffect(() => {
-    document.title = t("legal.privacy.metaTitle");
-  }, [t]);
+    document.title = t("legal.privacy.metaTitle", {profileName});
+  }, [profileName, t]);
 
   return (
     <main className={styles.main}>

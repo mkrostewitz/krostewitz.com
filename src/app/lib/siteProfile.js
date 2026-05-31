@@ -10,6 +10,7 @@ const MAX_METADATA_TITLE_LENGTH = 140;
 const MAX_METADATA_DESCRIPTION_LENGTH = 320;
 const MAX_METADATA_URL_LENGTH = 500;
 const MAX_METADATA_TYPE_LENGTH = 120;
+const MAX_PROFILE_NAME_LENGTH = 80;
 
 const DEFAULT_SITE_METADATA = {
   title: "Portfolio Site",
@@ -41,6 +42,13 @@ function cleanText(value, maxLength = MAX_ADDRESS_LENGTH) {
 
 function cleanUrl(value) {
   return String(value || "").trim().slice(0, MAX_METADATA_URL_LENGTH);
+}
+
+function normalizeBoolean(value, defaultValue = false) {
+  if (typeof value === "boolean") return value;
+  if (value === "true") return true;
+  if (value === "false") return false;
+  return defaultValue;
 }
 
 function getIconSource(metadata = {}) {
@@ -156,6 +164,115 @@ export function getDefaultSiteMetadata() {
   return normalizeSiteMetadata();
 }
 
+function splitFullName(value) {
+  const fullName = cleanText(value, MAX_PROFILE_NAME_LENGTH * 2);
+  if (!fullName || fullName === DEFAULT_SITE_METADATA.title) {
+    return {firstName: "", lastName: ""};
+  }
+
+  const parts = fullName.split(/\s+/).filter(Boolean);
+  if (parts.length < 2) return {firstName: fullName, lastName: ""};
+
+  return {
+    firstName: parts.slice(0, -1).join(" "),
+    lastName: parts.at(-1),
+  };
+}
+
+export function normalizeProfileName(input = {}, fallbackFullName = "") {
+  const source =
+    input && typeof input === "object" && !Array.isArray(input) ? input : {};
+  const fallback = splitFullName(source.fullName || source.name || fallbackFullName);
+  const firstName = cleanText(
+    source.firstName || source.givenName || fallback.firstName,
+    MAX_PROFILE_NAME_LENGTH
+  );
+  const lastName = cleanText(
+    source.lastName || source.familyName || fallback.lastName,
+    MAX_PROFILE_NAME_LENGTH
+  );
+  const fullName = [firstName, lastName].filter(Boolean).join(" ");
+
+  return {
+    firstName,
+    lastName,
+    fullName,
+  };
+}
+
+export function getDefaultProfileName() {
+  return normalizeProfileName(
+    null,
+    process.env.NEXT_PUBLIC_SITE_NAME || process.env.LEGAL_NAME || ""
+  );
+}
+
+function normalizeKoalendarBookingUrl(value, options = {}) {
+  const bookingUrl = cleanUrl(value);
+
+  if (!bookingUrl) return "";
+
+  try {
+    const url = new URL(bookingUrl);
+    const hostname = url.hostname.toLowerCase();
+    const isKoalendarHost =
+      hostname === "koalendar.com" || hostname.endsWith(".koalendar.com");
+
+    if (url.protocol !== "https:" || !isKoalendarHost) {
+      throw new Error("Invalid Koalendar URL.");
+    }
+
+    return url.toString();
+  } catch {
+    if (options.strict) {
+      throw new SiteProfileError(
+        "Koalendar booking URL must use HTTPS and the koalendar.com domain."
+      );
+    }
+
+    return "";
+  }
+}
+
+export function getDefaultKoalendarIntegration() {
+  return {
+    enabled: false,
+    bookingUrl: "",
+  };
+}
+
+export function normalizeKoalendarIntegration(input = {}, options = {}) {
+  const source =
+    typeof input === "string"
+      ? {bookingUrl: input}
+      : input && typeof input === "object" && !Array.isArray(input)
+        ? input
+        : {};
+  const defaultIntegration = getDefaultKoalendarIntegration();
+  const hasBookingUrl =
+    Object.prototype.hasOwnProperty.call(source, "bookingUrl") ||
+    Object.prototype.hasOwnProperty.call(source, "url") ||
+    Object.prototype.hasOwnProperty.call(source, "href");
+  const bookingUrl = normalizeKoalendarBookingUrl(
+    hasBookingUrl
+      ? source.bookingUrl || source.url || source.href || ""
+      : defaultIntegration.bookingUrl,
+    options
+  );
+  const enabled = normalizeBoolean(source.enabled, defaultIntegration.enabled);
+
+  if (options.strict && enabled && !bookingUrl) {
+    throw new SiteProfileError(
+      "Koalendar booking URL is required when the integration is enabled."
+    );
+  }
+
+  return {
+    enabled: enabled && Boolean(bookingUrl),
+    bookingUrl,
+  };
+}
+
 export function toNextMetadata(metadata) {
   const normalized = normalizeSiteMetadata(metadata);
 
@@ -217,10 +334,17 @@ export function normalizeSiteAddress(input) {
 }
 
 function serializeProfile(document = {}) {
+  const metadata = normalizeSiteMetadata(document.metadata);
+  const fallbackName =
+    metadata.title !== DEFAULT_SITE_METADATA.title ? metadata.title : "";
+  const name = normalizeProfileName(document.name, fallbackName);
+
   return {
     address: normalizeSiteAddress(document.address),
     blogEnabled: document.blogEnabled !== false,
-    metadata: normalizeSiteMetadata(document.metadata),
+    koalendar: normalizeKoalendarIntegration(document.koalendar),
+    metadata,
+    name,
     updatedAt: document.updatedAt?.toISOString?.() || null,
     updatedBy: document.updatedBy || null,
   };
@@ -228,9 +352,42 @@ function serializeProfile(document = {}) {
 
 export async function getSiteProfile() {
   const db = await getDb();
-  const document = await db
-    .collection(CONTENT_COLLECTION)
-    .findOne({_id: PROFILE_ID});
+  const collection = db.collection(CONTENT_COLLECTION);
+  let document = await collection.findOne({_id: PROFILE_ID});
+  const defaultName = getDefaultProfileName();
+
+  if (!document) {
+    await collection.updateOne(
+      {_id: PROFILE_ID},
+      {
+        $setOnInsert: {
+          koalendar: getDefaultKoalendarIntegration(),
+          name: defaultName,
+          createdAt: new Date(),
+        },
+      },
+      {upsert: true}
+    );
+
+    document = await collection.findOne({_id: PROFILE_ID});
+  } else if (document.koalendar === undefined) {
+    const koalendar = getDefaultKoalendarIntegration();
+
+    await collection.updateOne({_id: PROFILE_ID}, {$set: {koalendar}});
+    document = {...document, koalendar};
+  }
+
+  if (document && document.name === undefined) {
+    const metadata = normalizeSiteMetadata(document.metadata);
+    const fallbackName =
+      metadata.title !== DEFAULT_SITE_METADATA.title
+        ? metadata.title
+        : defaultName.fullName;
+    const name = normalizeProfileName(document.name, fallbackName);
+
+    await collection.updateOne({_id: PROFILE_ID}, {$set: {name}});
+    document = {...document, name};
+  }
 
   return serializeProfile(document || {});
 }
@@ -247,9 +404,17 @@ export async function saveSiteProfile(input = {}, user) {
     "blogEnabled"
   );
   const hasMetadata = Object.prototype.hasOwnProperty.call(input, "metadata");
+  const hasKoalendar = Object.prototype.hasOwnProperty.call(input, "koalendar");
+  const hasName = Object.prototype.hasOwnProperty.call(input, "name");
   const address = normalizeSiteAddress(input.address);
   const metadata = hasMetadata
     ? normalizeSiteMetadata(input.metadata, {strict: true})
+    : null;
+  const koalendar = hasKoalendar
+    ? normalizeKoalendarIntegration(input.koalendar, {strict: true})
+    : null;
+  const name = hasName
+    ? normalizeProfileName(input.name, metadata?.title || "")
     : null;
 
   if (hasAddress && input.address && !address) {
@@ -274,9 +439,20 @@ export async function saveSiteProfile(input = {}, user) {
     document.metadata = metadata;
   }
 
+  if (hasName) {
+    document.name = name;
+  }
+
+  if (hasKoalendar) {
+    document.koalendar = koalendar;
+  }
+
   const insertDefaults = {createdAt: now};
   if (!hasBlogEnabled) {
     insertDefaults.blogEnabled = true;
+  }
+  if (!hasKoalendar) {
+    insertDefaults.koalendar = getDefaultKoalendarIntegration();
   }
 
   const db = await getDb();

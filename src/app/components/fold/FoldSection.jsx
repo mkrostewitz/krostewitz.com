@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import {useEffect, useState} from "react";
 import {Trans, useTranslation} from "react-i18next";
 
 import pageStyles from "../../page.module.css";
@@ -7,6 +8,8 @@ import styles from "./fold-section.module.css";
 import "../../buttons.css";
 
 const FoldSection = () => {
+  const [bookingUrl, setBookingUrl] = useState("");
+  const [profileName, setProfileName] = useState("");
   const {t} = useTranslation(undefined, {
     keyPrefix: "offer",
   });
@@ -14,6 +17,45 @@ const FoldSection = () => {
     keyPrefix: "buttons",
   });
   const points = t("points", {returnObjects: true});
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function loadProfileSettings() {
+      try {
+        const response = await fetch("/api/content/profile", {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error("Unable to load booking settings.");
+        }
+
+        const profile = data.profile || {};
+        const koalendar = profile.koalendar;
+        setProfileName(profile.name?.fullName || "");
+        setBookingUrl(
+          koalendar?.enabled && koalendar?.bookingUrl
+            ? koalendar.bookingUrl
+            : ""
+        );
+      } catch (error) {
+        if (error?.name !== "AbortError") {
+          console.warn("Unable to load profile settings", error);
+          setProfileName("");
+          setBookingUrl("");
+        }
+      }
+    }
+
+    void loadProfileSettings();
+
+    return () => {
+      controller.abort();
+    };
+  }, []);
 
   return (
     <header className={styles.hero}>
@@ -40,14 +82,16 @@ const FoldSection = () => {
           ))}
         </ul>
         <div className={styles.actions}>
-          <Link
-            href="https://koalendar.com/e/meet-with-mathias-krostewitz"
-            className="primary"
-            target="_blank"
-            rel="noreferrer"
-          >
-            {transButtons("booking")}
-          </Link>
+          {bookingUrl && (
+            <Link
+              href={bookingUrl}
+              className="primary"
+              target="_blank"
+              rel="noreferrer"
+            >
+              {transButtons("booking")}
+            </Link>
+          )}
           <Link
             href="https://www.linkedin.com/in/mkrostewitz"
             className="secondary"
@@ -61,7 +105,7 @@ const FoldSection = () => {
       <div className={styles.portraitShell}>
         <Image
           src="/mk.png"
-          alt={t("alt")}
+          alt={profileName ? t("alt", {profileName}) : t("altFallback")}
           fill
           sizes="(max-width: 960px) 100vw, 38vw"
           className={styles.portrait}

@@ -14,6 +14,15 @@ import styles from "../admin.module.css";
 const EMPTY_PROFILE = {
   address: null,
   blogEnabled: true,
+  koalendar: {
+    enabled: false,
+    bookingUrl: "",
+  },
+  name: {
+    firstName: "",
+    lastName: "",
+    fullName: "",
+  },
   metadata: {
     title: "",
     description: "",
@@ -91,6 +100,20 @@ function normalizeMetadataForm(metadata = {}) {
   };
 }
 
+function normalizeKoalendarForm(koalendar = {}) {
+  return {
+    enabled: koalendar.enabled !== false,
+    bookingUrl: String(koalendar.bookingUrl || ""),
+  };
+}
+
+function normalizeNameForm(name = {}) {
+  return {
+    firstName: String(name.firstName || "").trim(),
+    lastName: String(name.lastName || "").trim(),
+  };
+}
+
 export default function ProfileSettings({user}) {
   const {t, i18n} = useTranslation(undefined, {keyPrefix: "admin.profile"});
   const {closeSnackbar, showSnackbar} = useSnackbar();
@@ -104,6 +127,12 @@ export default function ProfileSettings({user}) {
   const [address, setAddress] = useState(null);
   const [addressInput, setAddressInput] = useState("");
   const [blogEnabled, setBlogEnabled] = useState(true);
+  const [koalendarForm, setKoalendarForm] = useState(() =>
+    normalizeKoalendarForm(EMPTY_PROFILE.koalendar)
+  );
+  const [nameForm, setNameForm] = useState(() =>
+    normalizeNameForm(EMPTY_PROFILE.name)
+  );
   const [metadataForm, setMetadataForm] = useState(() =>
     normalizeMetadataForm(EMPTY_PROFILE.metadata)
   );
@@ -121,6 +150,11 @@ export default function ProfileSettings({user}) {
       ),
     [address?.label, addressInput, mapboxToken]
   );
+  const koalendarBookingUrl = koalendarForm.bookingUrl.trim();
+  const koalendarCanOpen = /^https:\/\/([^/]+\.)*koalendar\.com(\/|$)/i.test(
+    koalendarBookingUrl
+  );
+  const koalendarConnected = koalendarForm.enabled && koalendarCanOpen;
 
   useEffect(() => {
     void loadRuntimeTranslations();
@@ -145,6 +179,8 @@ export default function ProfileSettings({user}) {
           setAddress(nextProfile.address || null);
           setAddressInput(nextProfile.address?.label || "");
           setBlogEnabled(nextProfile.blogEnabled !== false);
+          setKoalendarForm(normalizeKoalendarForm(nextProfile.koalendar));
+          setNameForm(normalizeNameForm(nextProfile.name));
           setMetadataForm(normalizeMetadataForm(nextProfile.metadata));
           closeSnackbar();
         }
@@ -263,6 +299,48 @@ export default function ProfileSettings({user}) {
 
   function handleMetadataInput(field, value) {
     setMetadataForm((current) => ({...current, [field]: value}));
+  }
+
+  function handleNameInput(field, value) {
+    setNameForm((current) => ({...current, [field]: value}));
+  }
+
+  function handleKoalendarInput(field, value) {
+    setKoalendarForm((current) => ({...current, [field]: value}));
+  }
+
+  async function saveKoalendarIntegration() {
+    setIsSaving(true);
+    closeSnackbar();
+
+    try {
+      const response = await fetch("/api/admin/profile", {
+        method: "PUT",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({koalendar: koalendarForm}),
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || t("errors.saveKoalendar"));
+      }
+
+      const nextProfile = data.profile || EMPTY_PROFILE;
+
+      setProfile(nextProfile);
+      setKoalendarForm(normalizeKoalendarForm(nextProfile.koalendar));
+      showSnackbar({
+        type: "success",
+        message: t("status.koalendarSaved"),
+      });
+    } catch (error) {
+      showSnackbar({
+        type: "error",
+        message: error.message || t("errors.saveKoalendar"),
+      });
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   async function uploadMetadataAsset(
@@ -397,7 +475,13 @@ export default function ProfileSettings({user}) {
       const response = await fetch("/api/admin/profile", {
         method: "PUT",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({address, blogEnabled, metadata: metadataForm}),
+        body: JSON.stringify({
+          address,
+          blogEnabled,
+          koalendar: koalendarForm,
+          metadata: metadataForm,
+          name: nameForm,
+        }),
       });
       const data = await response.json().catch(() => ({}));
 
@@ -411,6 +495,8 @@ export default function ProfileSettings({user}) {
       setAddress(nextProfile.address || null);
       setAddressInput(nextProfile.address?.label || "");
       setBlogEnabled(nextProfile.blogEnabled !== false);
+      setKoalendarForm(normalizeKoalendarForm(nextProfile.koalendar));
+      setNameForm(normalizeNameForm(nextProfile.name));
       setMetadataForm(normalizeMetadataForm(nextProfile.metadata));
       showSnackbar({type: "success", message: t("status.profileSaved")});
     } catch (error) {
@@ -447,6 +533,32 @@ export default function ProfileSettings({user}) {
             </div>
 
             <div className={styles.metadataGrid}>
+              <label className={styles.field}>
+                {t("fields.firstName")}
+                <input
+                  autoComplete="given-name"
+                  maxLength={80}
+                  placeholder={t("fields.firstNamePlaceholder")}
+                  value={nameForm.firstName}
+                  onChange={(event) =>
+                    handleNameInput("firstName", event.target.value)
+                  }
+                />
+              </label>
+
+              <label className={styles.field}>
+                {t("fields.lastName")}
+                <input
+                  autoComplete="family-name"
+                  maxLength={80}
+                  placeholder={t("fields.lastNamePlaceholder")}
+                  value={nameForm.lastName}
+                  onChange={(event) =>
+                    handleNameInput("lastName", event.target.value)
+                  }
+                />
+              </label>
+
               <label className={`${styles.field} ${styles.metadataTitleField}`}>
                 {t("fields.browserTitle")}
                 <input
@@ -644,6 +756,76 @@ export default function ProfileSettings({user}) {
                 {blogEnabled ? t("blog.visible") : t("blog.hidden")}
               </span>
             </label>
+
+            <div className={styles.integrationPanel}>
+              <label className={styles.featureToggle}>
+                <input
+                  checked={koalendarForm.enabled}
+                  disabled={isSaving}
+                  type="checkbox"
+                  onChange={(event) =>
+                    handleKoalendarInput("enabled", event.target.checked)
+                  }
+                />
+                <span className={styles.featureSwitch} aria-hidden="true" />
+                <span className={styles.featureText}>
+                  <strong>{t("koalendar.title")}</strong>
+                  <small>
+                    {koalendarConnected
+                      ? t("koalendar.connectedDescription")
+                      : t("koalendar.disconnectedDescription")}
+                  </small>
+                </span>
+                <span className={styles.featureStatus}>
+                  {koalendarConnected
+                    ? t("koalendar.connected")
+                    : t("koalendar.disconnected")}
+                </span>
+              </label>
+
+              <div className={styles.integrationFields}>
+                <label className={styles.field}>
+                  {t("fields.koalendarUrl")}
+                  <input
+                    inputMode="url"
+                    type="url"
+                    value={koalendarForm.bookingUrl}
+                    onChange={(event) =>
+                      handleKoalendarInput("bookingUrl", event.target.value)
+                    }
+                  />
+                </label>
+
+                {koalendarCanOpen && (
+                  <a
+                    className={styles.secondaryButton}
+                    href={koalendarBookingUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {t("actions.openKoalendar")}
+                  </a>
+                )}
+              </div>
+
+              <div className={styles.editorActions}>
+                <p className={styles.muted}>
+                  {t("fields.lastSaved", {
+                    date: formatDate(profile.updatedAt, locale, notSavedLabel),
+                  })}
+                </p>
+                <button
+                  className={styles.button}
+                  disabled={isSaving}
+                  type="button"
+                  onClick={() => void saveKoalendarIntegration()}
+                >
+                  {isSaving
+                    ? t("actions.saving")
+                    : t("actions.saveKoalendar")}
+                </button>
+              </div>
+            </div>
           </section>
 
           <section className={styles.profilePanel}>

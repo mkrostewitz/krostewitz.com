@@ -6,11 +6,15 @@ import styles from "../legal.module.css";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-  title: "Privacy Policy - Mathias Krostewitz",
-  description:
-    "Privacy policy for krostewitz.com, including contact forms, analytics, maps, media, and LinkedIn publishing integration.",
-};
+export async function generateMetadata() {
+  const legal = await getLegalDetails();
+  const name = legal.ownerName || legal.siteName;
+
+  return {
+    title: `Privacy Policy - ${name}`,
+    description: `Privacy policy for ${legal.siteName}, including contact forms, analytics, maps, media, and LinkedIn publishing integration.`,
+  };
+}
 
 export default async function PrivacyPage() {
   const legal = await getLegalDetails();

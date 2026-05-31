@@ -52,7 +52,18 @@
         "visibleDescription": "Shown in navigation, homepage, and public post pages. Toggle saves immediately.",
         "hiddenDescription": "Hidden from navigation, homepage, posts API, and public post pages. Toggle saves immediately."
       },
+      "koalendar": {
+        "title": "Koalendar booking",
+        "connected": "Connected",
+        "disconnected": "Off",
+        "connectedDescription": "{{profileName}} booking buttons open this Koalendar page.",
+        "disconnectedDescription": "{{profileName}} booking buttons are hidden until the integration is enabled and saved."
+      },
       "fields": {
+        "firstName": "First name",
+        "firstNamePlaceholder": "{{firstName}}",
+        "lastName": "Last name",
+        "lastNamePlaceholder": "{{lastName}}",
         "browserTitle": "Browser title",
         "siteTitlePlaceholder": "Site title",
         "logoUrl": "Logo URL",
@@ -63,7 +74,8 @@
         "iconMimeType": "Icon MIME type",
         "lastSaved": "Last saved: {{date}}",
         "address": "Address",
-        "addressPlaceholder": "Start typing an address"
+        "addressPlaceholder": "Start typing an address",
+        "koalendarUrl": "Koalendar booking URL"
       },
       "actions": {
         "saving": "Saving...",
@@ -71,7 +83,9 @@
         "uploadAsset": "Upload",
         "saveMetadata": "Save site metadata",
         "clearAddress": "Clear address",
-        "saveProfile": "Save profile"
+        "saveProfile": "Save profile",
+        "openKoalendar": "Open Koalendar",
+        "saveKoalendar": "Save Koalendar"
       },
       "status": {
         "notSaved": "Not saved",
@@ -83,7 +97,8 @@
         "blogHidden": "Blog is hidden from the public website.",
         "blogVisible": "Blog is visible on the public website.",
         "profileSaved": "Profile settings saved.",
-        "assetUploaded": "{{asset}} uploaded and published."
+        "assetUploaded": "{{asset}} uploaded and published.",
+        "koalendarSaved": "Koalendar integration saved."
       },
       "errors": {
         "loadProfile": "Unable to load profile settings.",
@@ -91,7 +106,8 @@
         "saveBlogVisibility": "Unable to save blog visibility.",
         "uploadAsset": "Unable to upload {{asset}}.",
         "chooseAddress": "Choose an address from the Mapbox results before saving.",
-        "saveProfile": "Unable to save profile settings."
+        "saveProfile": "Unable to save profile settings.",
+        "saveKoalendar": "Unable to save Koalendar integration."
       },
       "preview": {
         "mapLabel": "Selected address map",
@@ -109,7 +125,8 @@
       "Stabilize cash, supply, and delivery with pragmatic ops changes"
     ],
     "cta": "Schedule a Call",
-    "alt": "Portrait of Mathias Krostewitz"
+    "alt": "Portrait of {{profileName}}",
+    "altFallback": "Portrait"
   },
   "executiveSummary": {
     "eyebrow": "Executive Summary",
@@ -194,6 +211,7 @@
       "forecast": "Forecast",
       "forecastTime": "Time",
       "recentMeasurements": "Recent readings",
+      "waterMeasurements": "GKD readings",
       "noForecast": "No forecast available",
       "updated": "Updated {{time}}",
       "loading": "Loading wind data",
@@ -473,7 +491,7 @@
       "register": "Register"
     },
     "impressum": {
-      "metaTitle": "Impressum - Mathias Krostewitz",
+      "metaTitle": "Impressum - {{profileName}}",
       "eyebrow": "Legal notice",
       "title": "Impressum",
       "lead": "Provider identification for {{siteName}} according to § 5 Digitale-Dienste-Gesetz (DDG).",
@@ -500,7 +518,7 @@
       }
     },
     "privacy": {
-      "metaTitle": "Privacy Policy - Mathias Krostewitz",
+      "metaTitle": "Privacy Policy - {{profileName}}",
       "eyebrow": "Privacy",
       "title": "Privacy Policy",
       "lead": "This policy explains how {{siteName}} processes personal data when you visit the website, use the contact form, or connect third-party publishing features.",
