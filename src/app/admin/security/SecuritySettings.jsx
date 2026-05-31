@@ -9,6 +9,11 @@ import styles from "../admin.module.css";
 export default function SecuritySettings({user}) {
   const {closeSnackbar, showSnackbar} = useSnackbar();
   const [settings, setSettings] = useState(null);
+  const [passwordSettings, setPasswordSettings] = useState(null);
+  const [passwordForm, setPasswordForm] = useState({
+    password: "",
+    confirmPassword: "",
+  });
   const [setup, setSetup] = useState(null);
   const [code, setCode] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -18,17 +23,30 @@ export default function SecuritySettings({user}) {
 
     async function loadSettings() {
       try {
-        const response = await fetch("/api/admin/auth/totp", {
-          cache: "no-store",
-        });
-        const data = await response.json().catch(() => ({}));
+        const [totpResponse, passwordResponse] = await Promise.all([
+          fetch("/api/admin/auth/totp", {
+            cache: "no-store",
+          }),
+          fetch("/api/admin/auth/password", {
+            cache: "no-store",
+          }),
+        ]);
+        const data = await totpResponse.json().catch(() => ({}));
+        const passwordData = await passwordResponse.json().catch(() => ({}));
 
-        if (!response.ok) {
+        if (!totpResponse.ok) {
           throw new Error(data.error || "Unable to load security settings.");
+        }
+
+        if (!passwordResponse.ok) {
+          throw new Error(
+            passwordData.error || "Unable to load password settings.",
+          );
         }
 
         if (!cancelled) {
           setSettings(data);
+          setPasswordSettings(passwordData);
           closeSnackbar();
         }
       } catch (error) {
@@ -42,6 +60,42 @@ export default function SecuritySettings({user}) {
       cancelled = true;
     };
   }, [closeSnackbar, showSnackbar]);
+
+  async function updatePassword(event) {
+    event.preventDefault();
+    closeSnackbar();
+
+    if (passwordForm.password !== passwordForm.confirmPassword) {
+      showSnackbar({type: "error", message: "Passwords do not match."});
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch("/api/admin/auth/password", {
+        method: "PUT",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({password: passwordForm.password}),
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || "Unable to update password.");
+      }
+
+      setPasswordSettings(data);
+      setPasswordForm({password: "", confirmPassword: ""});
+      showSnackbar({
+        type: "success",
+        message: "Admin password updated.",
+      });
+    } catch (error) {
+      showSnackbar({type: "error", message: error.message});
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   async function startSetup() {
     setIsSubmitting(true);
@@ -140,6 +194,65 @@ export default function SecuritySettings({user}) {
         </div>
 
         <section className={styles.securityGrid}>
+          <div className={styles.securityPanel}>
+            <div className={styles.panelHeader}>
+              <div className={styles.titleBlock}>
+                <h2>Password</h2>
+                <p className={styles.muted}>
+                  Set a new admin password for password sign-in.
+                </p>
+              </div>
+              <span className={styles.statusBadge}>
+                {passwordSettings?.configured ? "Configured" : "Not set"}
+              </span>
+            </div>
+
+            <form className={styles.form} onSubmit={updatePassword}>
+              <label className={styles.field}>
+                New password
+                <input
+                  type="password"
+                  autoComplete="new-password"
+                  minLength={12}
+                  value={passwordForm.password}
+                  onChange={(event) =>
+                    setPasswordForm((current) => ({
+                      ...current,
+                      password: event.target.value,
+                    }))
+                  }
+                  required
+                />
+              </label>
+
+              <label className={styles.field}>
+                Confirm new password
+                <input
+                  type="password"
+                  autoComplete="new-password"
+                  minLength={12}
+                  value={passwordForm.confirmPassword}
+                  onChange={(event) =>
+                    setPasswordForm((current) => ({
+                      ...current,
+                      confirmPassword: event.target.value,
+                    }))
+                  }
+                  required
+                />
+              </label>
+
+              <div className={styles.buttonRow}>
+                <button
+                  className={styles.button}
+                  disabled={isSubmitting || !passwordSettings}
+                >
+                  {isSubmitting ? "Saving..." : "Save password"}
+                </button>
+              </div>
+            </form>
+          </div>
+
           <div className={styles.securityPanel}>
             <div className={styles.panelHeader}>
               <div className={styles.titleBlock}>

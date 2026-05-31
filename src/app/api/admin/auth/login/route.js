@@ -13,6 +13,7 @@ import {
   getDefaultSender,
   isAppleMailConfigured,
 } from "../../../../lib/mail";
+import {renderAdminCodeEmail} from "../../../../lib/emailTemplates";
 import {getOriginHost, getRequestOrigin} from "../../../../lib/requestOrigin";
 
 export const runtime = "nodejs";
@@ -95,7 +96,8 @@ export async function POST(request) {
       );
     }
 
-    const siteHost = getOriginHost(getRequestOrigin(request));
+    const origin = getRequestOrigin(request);
+    const siteHost = getOriginHost(origin);
 
     try {
       await transporter.sendMail({
@@ -103,6 +105,11 @@ export async function POST(request) {
         to: admin.email,
         subject: `Your ${siteHost} admin sign-in code`,
         text: `Your admin sign-in code is ${challenge.code}.\n\nThis code expires in 10 minutes. If you did not request it, change your password immediately.`,
+        html: await renderAdminCodeEmail({
+          code: challenge.code,
+          origin,
+          siteHost,
+        }),
       });
     } catch (error) {
       console.error("Admin auth email error", error);

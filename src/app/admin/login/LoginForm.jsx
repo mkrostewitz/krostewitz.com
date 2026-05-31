@@ -1,6 +1,6 @@
 "use client";
 
-import {useMemo, useState} from "react";
+import {useEffect, useMemo, useState} from "react";
 import {useRouter} from "next/navigation";
 
 import {useSnackbar} from "../../components/snackbar/SnackbarProvider";
@@ -11,7 +11,16 @@ const METHODS = [
   {id: "email", label: "Email code"},
 ];
 
-export default function LoginForm() {
+const LINKEDIN_ERROR_MESSAGES = {
+  not_configured: "LinkedIn sign-in is not enabled or configured yet.",
+  cancelled: "LinkedIn sign-in was cancelled.",
+  state: "LinkedIn sign-in could not be verified. Try again.",
+  email: "LinkedIn did not return a verified email address.",
+  unauthorized: "This LinkedIn account is not allowed to access the admin area.",
+  failed: "Unable to complete LinkedIn sign-in.",
+};
+
+export default function LoginForm({linkedInSignInEnabled = false}) {
   const router = useRouter();
   const {closeSnackbar, showSnackbar} = useSnackbar();
   const [phase, setPhase] = useState("credentials");
@@ -27,6 +36,26 @@ export default function LoginForm() {
     () => METHODS.filter((item) => availableMethods.includes(item.id)),
     [availableMethods],
   );
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const linkedInError = params.get("linkedin_error");
+
+    if (!linkedInError) return;
+
+    showSnackbar({
+      type: "error",
+      message:
+        LINKEDIN_ERROR_MESSAGES[linkedInError] ||
+        "Unable to complete LinkedIn sign-in.",
+    });
+
+    params.delete("linkedin_error");
+    const nextUrl = `${window.location.pathname}${
+      params.toString() ? `?${params.toString()}` : ""
+    }${window.location.hash}`;
+    window.history.replaceState(null, "", nextUrl);
+  }, [showSnackbar]);
 
   async function submitCredentials(event) {
     event.preventDefault();
@@ -126,7 +155,7 @@ export default function LoginForm() {
     }
   }
 
-  async function requestMagicLink() {
+  async function requestMagicLink(intent = "sign_in") {
     if (!email.trim()) {
       showSnackbar({type: "error", message: "Enter the admin email first."});
       return;
@@ -139,7 +168,7 @@ export default function LoginForm() {
       const response = await fetch("/api/admin/auth/magic-link", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({email}),
+        body: JSON.stringify({email, intent}),
       });
       const data = await response.json().catch(() => ({}));
 
@@ -149,7 +178,10 @@ export default function LoginForm() {
 
       showSnackbar({
         type: "success",
-        message: "Magic link sent to the configured admin email.",
+        message:
+          intent === "password_reset"
+            ? "Password reset link sent to the configured admin email."
+            : "Magic link sent to the configured admin email.",
       });
     } catch (error) {
       showSnackbar({type: "error", message: error.message});
@@ -175,43 +207,72 @@ export default function LoginForm() {
       </div>
 
       {phase === "credentials" ? (
-        <form className={styles.form} onSubmit={submitCredentials}>
-          <label className={styles.field}>
-            Email
-            <input
-              type="email"
-              autoComplete="username"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              required
-            />
-          </label>
+        <>
+          {linkedInSignInEnabled ? (
+            <>
+              <a
+                className={styles.linkedinButton}
+                href="/api/admin/auth/linkedin"
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                Sign in with LinkedIn
+              </a>
 
-          <label className={styles.field}>
-            Password
-            <input
-              type="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              required
-            />
-          </label>
+              <div className={styles.loginDivider}>
+                <span>or use password</span>
+              </div>
+            </>
+          ) : null}
 
-          <div className={styles.buttonRow}>
-            <button className={styles.button} disabled={isSubmitting}>
-              {isSubmitting ? "Checking..." : "Continue"}
-            </button>
-            <button
-              type="button"
-              className={styles.ghostButton}
-              disabled={isSubmitting}
-              onClick={requestMagicLink}
-            >
-              Send magic link
-            </button>
-          </div>
-        </form>
+          <form className={styles.form} onSubmit={submitCredentials}>
+            <label className={styles.field}>
+              Email
+              <input
+                type="email"
+                autoComplete="username"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                required
+              />
+            </label>
+
+            <label className={styles.field}>
+              <span className={styles.fieldHeader}>
+                <span className={styles.fieldLabel}>Password</span>
+                <button
+                  type="button"
+                  className={styles.inlineButton}
+                  disabled={isSubmitting}
+                  onClick={() => requestMagicLink("password_reset")}
+                >
+                  Forgot password?
+                </button>
+              </span>
+              <input
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                required
+              />
+            </label>
+
+            <div className={styles.buttonRow}>
+              <button className={styles.button} disabled={isSubmitting}>
+                {isSubmitting ? "Checking..." : "Continue"}
+              </button>
+              <button
+                type="button"
+                className={styles.ghostButton}
+                disabled={isSubmitting}
+                onClick={() => requestMagicLink()}
+              >
+                Send magic link
+              </button>
+            </div>
+          </form>
+        </>
       ) : phase === "secondFactor" ? (
         <div className={styles.form}>
           <div className={styles.field}>
