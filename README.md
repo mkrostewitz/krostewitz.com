@@ -46,11 +46,15 @@ The `_id: "admin"` field marks that user as allowed to access the admin area. Yo
 Required or recommended for email links:
 
 - `APPLE_MAIL_FROM` defaults to `APPLE_MAIL_USER` if omitted
-- `AUTH_BASE_URL` should be the public site origin in production, for example `https://domainname.com`. It defaults to the current request origin in development.
+- Links use the current request host, so local emails point at `localhost` and deployed emails point at the active domain. `AUTH_BASE_URL` or `NEXT_PUBLIC_SITE_URL` can still be set as a fallback when no request host is available.
 
 ## Language detection
 
 The public site calls `/api/language` on first load unless the visitor has manually selected a language. The route first reads platform country headers derived from the visitor IP, such as `x-vercel-ip-country`, `cf-ipcountry`, and `cloudfront-viewer-country`. If those are unavailable, it uses `IP_INFO_TOKEN` with IPinfo Lite to read the visitor country code from a forwarded public IP. German is shown for `AT`, `CH`, `DE`, `LI`, and `LU`; English is used for every other country or when detection is unavailable.
+
+## Site profile settings
+
+Public profile settings are managed in `/admin/profile` and stored in MongoDB under the `site_content` document `_id: "profile_settings"`. This includes first and last name, site metadata, blog visibility, the contact address, and the Koalendar booking integration. The Impressum and privacy pages use the saved profile name and address for provider/controller details. Missing Koalendar settings initialize as disabled with an empty booking URL, and public booking CTAs read only from the saved profile setting.
 
 ## Blog posts
 
