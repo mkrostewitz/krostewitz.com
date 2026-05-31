@@ -371,7 +371,7 @@ export async function createAuthChallenge(admin, method) {
   };
 }
 
-export async function createMagicLinkChallenge(admin) {
+export async function createMagicLinkChallenge(admin, metadata = {}) {
   if (!admin) {
     throw new Error("Admin authentication is not configured.");
   }
@@ -387,6 +387,8 @@ export async function createMagicLinkChallenge(admin) {
     email: admin.email,
     method: "magic_link",
     tokenHash: hashToken(token),
+    intent: metadata.intent || "sign_in",
+    redirectPath: metadata.redirectPath || null,
     attempts: 0,
     createdAt: now,
     expiresAt,
@@ -478,6 +480,8 @@ export async function verifyMagicLinkChallenge(challengeId, token) {
     email: admin.email,
     name: admin.name,
     method: "magic_link",
+    intent: challenge.intent || "sign_in",
+    redirectPath: challenge.redirectPath || null,
   };
 }
 

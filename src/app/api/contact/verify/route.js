@@ -1,25 +1,17 @@
 "use server";
 
 import {NextResponse} from "next/server";
-import nodemailer from "nodemailer";
 
+import {
+  getAppleMailTransport,
+  getDefaultSender,
+} from "../../../lib/mail";
+import {
+  renderOwnerLeadNotificationEmail,
+  renderRequesterCopyEmail,
+} from "../../../lib/emailTemplates";
 import {LeadValidationError, verifyPendingLead} from "../../../lib/leads";
 import {getRequestOrigin} from "../../../lib/requestOrigin";
-
-const getTransport = () => {
-  const {APPLE_MAIL_USER, APPLE_MAIL_APP_PASSWORD} = process.env;
-  if (!APPLE_MAIL_USER || !APPLE_MAIL_APP_PASSWORD) return null;
-
-  return nodemailer.createTransport({
-    host: "smtp.mail.me.com",
-    port: 587,
-    secure: false,
-    auth: {
-      user: APPLE_MAIL_USER,
-      pass: APPLE_MAIL_APP_PASSWORD,
-    },
-  });
-};
 
 function getRequestSummaryLines(lead) {
   return [
@@ -90,8 +82,8 @@ function getRequesterCopyText(lead, downloadUrl) {
 }
 
 export async function POST(request) {
-  const {APPLE_MAIL_USER, APPLE_MAIL_FROM, APPLE_MAIL_TO} = process.env;
-  const transporter = getTransport();
+  const {APPLE_MAIL_USER, APPLE_MAIL_TO} = process.env;
+  const transporter = getAppleMailTransport();
   if (!transporter) {
     return NextResponse.json(
       {errorCode: "contact.form.mailNotConfigured"},
@@ -131,7 +123,8 @@ export async function POST(request) {
 
   // Send the actual message to us after verification
   const isCvRequest = lead.source.type === "cv_download";
-  const from = APPLE_MAIL_FROM || APPLE_MAIL_USER;
+  const origin = getRequestOrigin(request);
+  const from = getDefaultSender();
   const ownerMailOptions = {
     from,
     to: APPLE_MAIL_TO || APPLE_MAIL_USER,
@@ -140,6 +133,7 @@ export async function POST(request) {
       : `New contact from ${lead.name}`,
     replyTo: lead.email,
     text: getOwnerNotificationText(lead),
+    html: await renderOwnerLeadNotificationEmail({lead, origin}),
   };
   const requesterCopyMailOptions = {
     from,
@@ -149,6 +143,11 @@ export async function POST(request) {
       : "Copy of your contact request",
     replyTo: APPLE_MAIL_TO || APPLE_MAIL_USER,
     text: getRequesterCopyText(lead, requesterDownloadUrl || downloadUrl),
+    html: await renderRequesterCopyEmail({
+      lead,
+      origin,
+      downloadUrl: requesterDownloadUrl || downloadUrl,
+    }),
   };
 
   try {
