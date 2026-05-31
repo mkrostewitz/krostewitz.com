@@ -1,5 +1,6 @@
 "use client";
 
+import {X} from "lucide-react";
 import Link from "next/link";
 import {useEffect, useMemo, useState} from "react";
 
@@ -48,6 +49,8 @@ export default function PostManager({user}) {
   const [isLoading, setIsLoading] = useState(true);
   const [isDisconnectingLinkedin, setIsDisconnectingLinkedin] = useState(false);
   const [sharingPostId, setSharingPostId] = useState("");
+  const [pendingSharePost, setPendingSharePost] = useState(null);
+  const [shareTarget, setShareTarget] = useState("personal_profile");
 
   const counts = useMemo(
     () =>
@@ -161,7 +164,17 @@ export default function PostManager({user}) {
     }
   }
 
-  async function sharePostToLinkedIn(post) {
+  function openShareDialog(post) {
+    setShareTarget("personal_profile");
+    setPendingSharePost(post);
+  }
+
+  function closeShareDialog() {
+    if (sharingPostId) return;
+    setPendingSharePost(null);
+  }
+
+  async function sharePostToLinkedIn(post, target = "personal_profile") {
     if (!linkedin.connected || linkedin.needsReconnect) {
       showSnackbar({
         type: "error",
@@ -176,6 +189,8 @@ export default function PostManager({user}) {
     try {
       const response = await fetch(`/api/admin/posts/${post.id}/linkedin`, {
         method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({target}),
       });
       const data = await response.json().catch(() => ({}));
 
@@ -194,6 +209,7 @@ export default function PostManager({user}) {
         type: "success",
         message: "Post shared to LinkedIn.",
       });
+      setPendingSharePost(null);
     } catch (error) {
       showSnackbar({type: "error", message: error.message});
     } finally {
@@ -370,7 +386,7 @@ export default function PostManager({user}) {
                             !canShareToLinkedIn || sharingPostId === post.id
                           }
                           type="button"
-                          onClick={() => sharePostToLinkedIn(post)}
+                          onClick={() => openShareDialog(post)}
                         >
                           {sharingPostId === post.id ? "Sharing..." : "Share"}
                         </button>
@@ -392,6 +408,94 @@ export default function PostManager({user}) {
           </section>
         </div>
       </main>
+
+      {pendingSharePost && (
+        <div
+          className={styles.modalBackdrop}
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              closeShareDialog();
+            }
+          }}
+        >
+          <section
+            aria-labelledby="linkedin-share-title"
+            aria-modal="true"
+            className={styles.modalPanel}
+            role="dialog"
+          >
+            <div className={styles.modalHeader}>
+              <div className={styles.titleBlock}>
+                <h2 id="linkedin-share-title">Share to LinkedIn</h2>
+                <p className={styles.muted}>{pendingSharePost.title}</p>
+              </div>
+              <button
+                aria-label="Close LinkedIn share dialog"
+                className={styles.iconButton}
+                disabled={Boolean(sharingPostId)}
+                type="button"
+                onClick={closeShareDialog}
+              >
+                <X aria-hidden="true" size={18} strokeWidth={2.2} />
+              </button>
+            </div>
+
+            <fieldset className={styles.shareTargetList}>
+              <legend>Destination</legend>
+              <label className={styles.shareTargetOption}>
+                <input
+                  checked={shareTarget === "personal_profile"}
+                  name="linkedin-share-target"
+                  type="radio"
+                  value="personal_profile"
+                  onChange={(event) => setShareTarget(event.target.value)}
+                />
+                <span>
+                  <strong>Personal profile</strong>
+                  <small>
+                    {linkedin.profile?.name || linkedin.profile?.email}
+                  </small>
+                </span>
+              </label>
+
+              <label
+                className={`${styles.shareTargetOption} ${styles.shareTargetOptionDisabled}`}
+              >
+                <input
+                  disabled
+                  name="linkedin-share-target"
+                  type="radio"
+                  value="company_page"
+                />
+                <span>
+                  <strong>Company page</strong>
+                  <small>Requires LinkedIn organization publishing setup.</small>
+                </span>
+              </label>
+            </fieldset>
+
+            <div className={styles.modalFooter}>
+              <button
+                className={styles.secondaryButton}
+                disabled={Boolean(sharingPostId)}
+                type="button"
+                onClick={closeShareDialog}
+              >
+                Cancel
+              </button>
+              <button
+                className={styles.button}
+                disabled={Boolean(sharingPostId)}
+                type="button"
+                onClick={() => sharePostToLinkedIn(pendingSharePost, shareTarget)}
+              >
+                {sharingPostId ? "Sharing..." : "Share"}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
     </div>
   );
 }

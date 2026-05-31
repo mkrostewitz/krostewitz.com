@@ -35,9 +35,11 @@ export async function POST(request, context) {
 
   try {
     const {postId} = await context.params;
+    const body = await request.json().catch(() => ({}));
     const result = await publishPostToLinkedIn({
       postId,
       origin: getRequestOrigin(request),
+      target: body.target || "personal_profile",
       user,
     });
 

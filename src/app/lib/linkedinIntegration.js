@@ -5,11 +5,13 @@ import sanitizeHtml from "sanitize-html";
 
 import {getDb} from "./mongo";
 import {getAdminPostById, recordPostLinkedInShare} from "./posts";
+import {getConfiguredSiteOrigin} from "./requestOrigin";
 
 const CONTENT_COLLECTION = "site_content";
 const LINKEDIN_INTEGRATION_ID = "linkedin_integration";
 const LINKEDIN_POSTS_URL = "https://api.linkedin.com/rest/posts";
 const DEFAULT_LINKEDIN_API_VERSION = "202605";
+const DEFAULT_LINKEDIN_REQUEST_TIMEOUT_MS = 20000;
 const TOKEN_FORMAT = "v1";
 
 export class LinkedInIntegrationError extends Error {
@@ -31,6 +33,16 @@ function getLinkedInApiVersion() {
     .trim()
     .replace(/[^0-9]/g, "")
     .slice(0, 6) || DEFAULT_LINKEDIN_API_VERSION;
+}
+
+function getLinkedInRequestTimeoutMs() {
+  const timeout = Number(process.env.LINKEDIN_REQUEST_TIMEOUT_MS);
+
+  if (!Number.isFinite(timeout) || timeout <= 0) {
+    return DEFAULT_LINKEDIN_REQUEST_TIMEOUT_MS;
+  }
+
+  return Math.min(60000, Math.max(5000, timeout));
 }
 
 function getEncryptionSecret() {
@@ -289,28 +301,53 @@ function getLinkedInErrorMessage(data, fallback) {
 }
 
 async function createLinkedInPost({connection, commentary}) {
-  const response = await fetch(LINKEDIN_POSTS_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${connection.accessToken}`,
-      "Content-Type": "application/json",
-      "Linkedin-Version": getLinkedInApiVersion(),
-      "X-Restli-Protocol-Version": "2.0.0",
-    },
-    body: JSON.stringify({
-      author: connection.authorUrn,
-      commentary,
-      visibility: "PUBLIC",
-      distribution: {
-        feedDistribution: "MAIN_FEED",
-        targetEntities: [],
-        thirdPartyDistributionChannels: [],
+  const controller = new AbortController();
+  const timeout = setTimeout(
+    () => controller.abort(),
+    getLinkedInRequestTimeoutMs(),
+  );
+  let response;
+
+  try {
+    response = await fetch(LINKEDIN_POSTS_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${connection.accessToken}`,
+        "Content-Type": "application/json",
+        "LinkedIn-Version": getLinkedInApiVersion(),
+        "X-Restli-Protocol-Version": "2.0.0",
       },
-      lifecycleState: "PUBLISHED",
-      isReshareDisabledByAuthor: false,
-    }),
-    cache: "no-store",
-  });
+      body: JSON.stringify({
+        author: connection.authorUrn,
+        commentary,
+        visibility: "PUBLIC",
+        distribution: {
+          feedDistribution: "MAIN_FEED",
+          targetEntities: [],
+          thirdPartyDistributionChannels: [],
+        },
+        lifecycleState: "PUBLISHED",
+        isReshareDisabledByAuthor: false,
+      }),
+      cache: "no-store",
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      throw new LinkedInIntegrationError(
+        "LinkedIn did not respond in time. Check LinkedIn app permissions and try again.",
+        504,
+      );
+    }
+
+    throw new LinkedInIntegrationError(
+      "Unable to reach LinkedIn. Try again in a moment.",
+      502,
+    );
+  } finally {
+    clearTimeout(timeout);
+  }
+
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
@@ -323,7 +360,19 @@ async function createLinkedInPost({connection, commentary}) {
   return response.headers.get("x-restli-id") || data.id || "";
 }
 
-export async function publishPostToLinkedIn({postId, origin, user}) {
+export async function publishPostToLinkedIn({
+  postId,
+  origin,
+  target = "personal_profile",
+  user,
+}) {
+  if (target !== "personal_profile") {
+    throw new LinkedInIntegrationError(
+      "Company page publishing is not configured yet.",
+      501,
+    );
+  }
+
   const post = await getAdminPostById(postId);
 
   if (!post) {
@@ -344,7 +393,8 @@ export async function publishPostToLinkedIn({postId, origin, user}) {
     throw new LinkedInIntegrationError("Reconnect LinkedIn before sharing posts.", 401);
   }
 
-  const postUrl = buildPostUrl(post, origin);
+  const publicOrigin = getConfiguredSiteOrigin() || origin;
+  const postUrl = buildPostUrl(post, publicOrigin);
   const commentary = createCommentary(post, postUrl);
   const linkedInPostUrn = await createLinkedInPost({connection, commentary});
   const sharedAt = new Date();
