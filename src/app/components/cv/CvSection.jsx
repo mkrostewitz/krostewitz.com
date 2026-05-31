@@ -3,16 +3,15 @@
 import {useEffect, useMemo, useState} from "react";
 import {useTranslation} from "react-i18next";
 
+import LeadCaptureModal from "../contact/LeadCaptureModal";
 import pageStyles from "../../page.module.css";
 import "../../buttons.css";
 
 const DEFAULT_CV_DOWNLOADS = {
   en: {
-    url: "/data/CV_Mathias_Krostewitz_EN.pdf",
     fileName: "Mathias_Krostewitz_CV_EN.pdf",
   },
   de: {
-    url: "/data/CV_Mathias_Krostewitz_DE.pdf",
     fileName: "Mathias_Krostewitz_CV_DE.pdf",
   },
 };
@@ -28,6 +27,7 @@ function normalizeLanguage(language) {
 const CvSection = () => {
   const {t, i18n} = useTranslation();
   const [downloads, setDownloads] = useState(DEFAULT_CV_DOWNLOADS);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -55,10 +55,11 @@ const CvSection = () => {
     };
   }, []);
 
-  const cvDownload = useMemo(() => {
-    const language = normalizeLanguage(i18n.language);
-    return downloads[language] || downloads.en || DEFAULT_CV_DOWNLOADS.en;
-  }, [downloads, i18n.language]);
+  const language = normalizeLanguage(i18n.language);
+  const cvDownload = useMemo(
+    () => downloads[language] || downloads.en || DEFAULT_CV_DOWNLOADS.en,
+    [downloads, language]
+  );
 
   return (
     <section
@@ -75,13 +76,25 @@ const CvSection = () => {
         <h2>{t("cv.title")}</h2>
         <p className={pageStyles.lead}>{t("cv.subtitle")}</p>
       </div>
-      <a
-        href={cvDownload.url}
-        download={cvDownload.fileName || true}
+      <button
+        type="button"
         className="primary"
+        title={cvDownload.fileName || t("cv.download")}
+        onClick={() => setIsModalOpen(true)}
       >
         {t("cv.download")}
-      </a>
+      </button>
+      <LeadCaptureModal
+        cvLanguage={language}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onVerified={(data) => {
+          if (data.downloadUrl) {
+            window.location.assign(data.downloadUrl);
+          }
+        }}
+        sourceType="cv_download"
+      />
     </section>
   );
 };

@@ -11,12 +11,12 @@ function publicDownloads(downloads) {
       {
         type: asset.type,
         language: asset.language,
-        url: asset.url,
         mimeType: asset.mimeType,
         fileName: asset.fileName,
         size: asset.size,
         updatedAt: asset.updatedAt,
         source: asset.source,
+        requiresLead: true,
       },
     ])
   );

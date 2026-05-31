@@ -120,22 +120,35 @@
 
 .modalBody {
   display: grid;
-  gap: 18px;
+  gap: 16px;
   padding: 0 28px 28px;
 }
 
 .fields {
   display: grid;
-  gap: 16px;
+  gap: 14px;
+}
+
+.cvFields {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+
+.cvFields .field:nth-child(3),
+.cvFields .field:nth-child(4) {
+  grid-column: auto;
 }
 
 .form label {
   display: grid;
-  gap: 7px;
+  gap: 8px;
   color: var(--foreground);
   font-size: 0.95rem;
-  font-weight: 600;
+  font-weight: 700;
   line-height: 1.25;
+  align-content: start;
+  align-self: start;
+  text-align: left;
 }
 
 .form p {
@@ -143,6 +156,7 @@
 }
 
 .form input,
+.form select,
 .form textarea {
   width: 100%;
   border: 1px solid var(--border-strong);
@@ -155,9 +169,23 @@
   transition: border-color 0.16s ease, box-shadow 0.16s ease;
 }
 
-.form input {
-  min-height: 46px;
-  padding: 10px 13px;
+.form input,
+.form select {
+  min-height: 44px;
+  padding: 10px 12px;
+}
+
+.form select {
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--text-muted) 50%),
+    linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) 19px,
+    calc(100% - 13px) 19px;
+  background-repeat: no-repeat;
+  background-size: 5px 5px;
+  padding-right: 34px;
 }
 
 .form textarea {
@@ -171,15 +199,16 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 12px;
-  margin-top: auto;
-  padding-top: 2px;
+  margin-top: 2px;
+  padding-top: 0;
 }
 
 .submitButton {
-  min-width: 190px;
+  min-width: 180px;
 }
 
 .form input:focus,
+.form select:focus,
 .form textarea:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-focus);
@@ -244,8 +273,8 @@
 }
 
 .modalPanel {
-  width: min(100%, 660px);
-  max-height: min(88vh, 760px);
+  width: min(100%, 620px);
+  max-height: min(88vh, 720px);
   overflow: auto;
   display: grid;
   gap: 0;
@@ -254,6 +283,7 @@
   padding: 0;
   background: var(--background);
   color: var(--foreground);
+  text-align: left;
   box-shadow: 0 24px 70px var(--panel-shadow-strong);
 }
 
@@ -262,12 +292,12 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  padding: 26px 28px 20px;
+  padding: 24px 28px 16px;
 }
 
 .modalHeader h3 {
   margin: 0;
-  font-size: clamp(1.55rem, 2vw, 1.9rem);
+  font-size: clamp(1.45rem, 2vw, 1.8rem);
   letter-spacing: 0;
   line-height: 1.12;
 }
@@ -322,6 +352,15 @@
   color: var(--text-soft);
   font-size: 0.98rem;
   line-height: 1.55;
+}
+
+.formIntro {
+  max-width: 56ch;
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 0.96rem;
+  line-height: 1.5;
+  text-align: left;
 }
 
 @media (max-width: 960px) {
@@ -389,5 +428,9 @@
 
   .actionsRow {
     display: grid;
+  }
+
+  .cvFields {
+    grid-template-columns: 1fr;
   }
 }

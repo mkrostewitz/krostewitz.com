@@ -137,11 +137,11 @@ export default function CvManager({user}) {
                     <p className={styles.muted}>
                       {asset?.source === "digitalocean"
                         ? "DigitalOcean Spaces"
-                        : "Local fallback"}
+                        : "No remote CV file configured"}
                     </p>
                   </div>
                   <span className={styles.statusBadge}>
-                    {asset?.source === "digitalocean" ? "Live" : "Fallback"}
+                    {asset?.source === "digitalocean" ? "Live" : "Missing"}
                   </span>
                 </div>
 

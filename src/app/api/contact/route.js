@@ -1,12 +1,9 @@
 "use server";
 
-import crypto from "crypto";
 import {NextResponse} from "next/server";
 import nodemailer from "nodemailer";
 
-import {getDb} from "../../lib/mongo";
-
-const CONTACTS_COLLECTION = "contacts";
+import {createPendingLead, LeadValidationError} from "../../lib/leads";
 
 const getTransport = () => {
   const {APPLE_MAIL_USER, APPLE_MAIL_APP_PASSWORD} = process.env;
@@ -33,56 +30,44 @@ export async function POST(request) {
     );
   }
 
-  const {name, email, message} = await request.json();
+  const body = await request.json().catch(() => ({}));
+  let lead;
+  let verificationCode;
 
-  if (!name || !email || !message) {
+  try {
+    const result = await createPendingLead(body, request);
+    lead = result.lead;
+    verificationCode = result.verificationCode;
+  } catch (error) {
+    if (error instanceof LeadValidationError) {
+      return NextResponse.json(
+        {error: error.message, errorCode: error.errorCode},
+        {status: error.status}
+      );
+    }
+
+    console.error("Lead create error", error);
     return NextResponse.json(
-      {errorCode: "contact.form.missingFields"},
-      {status: 400}
+      {errorCode: "contact.form.errorGeneric"},
+      {status: 500}
     );
   }
 
-  const normalizedEmail = email.trim().toLowerCase();
-  const db = await getDb();
-  const contacts = db.collection(CONTACTS_COLLECTION);
-
-  const existing = await contacts.findOne({email: normalizedEmail});
-  if (existing && existing.status === "verified") {
-    return NextResponse.json(
-      {errorCode: "contact.form.alreadyExists"},
-      {status: 409}
-    );
-  }
-
-  const verificationCode = crypto.randomInt(100000, 999999).toString();
-
-  await contacts.updateOne(
-    {email: normalizedEmail},
-    {
-      $set: {
-        name,
-        message,
-        status: "pending",
-        verificationCode,
-        updatedAt: new Date(),
-      },
-      $setOnInsert: {createdAt: new Date()},
-    },
-    {upsert: true}
-  );
-
+  const isCvRequest = lead.source.type === "cv_download";
   const mailOptions = {
     from: APPLE_MAIL_FROM || APPLE_MAIL_USER,
-    to: normalizedEmail,
-    subject: "Verify your contact request",
+    to: lead.email,
+    subject: isCvRequest ? "Verify your CV request" : "Verify your contact request",
     text: `Hi ${
-      name || "there"
-    },\n\nPlease confirm your email to send your message:\n\nVerification code: ${verificationCode}\n\nIf you did not request this, you can ignore the email.`,
+      lead.name || "there"
+    },\n\nPlease confirm your email to ${
+      isCvRequest ? "access the CV download" : "send your message"
+    }:\n\nVerification code: ${verificationCode}\n\nIf you did not request this, you can ignore the email.`,
   };
 
   try {
     await transporter.sendMail(mailOptions);
-    return NextResponse.json({status: "verify_required"});
+    return NextResponse.json({status: "verify_required", leadId: lead.id});
   } catch (error) {
     console.error("Contact verification send error", error);
     return NextResponse.json(

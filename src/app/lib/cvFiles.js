@@ -6,10 +6,6 @@ import {getCvFileName} from "./storage";
 
 const CONTENT_COLLECTION = "site_content";
 const CV_DOWNLOADS_ID = "cv_downloads";
-const BUNDLED_CV_FILES = {
-  de: "CV_Mathias_Krostewitz_DE.pdf",
-  en: "CV_Mathias_Krostewitz_EN.pdf",
-};
 
 export class CvFileError extends Error {
   constructor(message, status = 400) {
@@ -43,15 +39,24 @@ function getDefaultCvAsset(language) {
   return {
     type: "pdf",
     language: normalizedLanguage,
-    url: `/data/${BUNDLED_CV_FILES[normalizedLanguage]}`,
+    url: "",
     key: null,
     mimeType: "application/pdf",
     fileName,
     size: null,
     updatedAt: null,
     updatedBy: null,
-    source: "local",
+    source: "missing",
   };
+}
+
+function isRemoteUrl(value) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" || url.protocol === "http:";
+  } catch {
+    return false;
+  }
 }
 
 function normalizeCvAsset(asset, language) {
@@ -62,8 +67,8 @@ function normalizeCvAsset(asset, language) {
   const normalizedLanguage = normalizeCvLanguage(language || asset.language);
   const url = String(asset.url || "").trim();
 
-  if (!url) {
-    throw new CvFileError("CV asset URL is required.");
+  if (!url || !isRemoteUrl(url)) {
+    throw new CvFileError("A remote CV asset URL is required.");
   }
 
   return {
@@ -76,7 +81,7 @@ function normalizeCvAsset(asset, language) {
     size: Number.isFinite(Number(asset.size)) ? Number(asset.size) : null,
     updatedAt: toIsoDate(asset.updatedAt),
     updatedBy: asset.updatedBy ? String(asset.updatedBy) : null,
-    source: asset.source === "local" ? "local" : "digitalocean",
+    source: "digitalocean",
   };
 }
 
@@ -85,9 +90,13 @@ function serializeCvDownloads(document) {
 
   return supportedLanguages.reduce((acc, language) => {
     const stored = files[language];
-    acc[language] = stored
-      ? normalizeCvAsset(stored, language)
-      : getDefaultCvAsset(language);
+    try {
+      acc[language] = stored
+        ? normalizeCvAsset(stored, language)
+        : getDefaultCvAsset(language);
+    } catch {
+      acc[language] = getDefaultCvAsset(language);
+    }
     return acc;
   }, {});
 }
