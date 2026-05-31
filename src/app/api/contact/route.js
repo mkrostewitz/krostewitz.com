@@ -1,28 +1,17 @@
 "use server";
 
 import {NextResponse} from "next/server";
-import nodemailer from "nodemailer";
 
+import {
+  getAppleMailTransport,
+  getDefaultSender,
+} from "../../lib/mail";
+import {renderLeadVerificationEmail} from "../../lib/emailTemplates";
 import {createPendingLead, LeadValidationError} from "../../lib/leads";
-
-const getTransport = () => {
-  const {APPLE_MAIL_USER, APPLE_MAIL_APP_PASSWORD} = process.env;
-  if (!APPLE_MAIL_USER || !APPLE_MAIL_APP_PASSWORD) return null;
-
-  return nodemailer.createTransport({
-    host: "smtp.mail.me.com",
-    port: 587,
-    secure: false,
-    auth: {
-      user: APPLE_MAIL_USER,
-      pass: APPLE_MAIL_APP_PASSWORD,
-    },
-  });
-};
+import {getRequestOrigin} from "../../lib/requestOrigin";
 
 export async function POST(request) {
-  const {APPLE_MAIL_USER, APPLE_MAIL_FROM} = process.env;
-  const transporter = getTransport();
+  const transporter = getAppleMailTransport();
   if (!transporter) {
     return NextResponse.json(
       {errorCode: "contact.form.mailNotConfigured"},
@@ -55,7 +44,7 @@ export async function POST(request) {
 
   const isCvRequest = lead.source.type === "cv_download";
   const mailOptions = {
-    from: APPLE_MAIL_FROM || APPLE_MAIL_USER,
+    from: getDefaultSender(),
     to: lead.email,
     subject: isCvRequest ? "Verify your CV request" : "Verify your contact request",
     text: `Hi ${
@@ -63,6 +52,11 @@ export async function POST(request) {
     },\n\nPlease confirm your email to ${
       isCvRequest ? "access the CV download" : "send your message"
     }:\n\nVerification code: ${verificationCode}\n\nIf you did not request this, you can ignore the email.`,
+    html: await renderLeadVerificationEmail({
+      lead,
+      origin: getRequestOrigin(request),
+      verificationCode,
+    }),
   };
 
   try {
