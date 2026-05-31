@@ -866,8 +866,8 @@ const PersonalSection = () => {
     ? `${forecastLabel} ${t("sailing.airPressure")}`
     : `${forecastLabel}: ${noForecastLabel}`;
   const waterTemperatureTooltip = waterTemperatureRows.length
-    ? `${t("sailing.recentMeasurements")} ${t("sailing.waterTemperature")}`
-    : `${t("sailing.recentMeasurements")}: ${noForecastLabel}`;
+    ? `${t("sailing.waterMeasurements")} ${t("sailing.waterTemperature")}`
+    : `${t("sailing.waterMeasurements")}: ${noForecastLabel}`;
   const mapWindReports = useMemo(
     () =>
       allWindReports.map((report) => ({
@@ -1386,22 +1386,6 @@ const PersonalSection = () => {
 
         <div className={styles.windLayout}>
           <div className={styles.windMap}>
-            {mapboxToken && (
-              <div
-                ref={mapContainerRef}
-                className={styles.windMapBackground}
-                aria-hidden
-              />
-            )}
-            <canvas
-              ref={canvasRef}
-              aria-label={t("sailing.windMapAlt")}
-              onPointerCancel={handleWindMapPointerCancel}
-              onPointerDown={handleWindMapPointerDown}
-              onPointerLeave={handleWindMapPointerLeave}
-              onPointerMove={handleWindMapPointerMove}
-              onPointerUp={handleWindMapPointerUp}
-            />
             <div className={`${styles.weatherOverlay} ${styles.weatherOverlayTop}`}>
               <div
                 className={`${styles.weatherBox} ${styles.weatherBoxInteractive}`}
@@ -1448,7 +1432,7 @@ const PersonalSection = () => {
                   className={`${styles.forecastTooltip} ${styles.weatherForecastTooltip}`}
                   aria-hidden
                 >
-                  <strong>{t("sailing.recentMeasurements")}</strong>
+                  <strong>{t("sailing.waterMeasurements")}</strong>
                   {waterTemperatureRows.length ? (
                     <div className={`${styles.forecastTable} ${styles.forecastTableCompact}`}>
                       <span>{t("sailing.forecastTime")}</span>
@@ -1500,6 +1484,57 @@ const PersonalSection = () => {
                   )}
                 </div>
               </div>
+            </div>
+            <div className={styles.windMapFrame}>
+              {mapboxToken && (
+                <div
+                  ref={mapContainerRef}
+                  className={styles.windMapBackground}
+                  aria-hidden
+                />
+              )}
+              <canvas
+                ref={canvasRef}
+                aria-label={t("sailing.windMapAlt")}
+                onPointerCancel={handleWindMapPointerCancel}
+                onPointerDown={handleWindMapPointerDown}
+                onPointerLeave={handleWindMapPointerLeave}
+                onPointerMove={handleWindMapPointerMove}
+                onPointerUp={handleWindMapPointerUp}
+              />
+              {windMapHover && (
+                <div
+                  className={styles.windMapTooltip}
+                  style={{
+                    left: `${windMapHover.x}px`,
+                    top: `${windMapHover.y}px`,
+                  }}
+                >
+                  <strong>{windMapHover.point.name ?? windMapHover.point.id}</strong>
+                  <span>
+                    {t("sailing.windSpeed")}:{" "}
+                    {windMapHover.point.speed == null
+                      ? "--"
+                      : windMapHover.point.speed.toFixed(1)}{" "}
+                    kn
+                  </span>
+                  <span>
+                    {t("sailing.windGusts")}:{" "}
+                    {windMapHover.point.gusts == null
+                      ? "--"
+                      : windMapHover.point.gusts.toFixed(1)}{" "}
+                    kn
+                  </span>
+                  <span>
+                    {t("sailing.windDirection")}:{" "}
+                    {windMapHover.point.direction == null
+                      ? "--"
+                      : `${Math.round(windMapHover.point.direction)}° ${
+                          windMapHover.directionLabel
+                        }`}
+                  </span>
+                </div>
+              )}
             </div>
             <div className={`${styles.weatherOverlay} ${styles.weatherOverlayBottom}`}>
               <button
@@ -1561,39 +1596,6 @@ const PersonalSection = () => {
                 )}
               </button>
             </div>
-            {windMapHover && (
-              <div
-                className={styles.windMapTooltip}
-                style={{
-                  left: `${windMapHover.x}px`,
-                  top: `${windMapHover.y}px`,
-                }}
-              >
-                <strong>{windMapHover.point.name ?? windMapHover.point.id}</strong>
-                <span>
-                  {t("sailing.windSpeed")}:{" "}
-                  {windMapHover.point.speed == null
-                    ? "--"
-                    : windMapHover.point.speed.toFixed(1)}{" "}
-                  kn
-                </span>
-                <span>
-                  {t("sailing.windGusts")}:{" "}
-                  {windMapHover.point.gusts == null
-                    ? "--"
-                    : windMapHover.point.gusts.toFixed(1)}{" "}
-                  kn
-                </span>
-                <span>
-                  {t("sailing.windDirection")}:{" "}
-                  {windMapHover.point.direction == null
-                    ? "--"
-                    : `${Math.round(windMapHover.point.direction)}° ${
-                        windMapHover.directionLabel
-                      }`}
-                </span>
-              </div>
-            )}
           </div>
 
           <div className={styles.instrumentGrid}>

@@ -182,6 +182,17 @@ const NavBar = () => {
     };
   }, []);
 
+  useEffect(() => {
+    if (typeof document === "undefined" || !menuOpen) return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [menuOpen]);
+
   const closeMenu = () => setMenuOpen(false);
 
   const visibleNavLinks = useMemo(

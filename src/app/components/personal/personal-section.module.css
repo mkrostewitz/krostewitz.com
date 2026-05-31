@@ -115,7 +115,13 @@
   position: relative;
 }
 
-.windMap::before {
+.windMapFrame {
+  inset: 0;
+  overflow: hidden;
+  position: absolute;
+}
+
+.windMapFrame::before {
   background:
     linear-gradient(90deg, rgba(7, 17, 31, 0.2), rgba(7, 17, 31, 0.04) 45%, rgba(7, 17, 31, 0.38)),
     linear-gradient(180deg, rgba(11, 15, 25, 0.38), rgba(11, 15, 25, 0.1) 48%, rgba(11, 15, 25, 0.52)),
@@ -1126,29 +1132,69 @@
     padding: 14px;
   }
 
-  .windMap,
+  .windMap {
+    display: grid;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .windMapFrame,
   .windMap canvas {
-    min-height: 320px;
+    min-height: 380px;
+  }
+
+  .windMapFrame {
+    inset: auto;
+    position: relative;
   }
 
   .weatherOverlay {
     gap: 8px;
-    left: 10px;
-    right: 10px;
+    left: auto;
+    padding: 12px;
+    pointer-events: auto;
+    position: static;
+    right: auto;
   }
 
   .weatherOverlayBottom {
-    bottom: 28px;
+    background: var(--wind-map-bg);
+    bottom: auto;
+    justify-content: stretch;
+  }
+
+  .weatherOverlayTop {
+    background: var(--wind-map-bg);
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    top: auto;
+  }
+
+  .weatherOverlayTop .weatherBox {
+    flex: none;
+  }
+
+  .weatherOverlayTop .weatherBox:nth-child(1) {
+    order: 1;
+  }
+
+  .weatherOverlayTop .weatherBox:nth-child(2) {
+    grid-column: 1 / -1;
+    order: 3;
+  }
+
+  .weatherOverlayTop .weatherBox:nth-child(3) {
+    order: 2;
   }
 
   .weatherBox {
     min-width: 0;
-    padding: 8px;
+    padding: 9px 10px;
   }
 
-  .weatherOverlayTop {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+  .weatherBox > span:not(.weatherBoxHeader):not(.weatherValueRow):not(.cloudPattern),
+  .weatherBoxHeader > span {
+    letter-spacing: 0.04em;
   }
 
   .weatherBox strong {
@@ -1156,8 +1202,34 @@
   }
 
   .weatherBoxWide {
+    max-width: none;
     min-width: 0;
     width: 100%;
+  }
+
+  .cloudPattern {
+    gap: 10px;
+  }
+
+  .cloudPatternBars {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding: 2px 0 8px;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .cloudPatternPoint {
+    flex: 0 0 58px;
+    scroll-snap-align: start;
+  }
+
+  .cloudPatternPoint > span:not(.cloudPatternIcon),
+  .cloudPatternPoint small,
+  .cloudPatternEmpty {
+    font-size: 0.68rem;
+    line-height: 1.15;
   }
 
   .instrumentGrid {
