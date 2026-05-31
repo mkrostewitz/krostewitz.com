@@ -6,6 +6,7 @@ import Link from "next/link";
 import {useEffect, useMemo, useState} from "react";
 import {useTranslation} from "react-i18next";
 
+import {getSupportedSiteLanguage} from "../../../lib/siteLanguages";
 import pageStyles from "../../page.module.css";
 import styles from "./blog-section.module.css";
 
@@ -49,6 +50,8 @@ function normalizeCategories(value) {
 export default function BlogSection() {
   const {t, i18n} = useTranslation();
   const topics = t("blog.topics", {returnObjects: true});
+  const language =
+    getSupportedSiteLanguage(i18n.resolvedLanguage || i18n.language) || "en";
   const [posts, setPosts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [activeCategory, setActiveCategory] = useState(ALL_CATEGORIES);
@@ -90,7 +93,10 @@ export default function BlogSection() {
 
     async function loadPosts() {
       try {
-        const response = await fetch("/api/posts", {cache: "no-store"});
+        const searchParams = new URLSearchParams({language});
+        const response = await fetch(`/api/posts?${searchParams.toString()}`, {
+          cache: "no-store",
+        });
         const data = await response.json().catch(() => ({}));
 
         if (!response.ok) {
@@ -120,7 +126,7 @@ export default function BlogSection() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [language]);
 
   useEffect(() => {
     if (
@@ -180,7 +186,7 @@ export default function BlogSection() {
           {visiblePosts.map((post) => (
             <Link
               className={styles.card}
-              href={`/blog/${post.slug}`}
+              href={`/blog/${post.slug}?lng=${language}`}
               key={post.id}
             >
               {post.media && (

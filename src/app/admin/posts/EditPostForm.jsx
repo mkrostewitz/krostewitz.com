@@ -52,19 +52,29 @@ import {useRouter} from "next/navigation";
 import {useEffect, useRef, useState} from "react";
 
 import {useSnackbar} from "@/app/components/snackbar/SnackbarProvider";
+import {FALLBACK_LANGUAGE} from "@/lib/languageDetection";
+import {
+  getSiteLanguageLabel,
+  getSupportedSiteLanguage,
+  SITE_LANGUAGES,
+} from "@/lib/siteLanguages";
 
 import styles from "../admin.module.css";
 
+const EMPTY_TRANSLATION = {
+  title: "",
+  summary: "",
+  contentHtml: "",
+};
+
 const EMPTY_FORM = {
   id: null,
-  title: "",
   slug: "",
   status: "draft",
   publishedAt: "",
-  summary: "",
   categories: [],
-  contentHtml: "",
   media: null,
+  translations: {},
 };
 
 const STATUS_LABELS = {
@@ -78,11 +88,6 @@ const AI_MODES = {
   tweak: "Tweak",
   translate: "Translate",
 };
-
-const POST_LANGUAGES = [
-  {code: "en", label: "English"},
-  {code: "de", label: "German"},
-];
 
 const SUGGESTED_CATEGORIES = [
   "Market data",
@@ -99,11 +104,23 @@ const DEFAULT_AI_TARGET_FIELDS = {
   contentHtml: true,
 };
 
+function createEmptyTranslation() {
+  return {...EMPTY_TRANSLATION};
+}
+
+function createEmptyTranslations() {
+  return SITE_LANGUAGES.reduce((acc, language) => {
+    acc[language.code] = createEmptyTranslation();
+    return acc;
+  }, {});
+}
+
 function createEmptyForm() {
   return {
     ...EMPTY_FORM,
     categories: [],
     media: null,
+    translations: createEmptyTranslations(),
   };
 }
 
@@ -165,19 +182,131 @@ function normalizeFormCategories(value) {
   return categories;
 }
 
+function normalizeTranslation(value = {}) {
+  return {
+    title: String(value.title || ""),
+    summary: String(value.summary || ""),
+    contentHtml: String(value.contentHtml || ""),
+  };
+}
+
+function hasTranslationContent(translation) {
+  return Boolean(
+    String(translation?.title || "").trim() ||
+      String(translation?.summary || "").trim() ||
+      String(translation?.contentHtml || "")
+        .replace(/<[^>]*>/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+  );
+}
+
+function hasTranslationTitle(translation) {
+  return String(translation?.title || "").trim().length >= 2;
+}
+
+function normalizePostTranslations(post) {
+  const translations = createEmptyTranslations();
+  const rawTranslations =
+    post?.translations && typeof post.translations === "object"
+      ? post.translations
+      : {};
+
+  for (const language of SITE_LANGUAGES) {
+    translations[language.code] = normalizeTranslation(
+      rawTranslations[language.code]
+    );
+  }
+
+  if (
+    post &&
+    !Object.values(translations).some(hasTranslationContent) &&
+    (post.title || post.summary || post.contentHtml)
+  ) {
+    translations[FALLBACK_LANGUAGE] = normalizeTranslation({
+      title: post.title,
+      summary: post.summary,
+      contentHtml: post.contentHtml,
+    });
+  }
+
+  return translations;
+}
+
+function getFormTranslation(form, language) {
+  const supportedLanguage =
+    getSupportedSiteLanguage(language) || FALLBACK_LANGUAGE;
+
+  return normalizeTranslation(form.translations?.[supportedLanguage]);
+}
+
+function updateFormTranslation(form, language, updates) {
+  const supportedLanguage =
+    getSupportedSiteLanguage(language) || FALLBACK_LANGUAGE;
+
+  return {
+    ...form,
+    translations: {
+      ...createEmptyTranslations(),
+      ...(form.translations || {}),
+      [supportedLanguage]: {
+        ...getFormTranslation(form, supportedLanguage),
+        ...updates,
+      },
+    },
+  };
+}
+
+function getPrimaryTranslation(translations) {
+  const fallbackTranslation = normalizeTranslation(
+    translations?.[FALLBACK_LANGUAGE]
+  );
+
+  if (hasTranslationTitle(fallbackTranslation)) {
+    return fallbackTranslation;
+  }
+
+  for (const language of SITE_LANGUAGES) {
+    const translation = normalizeTranslation(translations?.[language.code]);
+
+    if (hasTranslationTitle(translation)) {
+      return translation;
+    }
+  }
+
+  if (hasTranslationContent(fallbackTranslation)) {
+    return fallbackTranslation;
+  }
+
+  for (const language of SITE_LANGUAGES) {
+    const translation = normalizeTranslation(translations?.[language.code]);
+
+    if (hasTranslationContent(translation)) {
+      return translation;
+    }
+  }
+
+  return createEmptyTranslation();
+}
+
+function getDefaultTranslationTarget(sourceLanguage) {
+  return (
+    SITE_LANGUAGES.find((language) => language.code !== sourceLanguage)?.code ||
+    sourceLanguage
+  );
+}
+
 function createFormFromPost(post) {
   if (!post) return createEmptyForm();
 
   return {
     id: post.id || null,
-    title: post.title || "",
     slug: post.slug || "",
     status: post.status || "draft",
     publishedAt: toDateTimeLocalValue(post.publishedAt),
-    summary: post.summary || "",
     categories: normalizeFormCategories(post.categories),
-    contentHtml: post.contentHtml || "",
     media: post.media || null,
+    translations: normalizePostTranslations(post),
   };
 }
 
@@ -349,7 +478,9 @@ export default function EditPostForm({
   const router = useRouter();
   const {closeSnackbar, showSnackbar} = useSnackbar();
   const titleRef = useRef("");
+  const activeLanguageRef = useRef(FALLBACK_LANGUAGE);
   const [form, setForm] = useState(() => createFormFromPost(post));
+  const [activeLanguage, setActiveLanguage] = useState(FALLBACK_LANGUAGE);
   const [categoryDraft, setCategoryDraft] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -357,7 +488,7 @@ export default function EditPostForm({
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   const [aiForm, setAiForm] = useState({
     mode: "tweak",
-    targetLanguage: "en",
+    targetLanguage: getDefaultTranslationTarget(FALLBACK_LANGUAGE),
     prompt: "",
     targetFields: DEFAULT_AI_TARGET_FIELDS,
   });
@@ -383,7 +514,7 @@ export default function EditPostForm({
         },
       }),
     ],
-    content: form.contentHtml || "",
+    content: getFormTranslation(form, activeLanguage).contentHtml || "",
     editorProps: {
       handlePaste: (view, event) => {
         const clipboard = event.clipboardData;
@@ -407,9 +538,18 @@ export default function EditPostForm({
         event.preventDefault();
 
         if (parsed.title) {
-          setForm((current) =>
-            current.title.trim() ? current : {...current, title: parsed.title}
-          );
+          setForm((current) => {
+            const currentTranslation = getFormTranslation(
+              current,
+              activeLanguageRef.current
+            );
+
+            return currentTranslation.title.trim()
+              ? current
+              : updateFormTranslation(current, activeLanguageRef.current, {
+                  title: parsed.title,
+                });
+          });
         }
 
         editor?.chain().focus().insertContent(parsed.html).run();
@@ -420,32 +560,40 @@ export default function EditPostForm({
     onUpdate: ({editor: activeEditor}) => {
       const contentHtml = activeEditor.isEmpty ? "" : activeEditor.getHTML();
       setForm((current) =>
-        current.contentHtml === contentHtml
+        getFormTranslation(current, activeLanguageRef.current).contentHtml ===
+        contentHtml
           ? current
-          : {...current, contentHtml}
+          : updateFormTranslation(current, activeLanguageRef.current, {
+              contentHtml,
+            })
       );
     },
   });
 
   useEffect(() => {
     setForm(createFormFromPost(post));
+    setActiveLanguage(FALLBACK_LANGUAGE);
     setCategoryDraft("");
   }, [post]);
 
   useEffect(() => {
-    titleRef.current = form.title;
-  }, [form.title]);
+    activeLanguageRef.current = activeLanguage;
+  }, [activeLanguage]);
+
+  useEffect(() => {
+    titleRef.current = getFormTranslation(form, activeLanguage).title;
+  }, [activeLanguage, form]);
 
   useEffect(() => {
     if (!editor) return;
 
     const editorHtml = editor.isEmpty ? "" : editor.getHTML();
-    const formHtml = form.contentHtml || "";
+    const formHtml = getFormTranslation(form, activeLanguage).contentHtml || "";
 
     if (editorHtml !== formHtml) {
       editor.commands.setContent(formHtml, {emitUpdate: false});
     }
-  }, [editor, form.contentHtml]);
+  }, [activeLanguage, editor, form]);
 
   useEffect(() => {
     if (!isAiModalOpen) return;
@@ -463,11 +611,54 @@ export default function EditPostForm({
     };
   }, [isAiModalOpen]);
 
+  useEffect(() => {
+    setAiForm((current) => {
+      if (current.mode === "translate") {
+        const validTarget = SITE_LANGUAGES.some(
+          (language) =>
+            language.code === current.targetLanguage &&
+            language.code !== activeLanguage
+        );
+        const targetLanguage =
+          current.targetLanguage && validTarget
+            ? current.targetLanguage
+            : getDefaultTranslationTarget(activeLanguage);
+
+        return targetLanguage === current.targetLanguage
+          ? current
+          : {...current, targetLanguage};
+      }
+
+      return current.targetLanguage === activeLanguage
+        ? current
+        : {...current, targetLanguage: activeLanguage};
+    });
+  }, [activeLanguage, aiForm.mode]);
+
   function updateField(name, value) {
     setForm((current) => ({
       ...current,
       [name]: value,
     }));
+  }
+
+  function updateTranslationField(name, value) {
+    setForm((current) =>
+      updateFormTranslation(current, activeLanguage, {[name]: value})
+    );
+  }
+
+  function switchLanguage(language) {
+    const supportedLanguage = getSupportedSiteLanguage(language);
+
+    if (!supportedLanguage || supportedLanguage === activeLanguage) return;
+
+    setForm((current) =>
+      updateFormTranslation(current, activeLanguage, {
+        contentHtml: readEditorContent(),
+      })
+    );
+    setActiveLanguage(supportedLanguage);
   }
 
   function setFormFromPost(nextPost) {
@@ -529,21 +720,29 @@ export default function EditPostForm({
   }
 
   function readEditorContent() {
-    if (!editor) return form.contentHtml || "";
+    if (!editor) return getFormTranslation(form, activeLanguage).contentHtml || "";
     return editor.isEmpty ? "" : editor.getHTML();
   }
 
   function applyGeneratedPost(nextPost, targetFields = DEFAULT_AI_TARGET_FIELDS) {
-    setForm((current) => ({
-      ...current,
-      title: targetFields.title ? nextPost.title || current.title : current.title,
-      summary: targetFields.summary
-        ? nextPost.summary || current.summary
-        : current.summary,
-      contentHtml: targetFields.contentHtml
-        ? nextPost.contentHtml || current.contentHtml
-        : current.contentHtml,
-    }));
+    const targetLanguage =
+      getSupportedSiteLanguage(nextPost.language) || activeLanguage;
+
+    setForm((current) => {
+      const currentTranslation = getFormTranslation(current, targetLanguage);
+
+      return updateFormTranslation(current, targetLanguage, {
+        title: targetFields.title
+          ? nextPost.title || currentTranslation.title
+          : currentTranslation.title,
+        summary: targetFields.summary
+          ? nextPost.summary || currentTranslation.summary
+          : currentTranslation.summary,
+        contentHtml: targetFields.contentHtml
+          ? nextPost.contentHtml || currentTranslation.contentHtml
+          : currentTranslation.contentHtml,
+      });
+    });
   }
 
   function setEditorLink() {
@@ -595,6 +794,15 @@ export default function EditPostForm({
   }
 
   async function runAiAction() {
+    const isTranslateMode = aiForm.mode === "translate";
+    const requestedTargetLanguage = getSupportedSiteLanguage(
+      aiForm.targetLanguage
+    );
+    const targetLanguage = isTranslateMode
+      ? requestedTargetLanguage && requestedTargetLanguage !== activeLanguage
+        ? requestedTargetLanguage
+        : getDefaultTranslationTarget(activeLanguage)
+      : activeLanguage;
     const targetFields = {
       title: aiForm.targetFields.title === true,
       summary: aiForm.targetFields.summary === true,
@@ -614,16 +822,21 @@ export default function EditPostForm({
     closeSnackbar();
 
     try {
+      const sourceTranslation = {
+        ...getFormTranslation(form, activeLanguage),
+        contentHtml: readEditorContent(),
+      };
       const response = await fetch("/api/admin/posts/ai", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({
           mode: aiForm.mode,
-          targetLanguage: aiForm.targetLanguage,
+          sourceLanguage: activeLanguage,
+          targetLanguage,
           prompt: aiForm.prompt,
-          title: form.title,
-          summary: form.summary,
-          contentHtml: readEditorContent(),
+          title: sourceTranslation.title,
+          summary: sourceTranslation.summary,
+          contentHtml: sourceTranslation.contentHtml,
           targetFields,
         }),
       });
@@ -633,11 +846,16 @@ export default function EditPostForm({
         throw new Error(data.error || "Unable to generate post content.");
       }
 
-      applyGeneratedPost(data.post, targetFields);
+      applyGeneratedPost({...data.post, language: targetLanguage}, targetFields);
+      if (isTranslateMode && targetLanguage !== activeLanguage) {
+        setActiveLanguage(targetLanguage);
+      }
       setIsAiModalOpen(false);
       showSnackbar({
         type: "success",
-        message: "AI content applied. Review it before saving the post.",
+        message: `${getSiteLanguageLabel(
+          targetLanguage
+        )} content applied. Review it before saving the post.`,
       });
     } catch (error) {
       showSnackbar({type: "error", message: error.message});
@@ -653,14 +871,24 @@ export default function EditPostForm({
 
     try {
       const contentHtml = readEditorContent();
+      const translations = {
+        ...createEmptyTranslations(),
+        ...(form.translations || {}),
+        [activeLanguage]: {
+          ...getFormTranslation(form, activeLanguage),
+          contentHtml,
+        },
+      };
+      const primaryTranslation = getPrimaryTranslation(translations);
       const payload = {
-        title: form.title,
+        title: primaryTranslation.title,
         slug: form.slug,
         status: form.status,
         publishedAt: toIsoDateTimeValue(form.publishedAt),
-        summary: form.summary,
+        summary: primaryTranslation.summary,
         categories: form.categories,
-        contentHtml,
+        contentHtml: primaryTranslation.contentHtml,
+        translations,
         media: form.media,
       };
       const response = await fetch(
@@ -701,6 +929,12 @@ export default function EditPostForm({
   }
 
   const formCategories = normalizeFormCategories(form.categories);
+  const activeTranslation = getFormTranslation(form, activeLanguage);
+  const activeLanguageLabel = getSiteLanguageLabel(activeLanguage);
+  const translationTargets = SITE_LANGUAGES.filter(
+    (language) => language.code !== activeLanguage
+  );
+  const isTranslateMode = aiForm.mode === "translate";
   const isTableActive = Boolean(editor?.isActive("table"));
   const hasSelectedAiTarget = Object.values(aiForm.targetFields).some(Boolean);
 
@@ -716,7 +950,10 @@ export default function EditPostForm({
                 <>
                   {" "}
                   ·{" "}
-                  <Link href={`/blog/${form.slug}`} target="_blank">
+                  <Link
+                    href={`/blog/${form.slug}?lng=${activeLanguage}`}
+                    target="_blank"
+                  >
                     View published post
                   </Link>
                 </>
@@ -766,15 +1003,64 @@ export default function EditPostForm({
       </section>
 
       <section className={styles.formSection}>
+        <div className={styles.languageTabBar}>
+          <div className={styles.tabs} role="tablist" aria-label="Post language">
+            {SITE_LANGUAGES.map((language) => {
+              const translation = getFormTranslation(form, language.code);
+              const isActive = language.code === activeLanguage;
+
+              return (
+                <button
+                  aria-selected={isActive}
+                  className={`${styles.tabButton} ${
+                    isActive ? styles.tabButtonActive : ""
+                  }`}
+                  key={language.code}
+                  role="tab"
+                  type="button"
+                  onClick={() => switchLanguage(language.code)}
+                >
+                  {language.label}
+                  <span className={styles.languageTabMeta}>
+                    {hasTranslationContent(translation) ? "Drafted" : "Empty"}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <button
+            className={`${styles.secondaryButton} ${styles.translateButton}`}
+            disabled={translationTargets.length === 0}
+            type="button"
+            onClick={() => {
+              setAiForm((current) => ({
+                ...current,
+                mode: "translate",
+                targetLanguage: translationTargets.some(
+                  (language) => language.code === current.targetLanguage
+                )
+                  ? current.targetLanguage
+                  : getDefaultTranslationTarget(activeLanguage),
+              }));
+              setIsAiModalOpen(true);
+            }}
+          >
+            Translate from {activeLanguageLabel}
+          </button>
+        </div>
+      </section>
+
+      <section className={styles.formSection}>
         <div className={styles.postOverviewGrid}>
           <div className={styles.postTextFields}>
             <label className={styles.field}>
               <span className={styles.fieldLabel}>Title</span>
               <input
-                required
                 maxLength={140}
-                value={form.title}
-                onChange={(event) => updateField("title", event.target.value)}
+                value={activeTranslation.title}
+                onChange={(event) =>
+                  updateTranslationField("title", event.target.value)
+                }
               />
             </label>
 
@@ -797,15 +1083,17 @@ export default function EditPostForm({
               <span className={styles.fieldHeader}>
                 <span className={styles.fieldLabel}>Summary</span>
                 <span className={styles.fieldHint}>
-                  {form.summary.length}/260 characters
+                  {activeTranslation.summary.length}/260 characters
                 </span>
               </span>
               <textarea
                 rows={5}
                 maxLength={260}
                 placeholder="Optional short card text. If empty, it is generated from the post content."
-                value={form.summary}
-                onChange={(event) => updateField("summary", event.target.value)}
+                value={activeTranslation.summary}
+                onChange={(event) =>
+                  updateTranslationField("summary", event.target.value)
+                }
               />
             </label>
 
@@ -977,21 +1265,28 @@ export default function EditPostForm({
                 </select>
               </label>
 
-              <label className={styles.field}>
-                Language
-                <select
-                  value={aiForm.targetLanguage}
-                  onChange={(event) =>
-                    updateAiField("targetLanguage", event.target.value)
-                  }
-                >
-                  {POST_LANGUAGES.map((language) => (
-                    <option key={language.code} value={language.code}>
-                      {language.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <div className={styles.field}>
+                <span>Source</span>
+                <div className={styles.readOnlyField}>{activeLanguageLabel}</div>
+              </div>
+
+              {isTranslateMode && (
+                <label className={styles.field}>
+                  Translate to
+                  <select
+                    value={aiForm.targetLanguage}
+                    onChange={(event) =>
+                      updateAiField("targetLanguage", event.target.value)
+                    }
+                  >
+                    {translationTargets.map((language) => (
+                      <option key={language.code} value={language.code}>
+                        {language.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
             </div>
 
             <fieldset className={styles.aiTargets}>
@@ -1053,7 +1348,11 @@ export default function EditPostForm({
                 type="button"
                 onClick={runAiAction}
               >
-                {isAiWorking ? "Working..." : "Run AI"}
+                {isAiWorking
+                  ? "Working..."
+                  : isTranslateMode
+                  ? "Translate"
+                  : "Run AI"}
               </button>
             </div>
           </section>

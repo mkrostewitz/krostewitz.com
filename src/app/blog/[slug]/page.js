@@ -1,7 +1,16 @@
 /* eslint-disable @next/next/no-img-element */
 
+import {cookies} from "next/headers";
 import {notFound} from "next/navigation";
 
+import {
+  FALLBACK_LANGUAGE,
+  normalizeLanguage,
+} from "../../../lib/languageDetection";
+import {
+  getSupportedSiteLanguage,
+  LANGUAGE_COOKIE_NAME,
+} from "../../../lib/siteLanguages";
 import NavBar from "../../components/nav/nav";
 import PublicFooter from "../../components/footer/PublicFooter";
 import {getPublishedPostBySlug} from "../../lib/posts";
@@ -17,14 +26,33 @@ import ShareButtons from "./ShareButtons";
 
 export const dynamic = "force-dynamic";
 
-function formatDate(value) {
+function formatDate(value, language) {
   if (!value) return "";
 
-  return new Intl.DateTimeFormat("en", {
+  return new Intl.DateTimeFormat(language || FALLBACK_LANGUAGE, {
     year: "numeric",
     month: "long",
     day: "numeric",
   }).format(new Date(value));
+}
+
+async function getPostLanguage(searchParams) {
+  const resolvedSearchParams = await searchParams;
+  const queryLanguage = getSupportedSiteLanguage(
+    resolvedSearchParams?.lng || resolvedSearchParams?.language
+  );
+
+  if (queryLanguage) return queryLanguage;
+
+  const cookieStore = await cookies();
+  return (
+    getSupportedSiteLanguage(
+      cookieStore.get(LANGUAGE_COOKIE_NAME)?.value ||
+        cookieStore.get("NEXT_LOCALE")?.value
+    ) ||
+    getSupportedSiteLanguage(normalizeLanguage(cookieStore.get("i18next")?.value)) ||
+    FALLBACK_LANGUAGE
+  );
 }
 
 async function getSiteTitle() {
@@ -35,9 +63,10 @@ async function getSiteTitle() {
   }
 }
 
-export async function generateMetadata({params}) {
+export async function generateMetadata({params, searchParams}) {
   const blogEnabled = await isBlogEnabled();
   const siteTitle = await getSiteTitle();
+  const language = await getPostLanguage(searchParams);
 
   if (!blogEnabled) {
     return {
@@ -46,7 +75,7 @@ export async function generateMetadata({params}) {
   }
 
   const {slug} = await params;
-  const post = await getPublishedPostBySlug(slug);
+  const post = await getPublishedPostBySlug(slug, {language});
 
   if (!post) {
     return {
@@ -88,7 +117,7 @@ export async function generateMetadata({params}) {
   };
 }
 
-export default async function BlogPostPage({params}) {
+export default async function BlogPostPage({params, searchParams}) {
   const blogEnabled = await isBlogEnabled();
 
   if (!blogEnabled) {
@@ -96,14 +125,16 @@ export default async function BlogPostPage({params}) {
   }
 
   const {slug} = await params;
-  const post = await getPublishedPostBySlug(slug);
+  const language = await getPostLanguage(searchParams);
+  const post = await getPublishedPostBySlug(slug, {language});
 
   if (!post) {
     notFound();
   }
 
   const siteUrl = await getCurrentRequestOrigin();
-  const postUrl = new URL(`/blog/${post.slug}`, siteUrl).toString();
+  const postUrl = new URL(`/blog/${post.slug}`, siteUrl);
+  postUrl.searchParams.set("lng", language);
 
   return (
     <div className={styles.page} id="top">
@@ -115,7 +146,7 @@ export default async function BlogPostPage({params}) {
         <article className={styles.article}>
           <header className={styles.header}>
             <span className={styles.date}>
-              {formatDate(post.publishedAt || post.updatedAt)}
+              {formatDate(post.publishedAt || post.updatedAt, language)}
             </span>
             {Array.isArray(post.categories) && post.categories.length > 0 && (
               <div className={styles.categories}>
@@ -129,7 +160,7 @@ export default async function BlogPostPage({params}) {
             <ShareButtons
               summary={post.summary}
               title={post.title}
-              url={postUrl}
+              url={postUrl.toString()}
             />
           </header>
 
@@ -151,7 +182,7 @@ export default async function BlogPostPage({params}) {
           <ShareButtons
             summary={post.summary}
             title={post.title}
-            url={postUrl}
+            url={postUrl.toString()}
           />
         </article>
       </main>

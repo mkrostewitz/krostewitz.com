@@ -39,7 +39,15 @@ function getCategoryKey(category) {
 export default function PostManager({user}) {
   const {closeSnackbar, showSnackbar} = useSnackbar();
   const [posts, setPosts] = useState([]);
+  const [linkedin, setLinkedin] = useState({
+    available: false,
+    connected: false,
+    needsReconnect: false,
+    profile: null,
+  });
   const [isLoading, setIsLoading] = useState(true);
+  const [isDisconnectingLinkedin, setIsDisconnectingLinkedin] = useState(false);
+  const [sharingPostId, setSharingPostId] = useState("");
 
   const counts = useMemo(
     () =>
@@ -58,15 +66,25 @@ export default function PostManager({user}) {
 
     async function loadPosts() {
       try {
-        const response = await fetch("/api/admin/posts", {cache: "no-store"});
-        const data = await response.json().catch(() => ({}));
+        const [postsResponse, linkedinResponse] = await Promise.all([
+          fetch("/api/admin/posts", {cache: "no-store"}),
+          fetch("/api/admin/linkedin", {cache: "no-store"}),
+        ]);
+        const postsData = await postsResponse.json().catch(() => ({}));
+        const linkedinData = await linkedinResponse.json().catch(() => ({}));
 
-        if (!response.ok) {
-          throw new Error(data.error || "Unable to load posts.");
+        if (!postsResponse.ok) {
+          throw new Error(postsData.error || "Unable to load posts.");
         }
 
         if (!cancelled) {
-          setPosts(data.posts || []);
+          setPosts(postsData.posts || []);
+          if (linkedinResponse.ok) {
+            setLinkedin((current) => ({
+              ...current,
+              ...(linkedinData.integration || {}),
+            }));
+          }
           closeSnackbar();
         }
       } catch (error) {
@@ -87,6 +105,102 @@ export default function PostManager({user}) {
     };
   }, [closeSnackbar, showSnackbar]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const linkedInStatus = params.get("linkedin");
+    const linkedInError = params.get("linkedin_error");
+
+    if (linkedInStatus === "connected") {
+      showSnackbar({
+        type: "success",
+        message: "LinkedIn publishing is connected.",
+      });
+    } else if (linkedInError === "account_mismatch") {
+      showSnackbar({
+        type: "error",
+        message: "Connect the same LinkedIn email as the current admin account.",
+      });
+    } else if (linkedInError === "not_configured") {
+      showSnackbar({
+        type: "error",
+        message: "LinkedIn publishing is not configured yet.",
+      });
+    }
+
+    if (linkedInStatus || linkedInError) {
+      params.delete("linkedin");
+      params.delete("linkedin_error");
+      const nextUrl = `${window.location.pathname}${
+        params.toString() ? `?${params.toString()}` : ""
+      }${window.location.hash}`;
+      window.history.replaceState(null, "", nextUrl);
+    }
+  }, [showSnackbar]);
+
+  async function disconnectLinkedIn() {
+    setIsDisconnectingLinkedin(true);
+    closeSnackbar();
+
+    try {
+      const response = await fetch("/api/admin/linkedin", {method: "DELETE"});
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || "Unable to disconnect LinkedIn.");
+      }
+
+      setLinkedin((current) => ({
+        ...current,
+        ...(data.integration || {}),
+      }));
+      showSnackbar({type: "success", message: "LinkedIn disconnected."});
+    } catch (error) {
+      showSnackbar({type: "error", message: error.message});
+    } finally {
+      setIsDisconnectingLinkedin(false);
+    }
+  }
+
+  async function sharePostToLinkedIn(post) {
+    if (!linkedin.connected || linkedin.needsReconnect) {
+      showSnackbar({
+        type: "error",
+        message: "Connect LinkedIn before sharing posts.",
+      });
+      return;
+    }
+
+    setSharingPostId(post.id);
+    closeSnackbar();
+
+    try {
+      const response = await fetch(`/api/admin/posts/${post.id}/linkedin`, {
+        method: "POST",
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || "Unable to share post to LinkedIn.");
+      }
+
+      setPosts((current) =>
+        current.map((item) => (item.id === post.id ? data.post : item))
+      );
+      setLinkedin((current) => ({
+        ...current,
+        lastPublishedAt: data.linkedin?.sharedAt || current.lastPublishedAt,
+      }));
+      showSnackbar({
+        type: "success",
+        message: "Post shared to LinkedIn.",
+      });
+    } catch (error) {
+      showSnackbar({type: "error", message: error.message});
+    } finally {
+      setSharingPostId("");
+    }
+  }
+
   return (
     <div className={styles.shell}>
       <AdminHeader active="posts" user={user} />
@@ -102,6 +216,69 @@ export default function PostManager({user}) {
         </div>
 
         <div className={styles.postWorkspace}>
+          <section className={styles.linkedinPanel}>
+            <div className={styles.panelHeader}>
+              <div className={styles.titleBlock}>
+                <h2>LinkedIn publishing</h2>
+                <p className={styles.muted}>
+                  Share published blog posts to the connected LinkedIn member.
+                </p>
+              </div>
+              <span className={styles.statusBadge}>
+                {linkedin.connected
+                  ? linkedin.needsReconnect
+                    ? "Reconnect"
+                    : "Connected"
+                  : "Not connected"}
+              </span>
+            </div>
+
+            <div className={styles.linkedinStatusGrid}>
+              <div className={styles.linkedinAccount}>
+                <strong>
+                  {linkedin.connected
+                    ? linkedin.profile?.name || linkedin.profile?.email
+                    : "No LinkedIn account connected"}
+                </strong>
+                <span>
+                  {linkedin.connected
+                    ? linkedin.profile?.email
+                    : linkedin.available
+                    ? "Connect LinkedIn before sharing posts."
+                    : "Enable LinkedIn auth and configure app credentials first."}
+                </span>
+                {linkedin.accessTokenExpiresAt && (
+                  <span>
+                    Token expires {formatDate(linkedin.accessTokenExpiresAt)}
+                  </span>
+                )}
+              </div>
+
+              <div className={styles.buttonRow}>
+                {linkedin.available && (
+                  <a
+                    className={styles.secondaryButton}
+                    href="/api/admin/linkedin/connect"
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    {linkedin.connected ? "Reconnect" : "Connect LinkedIn"}
+                  </a>
+                )}
+                {linkedin.connected && (
+                  <button
+                    className={styles.ghostButton}
+                    disabled={isDisconnectingLinkedin}
+                    type="button"
+                    onClick={disconnectLinkedIn}
+                  >
+                    {isDisconnectingLinkedin ? "Disconnecting..." : "Disconnect"}
+                  </button>
+                )}
+              </div>
+            </div>
+          </section>
+
           <section className={styles.postListPanel}>
             <div className={styles.panelHeader}>
               <div className={styles.titleBlock}>
@@ -133,6 +310,11 @@ export default function PostManager({user}) {
                 const visibleCategories = categories.slice(0, 3);
                 const extraCategoryCount = categories.length - visibleCategories.length;
                 const editHref = `/admin/posts/${post.id}`;
+                const latestLinkedInShare = post.linkedinShares?.[0];
+                const canShareToLinkedIn =
+                  linkedin.connected &&
+                  !linkedin.needsReconnect &&
+                  post.status === "published";
 
                 return (
                   <article className={styles.postListRow} key={post.id}>
@@ -181,6 +363,23 @@ export default function PostManager({user}) {
                       >
                         Edit
                       </Link>
+                      {post.status === "published" && (
+                        <button
+                          className={styles.secondaryButton}
+                          disabled={
+                            !canShareToLinkedIn || sharingPostId === post.id
+                          }
+                          type="button"
+                          onClick={() => sharePostToLinkedIn(post)}
+                        >
+                          {sharingPostId === post.id ? "Sharing..." : "Share"}
+                        </button>
+                      )}
+                      {latestLinkedInShare?.sharedAt && (
+                        <span className={styles.postListShareMeta}>
+                          LinkedIn {formatDate(latestLinkedInShare.sharedAt)}
+                        </span>
+                      )}
                     </span>
                   </article>
                 );

@@ -3,6 +3,11 @@ import "server-only";
 import {ObjectId} from "mongodb";
 import sanitizeHtml from "sanitize-html";
 
+import {FALLBACK_LANGUAGE} from "../../lib/languageDetection";
+import {
+  getSupportedSiteLanguage,
+  SITE_LANGUAGE_CODES,
+} from "../../lib/siteLanguages";
 import {getDb} from "./mongo";
 
 const POSTS_COLLECTION = "posts";
@@ -169,6 +174,135 @@ function hasOwnProperty(object, key) {
   return Object.prototype.hasOwnProperty.call(object, key);
 }
 
+function createEmptyTranslation() {
+  return {
+    title: "",
+    summary: "",
+    contentHtml: "",
+  };
+}
+
+function normalizeTranslationInput(value = {}) {
+  const contentHtml = sanitizePostHtml(value.contentHtml);
+  const contentText = cleanText(contentHtml, 100000);
+
+  return {
+    title: cleanText(value.title, 140),
+    summary: cleanText(value.summary || contentText, 260),
+    contentHtml,
+  };
+}
+
+function hasTranslationValue(translation) {
+  if (!translation) return false;
+
+  return Boolean(
+    cleanText(translation.title, 140) ||
+      cleanText(translation.summary, 260) ||
+      cleanText(translation.contentHtml, 100000)
+  );
+}
+
+function hasPublishableTranslation(translation) {
+  return Boolean(
+    cleanText(translation?.title, 140).length >= 2 &&
+      cleanText(translation?.contentHtml, 100000).length >= 10
+  );
+}
+
+function hasTitledTranslation(translation) {
+  return cleanText(translation?.title, 140).length >= 2;
+}
+
+function normalizeTranslations(input = {}) {
+  const rawTranslations =
+    input.translations && typeof input.translations === "object"
+      ? input.translations
+      : {};
+  const fallbackInput = {
+    title: input.title,
+    summary: input.summary,
+    contentHtml: input.contentHtml,
+  };
+  const translations = {};
+
+  for (const language of SITE_LANGUAGE_CODES) {
+    const rawTranslation =
+      rawTranslations[language] && typeof rawTranslations[language] === "object"
+        ? rawTranslations[language]
+        : {};
+    const source =
+      language === FALLBACK_LANGUAGE && !hasTranslationValue(rawTranslation)
+        ? fallbackInput
+        : rawTranslation;
+
+    translations[language] = hasTranslationValue(source)
+      ? normalizeTranslationInput(source)
+      : createEmptyTranslation();
+  }
+
+  if (
+    !Object.values(translations).some(hasTranslationValue) &&
+    hasTranslationValue(fallbackInput)
+  ) {
+    translations[FALLBACK_LANGUAGE] = normalizeTranslationInput(fallbackInput);
+  }
+
+  return translations;
+}
+
+function getFirstTranslation(translations, predicate) {
+  const orderedLanguages = [
+    FALLBACK_LANGUAGE,
+    ...SITE_LANGUAGE_CODES.filter((language) => language !== FALLBACK_LANGUAGE),
+  ];
+
+  for (const language of orderedLanguages) {
+    const translation = translations[language];
+
+    if (predicate(translation)) {
+      return {language, translation};
+    }
+  }
+
+  return {language: FALLBACK_LANGUAGE, translation: createEmptyTranslation()};
+}
+
+function getPrimaryTranslation(translations) {
+  const fallbackTranslation = translations[FALLBACK_LANGUAGE];
+
+  if (hasTitledTranslation(fallbackTranslation)) return fallbackTranslation;
+
+  const publishable = getFirstTranslation(
+    translations,
+    hasPublishableTranslation
+  ).translation;
+
+  if (hasPublishableTranslation(publishable)) return publishable;
+
+  const titled = getFirstTranslation(translations, hasTitledTranslation)
+    .translation;
+
+  if (hasTitledTranslation(titled)) return titled;
+
+  const populated = getFirstTranslation(translations, hasTranslationValue)
+    .translation;
+
+  return hasTranslationValue(populated) ? populated : createEmptyTranslation();
+}
+
+function getLocalizedTranslation(translations, language) {
+  const supportedLanguage =
+    getSupportedSiteLanguage(language) || FALLBACK_LANGUAGE;
+  const requestedTranslation = translations[supportedLanguage];
+
+  if (hasTranslationValue(requestedTranslation)) {
+    return requestedTranslation;
+  }
+
+  return getPrimaryTranslation(translations);
+}
+
 function normalizePostSlugInput(input = {}) {
   if (!hasOwnProperty(input, "slug")) return undefined;
 
@@ -292,18 +426,48 @@ function normalizeMedia(value) {
   };
 }
 
+function serializeLinkedInShares(value) {
+  return (Array.isArray(value) ? value : [])
+    .filter((share) => share && typeof share === "object")
+    .map((share) => ({
+      provider: "linkedin",
+      postUrn: share.postUrn || "",
+      postUrl: share.postUrl || "",
+      sharedPostUrl: share.sharedPostUrl || "",
+      commentary: share.commentary || "",
+      account: share.account
+        ? {
+            sub: share.account.sub || "",
+            email: share.account.email || "",
+            name: share.account.name || "",
+            picture: share.account.picture || "",
+          }
+        : null,
+      sharedAt: toIsoDate(share.sharedAt),
+      sharedBy: share.sharedBy || null,
+    }))
+    .sort((left, right) => {
+      const leftTime = left.sharedAt ? new Date(left.sharedAt).getTime() : 0;
+      const rightTime = right.sharedAt ? new Date(right.sharedAt).getTime() : 0;
+      return rightTime - leftTime;
+    });
+}
+
 function normalizePostInput(input = {}) {
-  const title = cleanText(input.title, 140);
+  const translations = normalizeTranslations(input);
+  const primaryTranslation = getPrimaryTranslation(translations);
+  const title = cleanText(primaryTranslation.title, 140);
 
   if (title.length < 2) {
     throw new PostValidationError("Post title is required.");
   }
 
   const status = normalizeStatus(input.status);
-  const contentHtml = sanitizePostHtml(input.contentHtml);
-  const contentText = cleanText(contentHtml, 100000);
 
-  if (status === "published" && contentText.length < 10) {
+  if (
+    status === "published" &&
+    !Object.values(translations).some(hasPublishableTranslation)
+  ) {
     throw new PostValidationError("Published posts need post content.");
   }
 
@@ -311,9 +475,10 @@ function normalizePostInput(input = {}) {
     title,
     slug: normalizePostSlugInput(input),
     status,
-    summary: cleanText(input.summary || contentText, 260),
+    summary: cleanText(primaryTranslation.summary, 260),
     categories: normalizeCategories(input.categories),
-    contentHtml,
+    contentHtml: primaryTranslation.contentHtml,
+    translations,
     media: normalizeMedia(input.media),
     publishedAt: normalizePublishedAt(input),
   };
@@ -323,11 +488,21 @@ export function serializePost(document, options = {}) {
   if (!document) return null;
 
   const includeContent = options.includeContent !== false;
+  const translations = normalizeTranslations({
+    title: document.title,
+    summary: document.summary,
+    contentHtml: document.contentHtml,
+    translations: document.translations,
+  });
+  const localizedTranslation = getLocalizedTranslation(
+    translations,
+    options.language
+  );
   const post = {
     id: String(document._id),
-    title: document.title || "",
+    title: localizedTranslation.title || "",
     slug: document.slug || "",
-    summary: document.summary || "",
+    summary: localizedTranslation.summary || "",
     categories: normalizeCategories(document.categories),
     status: document.status || "draft",
     media: document.media || null,
@@ -337,12 +512,14 @@ export function serializePost(document, options = {}) {
   };
 
   if (includeContent) {
-    post.contentHtml = document.contentHtml || "";
+    post.contentHtml = localizedTranslation.contentHtml || "";
   }
 
   if (options.includeAdmin) {
     post.authorEmail = document.authorEmail || null;
     post.updatedBy = document.updatedBy || null;
+    post.translations = translations;
+    post.linkedinShares = serializeLinkedInShares(document.linkedinShares);
   }
 
   return post;
@@ -395,6 +572,7 @@ export async function createPost(input, user) {
     summary: normalized.summary,
     categories: normalized.categories,
     contentHtml: normalized.contentHtml,
+    translations: normalized.translations,
     media: normalized.media,
     authorEmail: user?.email || null,
     updatedBy: user?.email || null,
@@ -430,6 +608,7 @@ export async function updatePost(postId, input, user) {
     summary: normalized.summary,
     categories: normalized.categories,
     contentHtml: normalized.contentHtml,
+    translations: normalized.translations,
     media: normalized.media,
     updatedAt: now,
     updatedBy: user?.email || null,
@@ -467,6 +646,56 @@ export async function updatePost(postId, input, user) {
   return serializePost(post, {includeContent: true, includeAdmin: true});
 }
 
+export async function recordPostLinkedInShare(postId, share = {}, user) {
+  const db = await getDb();
+  await ensurePostIndexes(db);
+
+  const _id = toObjectId(postId);
+  const now = new Date();
+  const document = {
+    provider: "linkedin",
+    postUrn: String(share.postUrn || ""),
+    postUrl: String(share.postUrl || ""),
+    sharedPostUrl: String(share.sharedPostUrl || ""),
+    commentary: String(share.commentary || "").slice(0, 3000),
+    account: share.account
+      ? {
+          sub: String(share.account.sub || ""),
+          email: String(share.account.email || ""),
+          name: String(share.account.name || ""),
+          picture: String(share.account.picture || ""),
+        }
+      : null,
+    sharedAt: share.sharedAt instanceof Date ? share.sharedAt : now,
+    sharedBy: user?.email || null,
+  };
+  const result = await getPostsCollection(db).findOneAndUpdate(
+    {_id},
+    {
+      $set: {
+        updatedAt: now,
+        updatedBy: user?.email || null,
+        lastLinkedInShare: document,
+      },
+      $push: {
+        linkedinShares: {
+          $each: [document],
+          $position: 0,
+          $slice: 10,
+        },
+      },
+    },
+    {returnDocument: "after"}
+  );
+  const post = result?.value || result;
+
+  if (!post) {
+    throw new PostValidationError("Post not found.", 404);
+  }
+
+  return serializePost(post, {includeContent: true, includeAdmin: true});
+}
+
 export async function getPublishedPosts(filters = {}) {
   const db = await getDb();
   await ensurePostIndexes(db);
@@ -492,7 +721,12 @@ export async function getPublishedPosts(filters = {}) {
     .sort({publishedAt: -1, updatedAt: -1})
     .toArray();
 
-  return posts.map((post) => serializePost(post, {includeContent: false}));
+  return posts.map((post) =>
+    serializePost(post, {
+      includeContent: false,
+      language: filters.language,
+    })
+  );
 }
 
 export async function getPublishedPostCategories() {
@@ -523,7 +757,7 @@ export async function getPublishedPostCategories() {
     .filter((category) => category.label && category.slug);
 }
 
-export async function getPublishedPostBySlug(slug) {
+export async function getPublishedPostBySlug(slug, options = {}) {
   const db = await getDb();
   await ensurePostIndexes(db);
 
@@ -532,5 +766,8 @@ export async function getPublishedPostBySlug(slug) {
     status: "published",
   });
 
-  return serializePost(post, {includeContent: true});
+  return serializePost(post, {
+    includeContent: true,
+    language: options.language,
+  });
 }

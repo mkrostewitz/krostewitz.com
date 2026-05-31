@@ -10,13 +10,13 @@ import {getAiSettings} from "../../../../lib/aiSettings";
 import {getCvDownloads} from "../../../../lib/cvFiles";
 import {sanitizePostHtml} from "../../../../lib/posts";
 import {getRequestOrigin} from "../../../../lib/requestOrigin";
+import {
+  getSiteLanguageLabel,
+  getSupportedSiteLanguage,
+  SITE_LANGUAGE_CODES,
+} from "../../../../../lib/siteLanguages";
 
 export const runtime = "nodejs";
-
-const SUPPORTED_LANGUAGES = {
-  en: "English",
-  de: "German",
-};
 
 const SUPPORTED_MODES = new Set(["create", "tweak", "translate"]);
 
@@ -24,6 +24,12 @@ const DEFAULT_TARGET_FIELDS = {
   title: true,
   summary: true,
   contentHtml: true,
+};
+
+const OUTPUT_TOKEN_LIMITS = {
+  create: 8000,
+  tweak: 8000,
+  translate: 12000,
 };
 
 const OUTPUT_SCHEMA = {
@@ -76,18 +82,50 @@ function getResponseText(data) {
 
   return (data?.output || [])
     .flatMap((item) => item.content || [])
-    .map((content) => content.text || content.output_text || "")
+    .map((content) => content.text || content.output_text || content.refusal || "")
     .join("")
     .trim();
 }
 
 function parseJsonPayload(text) {
+  const value = String(text || "")
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/i, "")
+    .trim();
+
   try {
-    return JSON.parse(text);
+    return JSON.parse(value);
   } catch {
-    const match = String(text || "").match(/\{[\s\S]*\}/);
+    const match = value.match(/\{[\s\S]*\}/);
     if (!match) return null;
-    return JSON.parse(match[0]);
+
+    try {
+      return JSON.parse(match[0]);
+    } catch {
+      return null;
+    }
+  }
+}
+
+function getIncompleteReason(data) {
+  return data?.incomplete_details?.reason || data?.incomplete_details || "";
+}
+
+function assertReadableOpenAiResponse(data, text) {
+  const incompleteReason = getIncompleteReason(data);
+
+  if (data?.status === "incomplete") {
+    if (String(incompleteReason).includes("max_output_tokens")) {
+      throw new Error(
+        "OpenAI response was cut off before the translation finished. Try translating fewer fields at once or shorten the post."
+      );
+    }
+
+    throw new Error("OpenAI did not finish the response.");
+  }
+
+  if (!text) {
+    throw new Error("OpenAI returned no readable text.");
   }
 }
 
@@ -97,8 +135,7 @@ function normalizeMode(value) {
 }
 
 function normalizeLanguage(value) {
-  const language = String(value || "en").toLowerCase();
-  return SUPPORTED_LANGUAGES[language] ? language : "en";
+  return getSupportedSiteLanguage(value) || SITE_LANGUAGE_CODES[0] || "en";
 }
 
 function normalizeTargetFields(value) {
@@ -162,8 +199,14 @@ async function getCvFileInputs(request) {
     .filter((asset) => isOpenAiFetchableUrl(asset.file_url));
 }
 
-function buildInstruction(mode, targetLanguage, agentInstructions) {
-  const languageName = SUPPORTED_LANGUAGES[targetLanguage];
+function buildInstruction(
+  mode,
+  targetLanguage,
+  sourceLanguage,
+  agentInstructions
+) {
+  const languageName = getSiteLanguageLabel(targetLanguage);
+  const sourceLanguageName = getSiteLanguageLabel(sourceLanguage);
   const base = [
     "You are the content assistant configured by this site's saved AI settings.",
     "Follow the saved agent instructions as the source of truth for brand voice, audience, topics, and style.",
@@ -180,7 +223,7 @@ function buildInstruction(mode, targetLanguage, agentInstructions) {
   }
 
   if (mode === "translate") {
-    return `${base} Translate the supplied post into ${languageName}. Preserve meaning, tone, formatting, links, and HTML structure. Use all supplied post fields as context, and only translate the selected output fields.`;
+    return `${base} Translate the supplied post from ${sourceLanguageName} into ${languageName}. Preserve meaning, tone, formatting, links, and HTML structure. Use all supplied post fields as context, and only translate the selected output fields.`;
   }
 
   return `${base} Improve the supplied post in ${languageName}. Apply the user's instructions while preserving the author's voice, safe HTML, and article structure. Use all supplied post fields as context, and only rewrite the selected output fields.`;
@@ -202,6 +245,7 @@ async function createOpenAiResponse(apiKey, requestBody) {
 
 async function runOpenAiPostEdit({
   mode,
+  sourceLanguage,
   targetLanguage,
   prompt,
   post,
@@ -217,8 +261,10 @@ async function runOpenAiPostEdit({
       type: "input_text",
       text: JSON.stringify({
         mode,
+        sourceLanguage,
+        sourceLanguageName: getSiteLanguageLabel(sourceLanguage),
         targetLanguage,
-        targetLanguageName: SUPPORTED_LANGUAGES[targetLanguage],
+        targetLanguageName: getSiteLanguageLabel(targetLanguage),
         userInstructions: prompt,
         targetFields,
         selectedFields: getTargetFieldNames(targetFields),
@@ -239,7 +285,12 @@ async function runOpenAiPostEdit({
   ];
   const requestBody = {
     model,
-    instructions: buildInstruction(mode, targetLanguage, agentInstructions),
+    instructions: buildInstruction(
+      mode,
+      targetLanguage,
+      sourceLanguage,
+      agentInstructions
+    ),
     input: [
       {
         role: "user",
@@ -254,7 +305,8 @@ async function runOpenAiPostEdit({
         schema: OUTPUT_SCHEMA,
       },
     },
-    max_output_tokens: 3000,
+    max_output_tokens:
+      OUTPUT_TOKEN_LIMITS[mode] || OUTPUT_TOKEN_LIMITS.translate,
   };
 
   if (temperature !== null && temperature !== undefined) {
@@ -283,6 +335,7 @@ async function runOpenAiPostEdit({
   }
 
   const text = getResponseText(data);
+  assertReadableOpenAiResponse(data, text);
   const parsed = parseJsonPayload(text);
 
   if (!parsed) {
@@ -307,6 +360,7 @@ export async function POST(request) {
   try {
     const body = await request.json().catch(() => ({}));
     const mode = normalizeMode(body.mode);
+    const sourceLanguage = normalizeLanguage(body.sourceLanguage);
     const targetLanguage = normalizeLanguage(body.targetLanguage);
     const targetFields = normalizeTargetFields(body.targetFields);
     const prompt = clampText(body.prompt, 4000);
@@ -344,6 +398,7 @@ export async function POST(request) {
       : [];
     const post = await runOpenAiPostEdit({
       mode,
+      sourceLanguage,
       targetLanguage,
       prompt,
       targetFields,
