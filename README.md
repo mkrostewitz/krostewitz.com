@@ -20,13 +20,12 @@ You can start editing the page by modifying `app/page.js`. The page auto-updates
 
 ## Admin authentication
 
-The admin area is available at `/admin`. It uses the MongoDB `users` collection for the admin user, MongoDB collections for auth challenges and sessions, Apple/iCloud SMTP for email codes and magic links, and an HTTP-only signed session cookie.
+The admin area is available at `/admin`. It uses the MongoDB `users` collection for the admin user, MongoDB collections for auth challenges and sessions, optional Apple/iCloud SMTP for email codes and magic links, optional LinkedIn OAuth for admin sign-in, and an HTTP-only signed session cookie.
 
 Required environment for any admin sign-in:
 
 - `AUTH_SECRET` with at least 32 characters
 - `MONGO_DB_URI`, `MONGO_DB_NAME`, `MONGO_DB_USER`, `MONGO_DB_PASSWORD`
-- `APPLE_MAIL_USER`, `APPLE_MAIL_APP_PASSWORD`
 
 Store the admin user in MongoDB's `users` collection:
 
@@ -45,8 +44,21 @@ The `_id: "admin"` field marks that user as allowed to access the admin area. Yo
 
 Required or recommended for email links:
 
+- `APPLE_MAIL_USER`, `APPLE_MAIL_APP_PASSWORD`
 - `APPLE_MAIL_FROM` defaults to `APPLE_MAIL_USER` if omitted
 - Links use the current request host, so local emails point at `localhost` and deployed emails point at the active domain. `AUTH_BASE_URL` or `NEXT_PUBLIC_SITE_URL` can still be set as a fallback when no request host is available.
+
+LinkedIn admin sign-in:
+
+- Add the `Sign in with LinkedIn using OpenID Connect` product to the LinkedIn app.
+- Set `LINKEDIN_AUTH_ENABLED=true`, `LINKEDIN_CLIENT_ID`, and `LINKEDIN_CLIENT_SECRET`.
+- Add this local redirect URL in the LinkedIn app's Auth settings: `http://localhost:3000/api/admin/auth/linkedin/callback`.
+- When the site moves to the domain, add the production redirect URL too: `https://your-domain.com/api/admin/auth/linkedin/callback`.
+- LinkedIn requires an exact redirect URL match, including protocol, host, port, path, and no trailing slash.
+- The app builds the callback URL from the current request origin, so `localhost`, `127.0.0.1`, tunnels, and the production domain each use their own matching `/api/admin/auth/linkedin/callback` URL. Add every origin you use to the LinkedIn app's allowed redirect URLs.
+- There is no public sign-up flow. The LinkedIn account must return the same email address as an existing configured admin user in MongoDB, otherwise sign-in is rejected.
+- To publish posts from `/admin/posts`, add the `Share on LinkedIn` product to the LinkedIn app. The admin publishing connect action requests `w_member_social` and stores the access token encrypted in MongoDB.
+- `LINKEDIN_OAUTH_SCOPES` is optional and defaults to `openid profile email` for admin sign-in. `LINKEDIN_API_VERSION` is optional and defaults to `202605` for the LinkedIn Posts API.
 
 ## Language detection
 
@@ -105,12 +117,13 @@ If no repositories are selected, the public portfolio section shows no projects.
 
 ## CV downloads
 
-The public CV button reads its PDF URLs from MongoDB runtime content and falls back to the bundled files in `public/data` if nothing has been uploaded yet.
+The public CV button creates a verified lead before serving a PDF. Public CV metadata is exposed through `/api/cv`, but the actual PDF is served through a tokenized `/api/cv/download` URL after email verification. The download route only streams the remote DigitalOcean Spaces URL stored in MongoDB; no CV PDF is bundled with the project.
 
 - Upload and replace CV PDFs in `/admin/cv`.
 - Files are uploaded to stable DigitalOcean Spaces paths with readable attachment filenames.
 - `DO_SPACES_CV_PREFIX` controls the Spaces key prefix for CV files. It defaults to `cv`.
 - `CV_UPLOAD_MAX_BYTES` controls the PDF upload limit. It defaults to 10 MB.
+- Contact and CV requests are stored together in the MongoDB `leads` collection and managed from `/admin/leads`.
 
 Secret helpers:
 
@@ -120,6 +133,7 @@ npm run admin:secret -- password-hash "your-password"
 ```
 
 Use `passwordHash` for password plus 2FA sign-in. Magic-link sign-in only needs the admin user document with an email, mail settings, MongoDB, and `AUTH_SECRET`.
+After signing in, the admin password can be set or replaced at `/admin/security` without entering the old password. The login page's forgot-password action sends a one-time magic link that opens that security screen.
 
 Authenticator-app 2FA can be configured after sign-in at `/admin/security`. The setup screen generates a pending TOTP secret, shows a QR code and manual key, and only saves `totpSecret` to the user document after a valid authenticator code is entered. Microsoft Authenticator, Apple Passwords, 1Password, and other standard TOTP apps are supported.
 
