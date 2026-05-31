@@ -4,6 +4,7 @@ import {Moon, Sun} from "lucide-react";
 import {useEffect, useState} from "react";
 import {useTranslation} from "react-i18next";
 
+import "../../../lib/i18n";
 import "./theme-toggle.css";
 
 const THEME_STORAGE_KEY = "krostewitz-theme";
