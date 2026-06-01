@@ -1,8 +1,8 @@
 "use client";
 
-import {X} from "lucide-react";
+import {Sparkles, X} from "lucide-react";
 import Link from "next/link";
-import {useEffect, useMemo, useState} from "react";
+import {useEffect, useMemo, useRef, useState} from "react";
 
 import {useSnackbar} from "../../components/snackbar/SnackbarProvider";
 import {FALLBACK_LANGUAGE} from "@/lib/languageDetection";
@@ -23,6 +23,20 @@ const LINKEDIN_IMAGE_CONTENT_TYPES = new Set([
   "image/jpeg",
   "image/png",
 ]);
+const SHARE_EMOJIS = ["💡", "📈", "🤖", "🏭", "🌍", "✅"];
+const FALLBACK_TIME_ZONE = "Europe/Berlin";
+const FALLBACK_TIME_ZONES = [
+  "Europe/Berlin",
+  "UTC",
+  "Europe/London",
+  "America/New_York",
+  "America/Chicago",
+  "America/Denver",
+  "America/Los_Angeles",
+  "Asia/Singapore",
+  "Asia/Tokyo",
+  "Australia/Sydney",
+];
 
 function formatDate(value) {
   if (!value) return "Not saved";
@@ -34,16 +48,31 @@ function formatDate(value) {
   }).format(new Date(value));
 }
 
-function formatDateTime(value) {
+function formatDateTime(value, timeZone) {
   if (!value) return "Not scheduled";
 
-  return new Intl.DateTimeFormat("en", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(new Date(value));
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Not scheduled";
+
+  try {
+    return new Intl.DateTimeFormat("en", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      timeZone: timeZone || undefined,
+      timeZoneName: timeZone ? "short" : undefined,
+    }).format(date);
+  } catch {
+    return new Intl.DateTimeFormat("en", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(date);
+  }
 }
 
 function normalizeListCategories(value) {
@@ -108,21 +137,148 @@ function getPostTranslation(post, language) {
   );
 }
 
-function toDateTimeLocalValue(value) {
+function padDatePart(value) {
+  return String(value).padStart(2, "0");
+}
+
+function getDefaultTimeZone() {
+  return (
+    Intl.DateTimeFormat().resolvedOptions().timeZone || FALLBACK_TIME_ZONE
+  );
+}
+
+function getTimeZoneOptions(selectedTimeZone) {
+  const supportedTimeZones =
+    typeof Intl.supportedValuesOf === "function"
+      ? Intl.supportedValuesOf("timeZone")
+      : FALLBACK_TIME_ZONES;
+
+  return [...new Set([selectedTimeZone, ...FALLBACK_TIME_ZONES, ...supportedTimeZones])]
+    .filter(Boolean)
+    .sort((left, right) => left.localeCompare(right));
+}
+
+function getTimeZoneLabel(timeZone) {
+  try {
+    const label = new Intl.DateTimeFormat("en", {
+      timeZone,
+      timeZoneName: "short",
+    })
+      .formatToParts(new Date())
+      .find((part) => part.type === "timeZoneName")?.value;
+
+    return label ? `${timeZone} (${label})` : timeZone;
+  } catch {
+    return timeZone;
+  }
+}
+
+function getTimeZoneDateParts(value, timeZone) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    day: "2-digit",
+    hour: "2-digit",
+    hour12: false,
+    hourCycle: "h23",
+    minute: "2-digit",
+    month: "2-digit",
+    second: "2-digit",
+    timeZone,
+    year: "numeric",
+  }).formatToParts(value);
+  const partMap = Object.fromEntries(
+    parts
+      .filter((part) => part.type !== "literal")
+      .map((part) => [part.type, part.value])
+  );
+
+  return {
+    day: Number(partMap.day),
+    hour: Number(partMap.hour),
+    minute: Number(partMap.minute),
+    month: Number(partMap.month),
+    second: Number(partMap.second),
+    year: Number(partMap.year),
+  };
+}
+
+function toDateTimeLocalValue(value, timeZone = getDefaultTimeZone()) {
   if (!value) return "";
 
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
 
-  const offsetDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-  return offsetDate.toISOString().slice(0, 16);
+  try {
+    const parts = getTimeZoneDateParts(date, timeZone);
+
+    return `${parts.year}-${padDatePart(parts.month)}-${padDatePart(
+      parts.day
+    )}T${padDatePart(parts.hour)}:${padDatePart(parts.minute)}`;
+  } catch {
+    const offsetDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+    return offsetDate.toISOString().slice(0, 16);
+  }
 }
 
-function toIsoDateTimeValue(value) {
+function parseDateTimeLocalValue(value) {
+  const match = String(value || "").match(
+    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/
+  );
+
+  if (!match) return null;
+
+  return {
+    day: Number(match[3]),
+    hour: Number(match[4]),
+    minute: Number(match[5]),
+    month: Number(match[2]),
+    year: Number(match[1]),
+  };
+}
+
+function getTimeZoneOffsetMs(date, timeZone) {
+  const parts = getTimeZoneDateParts(date, timeZone);
+  const utcTime = Date.UTC(
+    parts.year,
+    parts.month - 1,
+    parts.day,
+    parts.hour,
+    parts.minute,
+    parts.second || 0
+  );
+
+  return utcTime - date.getTime();
+}
+
+function toIsoDateTimeValue(value, timeZone = getDefaultTimeZone()) {
   if (!value) return "";
 
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "" : date.toISOString();
+  const parts = parseDateTimeLocalValue(value);
+
+  if (!parts) return "";
+
+  try {
+    const localUtcTime = Date.UTC(
+      parts.year,
+      parts.month - 1,
+      parts.day,
+      parts.hour,
+      parts.minute,
+      0
+    );
+    const initialOffset = getTimeZoneOffsetMs(new Date(localUtcTime), timeZone);
+    let utcTime = localUtcTime - initialOffset;
+    const finalOffset = getTimeZoneOffsetMs(new Date(utcTime), timeZone);
+
+    if (finalOffset !== initialOffset) {
+      utcTime = localUtcTime - finalOffset;
+    }
+
+    const date = new Date(utcTime);
+    return Number.isNaN(date.getTime()) ? "" : date.toISOString();
+  } catch {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? "" : date.toISOString();
+  }
 }
 
 function getImageContentTypeFromUrl(url) {
@@ -200,6 +356,13 @@ export default function PostManager({user}) {
   const [shareIncludeImage, setShareIncludeImage] = useState(false);
   const [shareTiming, setShareTiming] = useState("now");
   const [shareScheduledAt, setShareScheduledAt] = useState("");
+  const [shareTimeZone, setShareTimeZone] = useState(getDefaultTimeZone);
+  const [isGeneratingThoughts, setIsGeneratingThoughts] = useState(false);
+  const shareThoughtsRef = useRef(null);
+  const timeZoneOptions = useMemo(
+    () => getTimeZoneOptions(shareTimeZone),
+    [shareTimeZone]
+  );
 
   const counts = useMemo(
     () =>
@@ -320,12 +483,67 @@ export default function PostManager({user}) {
     setShareIncludeImage(canIncludeLinkedInImage(post));
     setShareTiming("now");
     setShareScheduledAt("");
+    setShareTimeZone(getDefaultTimeZone());
     setPendingSharePost(post);
   }
 
   function closeShareDialog() {
-    if (sharingPostId) return;
+    if (sharingPostId || isGeneratingThoughts) return;
     setPendingSharePost(null);
+  }
+
+  function insertShareEmoji(emoji) {
+    const textarea = shareThoughtsRef.current;
+
+    if (!textarea) {
+      setShareCommentary((current) => `${current}${emoji}`);
+      return;
+    }
+
+    const start = textarea.selectionStart ?? shareCommentary.length;
+    const end = textarea.selectionEnd ?? shareCommentary.length;
+    const nextValue = `${shareCommentary.slice(0, start)}${emoji}${shareCommentary.slice(end)}`;
+    const nextCursor = start + emoji.length;
+
+    setShareCommentary(nextValue);
+    requestAnimationFrame(() => {
+      textarea.focus();
+      textarea.setSelectionRange(nextCursor, nextCursor);
+    });
+  }
+
+  async function generateShareThoughts(post) {
+    setIsGeneratingThoughts(true);
+    closeSnackbar();
+
+    try {
+      const response = await fetch(
+        `/api/admin/posts/${post.id}/linkedin/thoughts`,
+        {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({
+            currentThoughts: shareCommentary,
+            language: shareLanguage,
+          }),
+        }
+      );
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || "Unable to generate LinkedIn thoughts.");
+      }
+
+      setShareCommentary(data.thoughts || "");
+      showSnackbar({
+        type: "success",
+        message: "LinkedIn thoughts generated.",
+      });
+    } catch (error) {
+      showSnackbar({type: "error", message: error.message});
+    } finally {
+      setIsGeneratingThoughts(false);
+    }
   }
 
   async function sharePostToLinkedIn(post, options = {}) {
@@ -339,7 +557,7 @@ export default function PostManager({user}) {
 
     const scheduledAt =
       options.timing === "scheduled"
-        ? toIsoDateTimeValue(options.scheduledAt)
+        ? toIsoDateTimeValue(options.scheduledAt, options.timeZone)
         : "";
 
     if (options.timing === "scheduled" && !scheduledAt) {
@@ -359,6 +577,7 @@ export default function PostManager({user}) {
           includeImage: options.includeImage,
           language: options.language,
           scheduledAt,
+          scheduledTimeZone: options.timeZone,
           target: options.target,
         }),
       });
@@ -387,7 +606,8 @@ export default function PostManager({user}) {
           ? {
               type: "success",
               message: `LinkedIn share scheduled for ${formatDateTime(
-                data.linkedin?.scheduledAt
+                data.linkedin?.scheduledAt,
+                data.linkedin?.scheduledTimeZone || options.timeZone
               )}.`,
             }
           : {
@@ -594,7 +814,11 @@ export default function PostManager({user}) {
                       )}
                       {nextLinkedInSchedule?.scheduledAt && (
                         <span className={styles.postListShareMeta}>
-                          Scheduled {formatDateTime(nextLinkedInSchedule.scheduledAt)}
+                          Scheduled{" "}
+                          {formatDateTime(
+                            nextLinkedInSchedule.scheduledAt,
+                            nextLinkedInSchedule.scheduledTimeZone
+                          )}
                         </span>
                       )}
                     </span>
@@ -706,9 +930,21 @@ export default function PostManager({user}) {
               </div>
             </div>
 
-            <label className={styles.field}>
-              Thoughts
+            <div className={styles.field}>
+              <div className={styles.fieldHeader}>
+                <span className={styles.fieldLabel}>Thoughts</span>
+                <button
+                  className={`${styles.secondaryButton} ${styles.shareThoughtButton}`}
+                  disabled={isGeneratingThoughts || Boolean(sharingPostId)}
+                  type="button"
+                  onClick={() => generateShareThoughts(pendingSharePost)}
+                >
+                  <Sparkles aria-hidden="true" size={16} strokeWidth={2.2} />
+                  {isGeneratingThoughts ? "Generating..." : "Generate"}
+                </button>
+              </div>
               <textarea
+                ref={shareThoughtsRef}
                 maxLength={2800}
                 placeholder={`Optional note for your ${getSiteLanguageLabel(
                   shareLanguage
@@ -717,10 +953,24 @@ export default function PostManager({user}) {
                 value={shareCommentary}
                 onChange={(event) => setShareCommentary(event.target.value)}
               />
+              <div className={styles.shareEmojiRow} aria-label="Emoji shortcuts">
+                {SHARE_EMOJIS.map((emoji) => (
+                  <button
+                    aria-label={`Insert ${emoji}`}
+                    className={styles.shareEmojiButton}
+                    disabled={Boolean(sharingPostId)}
+                    key={emoji}
+                    type="button"
+                    onClick={() => insertShareEmoji(emoji)}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
               <span className={styles.muted}>
                 The blog link is added automatically if it is not included.
               </span>
-            </label>
+            </div>
 
             <fieldset className={styles.shareTargetList}>
               <legend>Media</legend>
@@ -772,7 +1022,10 @@ export default function PostManager({user}) {
                     setShareTiming(event.target.value);
                     if (!shareScheduledAt) {
                       setShareScheduledAt(
-                        toDateTimeLocalValue(Date.now() + 60 * 60 * 1000)
+                        toDateTimeLocalValue(
+                          Date.now() + 60 * 60 * 1000,
+                          shareTimeZone
+                        )
                       );
                     }
                   }}
@@ -784,14 +1037,31 @@ export default function PostManager({user}) {
               </label>
 
               {shareTiming === "scheduled" && (
-                <label className={styles.field}>
-                  Scheduled time
-                  <input
-                    type="datetime-local"
-                    value={shareScheduledAt}
-                    onChange={(event) => setShareScheduledAt(event.target.value)}
-                  />
-                </label>
+                <div className={styles.shareScheduleGrid}>
+                  <label className={styles.field}>
+                    Scheduled time
+                    <input
+                      type="datetime-local"
+                      value={shareScheduledAt}
+                      onChange={(event) =>
+                        setShareScheduledAt(event.target.value)
+                      }
+                    />
+                  </label>
+                  <label className={styles.field}>
+                    Time zone
+                    <select
+                      value={shareTimeZone}
+                      onChange={(event) => setShareTimeZone(event.target.value)}
+                    >
+                      {timeZoneOptions.map((timeZone) => (
+                        <option key={timeZone} value={timeZone}>
+                          {getTimeZoneLabel(timeZone)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
               )}
             </fieldset>
 
@@ -815,6 +1085,7 @@ export default function PostManager({user}) {
                     language: shareLanguage,
                     scheduledAt: shareScheduledAt,
                     target: shareTarget,
+                    timeZone: shareTimeZone,
                     timing: shareTiming,
                   })
                 }

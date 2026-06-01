@@ -752,6 +752,56 @@
   line-height: 1.45;
 }
 
+.shareThoughtButton {
+  gap: 7px;
+  min-height: 34px;
+  padding: 7px 10px;
+  font-size: 0.86rem;
+}
+
+.shareThoughtButton svg {
+  display: block;
+}
+
+.shareEmojiRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.shareEmojiButton {
+  width: 34px;
+  min-width: 34px;
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  padding: 0;
+  background: var(--surface);
+  cursor: pointer;
+  font: inherit;
+  font-size: 1rem;
+}
+
+.shareEmojiButton:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.shareEmojiButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.shareScheduleGrid {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.7fr) minmax(220px, 1fr);
+  gap: 12px;
+}
+
 .leadStats {
   display: flex;
   flex-wrap: wrap;
@@ -2197,6 +2247,7 @@
   .postStatusGrid,
   .postOverviewGrid,
   .shareComposerGrid,
+  .shareScheduleGrid,
   .aiGrid,
   .settingsGrid,
   .aiSettingsFields,

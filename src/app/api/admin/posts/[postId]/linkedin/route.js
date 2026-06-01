@@ -47,7 +47,11 @@ export async function POST(request, context) {
       user,
     };
     const result = body.scheduledAt
-      ? await schedulePostToLinkedIn({...payload, scheduledAt: body.scheduledAt})
+      ? await schedulePostToLinkedIn({
+          ...payload,
+          scheduledAt: body.scheduledAt,
+          scheduledTimeZone: body.scheduledTimeZone,
+        })
       : await publishPostToLinkedIn(payload);
 
     return NextResponse.json(result);

@@ -474,6 +474,7 @@ function serializeLinkedInShareSchedules(value) {
       includeImage: schedule.includeImage === true,
       status: schedule.status || "scheduled",
       scheduledAt: toIsoDate(schedule.scheduledAt),
+      scheduledTimeZone: schedule.scheduledTimeZone || "",
       publishedAt: toIsoDate(schedule.publishedAt),
       failedAt: toIsoDate(schedule.failedAt),
       failure: schedule.failure || "",
@@ -768,6 +769,7 @@ export async function recordPostLinkedInShareSchedule(postId, schedule = {}, use
     status: "scheduled",
     scheduledAt:
       schedule.scheduledAt instanceof Date ? schedule.scheduledAt : now,
+    scheduledTimeZone: String(schedule.scheduledTimeZone || ""),
     account: schedule.account
       ? {
           sub: String(schedule.account.sub || ""),

@@ -179,6 +179,19 @@ function normalizeShareLanguage(value) {
   return getSupportedSiteLanguage(value) || FALLBACK_LANGUAGE;
 }
 
+function normalizeTimeZone(value) {
+  const timeZone = String(value || "").trim();
+
+  if (!timeZone) return "";
+
+  try {
+    new Intl.DateTimeFormat("en", {timeZone}).format(new Date());
+    return timeZone;
+  } catch {
+    return "";
+  }
+}
+
 function getBestTextValue(post, language, key, maxLength) {
   const supportedLanguage = normalizeShareLanguage(language);
   const translations = post?.translations || {};
@@ -834,11 +847,13 @@ export async function schedulePostToLinkedIn({
   postId,
   origin,
   scheduledAt,
+  scheduledTimeZone,
   target = "personal_profile",
   user,
 }) {
   const normalizedTarget = normalizeShareTarget(target);
   const normalizedLanguage = normalizeShareLanguage(language);
+  const normalizedTimeZone = normalizeTimeZone(scheduledTimeZone);
   const scheduleDate = normalizeScheduledAt(scheduledAt);
   const post = await getAdminPostById(postId);
 
@@ -879,6 +894,7 @@ export async function schedulePostToLinkedIn({
     origin: publicOrigin,
     account: connection.profile,
     scheduledAt: scheduleDate,
+    scheduledTimeZone: normalizedTimeZone,
     createdAt: now,
     createdBy: user?.email || null,
     updatedAt: now,
@@ -897,6 +913,7 @@ export async function schedulePostToLinkedIn({
       includeImage: includeImage && hasShareableLinkedInImage(post),
       account: connection.profile,
       scheduledAt: scheduleDate,
+      scheduledTimeZone: normalizedTimeZone,
     },
     user,
   );
@@ -909,6 +926,7 @@ export async function schedulePostToLinkedIn({
       target: normalizedTarget,
       language: normalizedLanguage,
       scheduledAt: scheduleDate.toISOString(),
+      scheduledTimeZone: normalizedTimeZone,
       commentary: finalCommentary,
       includeImage: includeImage && hasShareableLinkedInImage(post),
     },
