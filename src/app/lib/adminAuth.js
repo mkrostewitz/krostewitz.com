@@ -442,9 +442,11 @@ export async function verifyAuthChallenge(challengeId, code) {
   };
 }
 
-export async function verifyMagicLinkChallenge(challengeId, token) {
+export async function verifyMagicLinkChallenge(challengeId, token, options = {}) {
   if (!token) return null;
 
+  const consume = options.consume !== false;
+  const expectedIntent = options.intent || "";
   const db = await getDb();
   const challenges = db.collection(CHALLENGES_COLLECTION);
   const challenge = await challenges.findOne({
@@ -455,19 +457,33 @@ export async function verifyMagicLinkChallenge(challengeId, token) {
   });
 
   if (!challenge || challenge.attempts >= 5) return null;
+  const challengeIntent = challenge.intent || "sign_in";
+  if (expectedIntent && challengeIntent !== expectedIntent) return null;
 
   const admin = await getConfiguredAdmin(challenge.email);
   if (!admin) return null;
 
-  await challenges.updateOne(
-    {_id: challenge._id},
-    {$inc: {attempts: 1}, $set: {updatedAt: new Date()}},
-  );
+  if (consume) {
+    await challenges.updateOne(
+      {_id: challenge._id},
+      {$inc: {attempts: 1}, $set: {updatedAt: new Date()}},
+    );
+  }
 
   const tokenHash = hashToken(token);
   const verified = timingSafeStringEqual(tokenHash, challenge.tokenHash || "");
 
   if (!verified) return null;
+
+  if (!consume) {
+    return {
+      email: admin.email,
+      name: admin.name,
+      method: "magic_link",
+      intent: challengeIntent,
+      redirectPath: challenge.redirectPath || null,
+    };
+  }
 
   const result = await challenges.updateOne(
     {_id: challenge._id, consumedAt: {$exists: false}},
@@ -480,7 +496,7 @@ export async function verifyMagicLinkChallenge(challengeId, token) {
     email: admin.email,
     name: admin.name,
     method: "magic_link",
-    intent: challenge.intent || "sign_in",
+    intent: challengeIntent,
     redirectPath: challenge.redirectPath || null,
   };
 }

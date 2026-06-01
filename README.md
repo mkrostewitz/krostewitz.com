@@ -136,7 +136,7 @@ npm run admin:secret -- password-hash "your-password"
 ```
 
 Use `passwordHash` for password plus 2FA sign-in. Magic-link sign-in only needs the admin user document with an email, mail settings, MongoDB, and `AUTH_SECRET`.
-After signing in, the admin password can be set or replaced at `/admin/security` without entering the old password. The login page's forgot-password action sends a one-time magic link that opens that security screen.
+After signing in, the admin password can be set or replaced at `/admin/security` without entering the old password. The login page's forgot-password action sends a one-time reset link that opens `/admin/reset-password` and consumes the token only when the new password is saved.
 
 Authenticator-app 2FA can be configured after sign-in at `/admin/security`. The setup screen generates a pending TOTP secret, shows a QR code and manual key, and only saves `totpSecret` to the user document after a valid authenticator code is entered. Microsoft Authenticator, Apple Passwords, 1Password, and other standard TOTP apps are supported.
 

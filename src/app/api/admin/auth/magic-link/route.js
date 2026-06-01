@@ -4,15 +4,20 @@ import {
   createAdminSession,
   createMagicLinkChallenge,
   getConfiguredAdmin,
+  hashPassword,
   isSameOriginRequest,
   setSessionCookie,
   verifyMagicLinkChallenge,
 } from "../../../../lib/adminAuth";
 import {renderAdminMagicLinkEmail} from "../../../../lib/emailTemplates";
 import {getAppleMailTransport, getDefaultSender} from "../../../../lib/mail";
+import {getDb} from "../../../../lib/mongo";
 import {getOriginHost, getRequestOrigin} from "../../../../lib/requestOrigin";
 
 export const runtime = "nodejs";
+
+const MIN_PASSWORD_LENGTH = 12;
+const USERS_COLLECTION = "users";
 
 function normalizeEmail(email) {
   return String(email || "")
@@ -22,6 +27,13 @@ function normalizeEmail(email) {
 
 function createMagicLink(request, challenge) {
   const url = new URL("/api/admin/auth/magic-link", getRequestOrigin(request));
+  url.searchParams.set("challenge", challenge.challengeId);
+  url.searchParams.set("token", challenge.token);
+  return url.toString();
+}
+
+function createPasswordResetLink(request, challenge) {
+  const url = new URL("/admin/reset-password", getRequestOrigin(request));
   url.searchParams.set("challenge", challenge.challengeId);
   url.searchParams.set("token", challenge.token);
   return url.toString();
@@ -45,6 +57,23 @@ function normalizeRedirectPath(path) {
   } catch {
     return fallbackPath;
   }
+}
+
+async function updateUserPassword(email, passwordHash) {
+  const db = await getDb();
+  return db.collection(USERS_COLLECTION).updateOne(
+    {email: normalizeEmail(email)},
+    {
+      $set: {
+        passwordHash,
+        passwordUpdatedAt: new Date(),
+        updatedAt: new Date(),
+      },
+      $unset: {
+        password: "",
+      },
+    },
+  );
 }
 
 export async function POST(request) {
@@ -76,7 +105,7 @@ export async function POST(request) {
       intent: normalizedIntent,
       redirectPath: normalizeRedirectPath(
         normalizedIntent === "password_reset"
-          ? "/admin/security?password=1"
+          ? "/admin/reset-password"
           : redirectPath,
       ),
     });
@@ -90,8 +119,10 @@ export async function POST(request) {
 
   const origin = getRequestOrigin(request);
   const siteHost = getOriginHost(origin);
-  const link = createMagicLink(request, challenge);
   const isPasswordReset = normalizedIntent === "password_reset";
+  const link = isPasswordReset
+    ? createPasswordResetLink(request, challenge)
+    : createMagicLink(request, challenge);
 
   try {
     await transporter.sendMail({
@@ -125,7 +156,21 @@ export async function GET(request) {
   const url = new URL(request.url);
   const challengeId = url.searchParams.get("challenge");
   const token = url.searchParams.get("token");
-  const user = await verifyMagicLinkChallenge(challengeId, token);
+  const passwordResetUser = await verifyMagicLinkChallenge(challengeId, token, {
+    consume: false,
+    intent: "password_reset",
+  });
+
+  if (passwordResetUser) {
+    const resetUrl = new URL("/admin/reset-password", request.url);
+    resetUrl.searchParams.set("challenge", challengeId);
+    resetUrl.searchParams.set("token", token);
+    return NextResponse.redirect(resetUrl);
+  }
+
+  const user = await verifyMagicLinkChallenge(challengeId, token, {
+    intent: "sign_in",
+  });
 
   if (!user) {
     return NextResponse.redirect(new URL("/admin/login", request.url));
@@ -140,4 +185,44 @@ export async function GET(request) {
   setSessionCookie(response, session.token);
 
   return response;
+}
+
+export async function PUT(request) {
+  if (!isSameOriginRequest(request)) {
+    return NextResponse.json({error: "Invalid request origin."}, {status: 403});
+  }
+
+  const {challenge, token, password} = await request.json().catch(() => ({}));
+
+  if (typeof password !== "string" || password.length < MIN_PASSWORD_LENGTH) {
+    return NextResponse.json(
+      {error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`},
+      {status: 400},
+    );
+  }
+
+  const user = await verifyMagicLinkChallenge(challenge, token, {
+    intent: "password_reset",
+  });
+
+  if (!user) {
+    return NextResponse.json(
+      {error: "Password reset link is invalid or expired."},
+      {status: 400},
+    );
+  }
+
+  const result = await updateUserPassword(
+    user.email,
+    await hashPassword(password),
+  );
+
+  if (result.matchedCount !== 1) {
+    return NextResponse.json(
+      {error: "Admin user could not be updated."},
+      {status: 404},
+    );
+  }
+
+  return NextResponse.json({ok: true});
 }

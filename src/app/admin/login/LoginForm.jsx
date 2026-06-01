@@ -40,17 +40,26 @@ export default function LoginForm({linkedInSignInEnabled = false}) {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const linkedInError = params.get("linkedin_error");
+    const passwordReset = params.get("password_reset");
 
-    if (!linkedInError) return;
+    if (!linkedInError && !passwordReset) return;
 
-    showSnackbar({
-      type: "error",
-      message:
-        LINKEDIN_ERROR_MESSAGES[linkedInError] ||
-        "Unable to complete LinkedIn sign-in.",
-    });
+    if (linkedInError) {
+      showSnackbar({
+        type: "error",
+        message:
+          LINKEDIN_ERROR_MESSAGES[linkedInError] ||
+          "Unable to complete LinkedIn sign-in.",
+      });
+    } else if (passwordReset === "success") {
+      showSnackbar({
+        type: "success",
+        message: "Password updated. Sign in with your new password.",
+      });
+    }
 
     params.delete("linkedin_error");
+    params.delete("password_reset");
     const nextUrl = `${window.location.pathname}${
       params.toString() ? `?${params.toString()}` : ""
     }${window.location.hash}`;
