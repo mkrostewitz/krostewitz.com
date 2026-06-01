@@ -1175,12 +1175,12 @@ export default function EditPostForm({
             <div className={styles.postMediaHeader}>
               <div className={styles.titleBlock}>
                 <h2 id="post-picture-title">Post picture</h2>
-                <p className={styles.muted}>Attach one image or video.</p>
+                <p className={styles.muted}>Attach JPG, PNG, GIF, or video.</p>
               </div>
               <label className={styles.uploadButton}>
                 {isUploading ? "Uploading..." : "Upload"}
                 <input
-                  accept="image/*,video/*"
+                  accept="image/jpeg,image/png,image/gif,video/*"
                   disabled={isUploading}
                   type="file"
                   onChange={uploadFile}

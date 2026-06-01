@@ -18,6 +18,11 @@ const STATUS_LABELS = {
   published: "Published",
   archived: "Archived",
 };
+const LINKEDIN_IMAGE_CONTENT_TYPES = new Set([
+  "image/gif",
+  "image/jpeg",
+  "image/png",
+]);
 
 function formatDate(value) {
   if (!value) return "Not saved";
@@ -120,6 +125,62 @@ function toIsoDateTimeValue(value) {
   return Number.isNaN(date.getTime()) ? "" : date.toISOString();
 }
 
+function getImageContentTypeFromUrl(url) {
+  try {
+    const pathname = new URL(url).pathname.toLowerCase();
+
+    if (pathname.endsWith(".gif")) return "image/gif";
+    if (pathname.endsWith(".jpg") || pathname.endsWith(".jpeg")) {
+      return "image/jpeg";
+    }
+    if (pathname.endsWith(".png")) return "image/png";
+  } catch {
+    return "";
+  }
+
+  return "";
+}
+
+function normalizeImageContentType(value) {
+  const contentType = String(value || "")
+    .split(";")[0]
+    .trim()
+    .toLowerCase();
+
+  return contentType === "image/jpg" ? "image/jpeg" : contentType;
+}
+
+function getSupportedLinkedInImageContentType(media) {
+  const contentType =
+    normalizeImageContentType(media?.mimeType) ||
+    getImageContentTypeFromUrl(media?.url);
+
+  return LINKEDIN_IMAGE_CONTENT_TYPES.has(contentType) ? contentType : "";
+}
+
+function canIncludeLinkedInImage(post) {
+  const media = post?.media;
+
+  if (media?.type !== "image" || !media.url) return false;
+
+  return Boolean(
+    getSupportedLinkedInImageContentType(media) ||
+      !normalizeImageContentType(media.mimeType)
+  );
+}
+
+function getShareImageStatus(post) {
+  const media = post?.media;
+
+  if (!media) return "No image is attached to this post.";
+  if (media.type !== "image") return "Only attached images can be posted to LinkedIn.";
+  if (!canIncludeLinkedInImage(post)) {
+    return "LinkedIn accepts JPG, PNG, and GIF images for image posts.";
+  }
+
+  return media.fileName || "Attached blog image";
+}
+
 export default function PostManager({user}) {
   const {closeSnackbar, showSnackbar} = useSnackbar();
   const [posts, setPosts] = useState([]);
@@ -136,6 +197,7 @@ export default function PostManager({user}) {
   const [shareTarget, setShareTarget] = useState("personal_profile");
   const [shareLanguage, setShareLanguage] = useState(FALLBACK_LANGUAGE);
   const [shareCommentary, setShareCommentary] = useState("");
+  const [shareIncludeImage, setShareIncludeImage] = useState(false);
   const [shareTiming, setShareTiming] = useState("now");
   const [shareScheduledAt, setShareScheduledAt] = useState("");
 
@@ -255,6 +317,7 @@ export default function PostManager({user}) {
     setShareTarget("personal_profile");
     setShareLanguage(getDefaultShareLanguage(post));
     setShareCommentary("");
+    setShareIncludeImage(canIncludeLinkedInImage(post));
     setShareTiming("now");
     setShareScheduledAt("");
     setPendingSharePost(post);
@@ -293,6 +356,7 @@ export default function PostManager({user}) {
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({
           commentary: options.commentary,
+          includeImage: options.includeImage,
           language: options.language,
           scheduledAt,
           target: options.target,
@@ -659,6 +723,30 @@ export default function PostManager({user}) {
             </label>
 
             <fieldset className={styles.shareTargetList}>
+              <legend>Media</legend>
+              {canIncludeLinkedInImage(pendingSharePost) ? (
+                <label className={styles.shareTargetOption}>
+                  <input
+                    checked={shareIncludeImage}
+                    name="linkedin-share-include-image"
+                    type="checkbox"
+                    onChange={(event) =>
+                      setShareIncludeImage(event.target.checked)
+                    }
+                  />
+                  <span>
+                    <strong>Include attached image</strong>
+                    <small>{getShareImageStatus(pendingSharePost)}</small>
+                  </span>
+                </label>
+              ) : (
+                <p className={styles.muted}>
+                  {getShareImageStatus(pendingSharePost)}
+                </p>
+              )}
+            </fieldset>
+
+            <fieldset className={styles.shareTargetList}>
               <legend>Timing</legend>
               <label className={styles.shareTargetOption}>
                 <input
@@ -723,6 +811,7 @@ export default function PostManager({user}) {
                 onClick={() =>
                   sharePostToLinkedIn(pendingSharePost, {
                     commentary: shareCommentary,
+                    includeImage: shareIncludeImage,
                     language: shareLanguage,
                     scheduledAt: shareScheduledAt,
                     target: shareTarget,

@@ -438,6 +438,13 @@ function serializeLinkedInShares(value) {
       postUrl: share.postUrl || "",
       sharedPostUrl: share.sharedPostUrl || "",
       commentary: share.commentary || "",
+      media: share.media
+        ? {
+            imageUrn: share.media.imageUrn || "",
+            mimeType: share.media.mimeType || "",
+            sourceUrl: share.media.sourceUrl || "",
+          }
+        : null,
       account: share.account
         ? {
             sub: share.account.sub || "",
@@ -464,6 +471,7 @@ function serializeLinkedInShareSchedules(value) {
       jobId: schedule.jobId || "",
       target: schedule.target || "personal_profile",
       language: schedule.language || null,
+      includeImage: schedule.includeImage === true,
       status: schedule.status || "scheduled",
       scheduledAt: toIsoDate(schedule.scheduledAt),
       publishedAt: toIsoDate(schedule.publishedAt),
@@ -700,6 +708,13 @@ export async function recordPostLinkedInShare(postId, share = {}, user) {
     postUrl: String(share.postUrl || ""),
     sharedPostUrl: String(share.sharedPostUrl || ""),
     commentary: String(share.commentary || "").slice(0, 3000),
+    media: share.media
+      ? {
+          imageUrn: String(share.media.imageUrn || ""),
+          mimeType: String(share.media.mimeType || ""),
+          sourceUrl: String(share.media.sourceUrl || ""),
+        }
+      : null,
     account: share.account
       ? {
           sub: String(share.account.sub || ""),
@@ -749,6 +764,7 @@ export async function recordPostLinkedInShareSchedule(postId, schedule = {}, use
     jobId: String(schedule.jobId || ""),
     target: String(schedule.target || "personal_profile"),
     language: schedule.language ? String(schedule.language) : null,
+    includeImage: schedule.includeImage === true,
     status: "scheduled",
     scheduledAt:
       schedule.scheduledAt instanceof Date ? schedule.scheduledAt : now,

@@ -59,7 +59,7 @@ LinkedIn admin sign-in:
 - There is no public sign-up flow. The LinkedIn account must return the same email address as an existing configured admin user in MongoDB, otherwise sign-in is rejected.
 - To publish posts from `/admin/posts`, add the `Share on LinkedIn` product to the LinkedIn app. The admin publishing connect action requests `w_member_social` and stores the access token encrypted in MongoDB.
 - The current publishing flow supports the connected member profile. Company page publishing requires separate LinkedIn organization permissions and organization selection before it can be enabled.
-- When sharing a post, the admin can choose a saved site language, add optional LinkedIn commentary, and either share immediately or schedule the share.
+- When sharing a post, the admin can choose a saved site language, add optional LinkedIn commentary, include a supported attached image, and either share immediately or schedule the share. Post image uploads are limited to JPG, PNG, and GIF so attached images can be used by LinkedIn image publishing.
 - Scheduled shares are processed by the Netlify scheduled function in `netlify/functions/linkedin-scheduler.mjs`, which checks for due jobs every 15 minutes. Set the same random `LINKEDIN_SCHEDULER_SECRET` value in Netlify and your environment file so the scheduled function can call `/api/admin/linkedin/scheduled`.
 - `LINKEDIN_OAUTH_SCOPES` is optional and defaults to `openid profile email` for admin sign-in. `LINKEDIN_API_VERSION` is optional and defaults to `202605` for the LinkedIn Posts API. `LINKEDIN_REQUEST_TIMEOUT_MS` is optional and defaults to `20000`.
 

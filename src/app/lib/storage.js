@@ -8,6 +8,11 @@ const DEFAULT_MAX_CV_UPLOAD_BYTES = 10 * 1024 * 1024;
 const DEFAULT_UPLOAD_PREFIX = "portfolio-posts";
 const DEFAULT_CV_UPLOAD_PREFIX = "cv";
 const DEFAULT_SITE_UPLOAD_PREFIX = "site-assets";
+const SUPPORTED_POST_IMAGE_MIME_TYPES = new Set([
+  "image/gif",
+  "image/jpeg",
+  "image/png",
+]);
 
 export class UploadError extends Error {
   constructor(message, status = 400) {
@@ -137,8 +142,17 @@ function getMediaType(mimeType) {
   return null;
 }
 
+function normalizeMimeType(value) {
+  const mimeType = String(value || "")
+    .split(";")[0]
+    .trim()
+    .toLowerCase();
+
+  return mimeType === "image/jpg" ? "image/jpeg" : mimeType;
+}
+
 function inferImageMimeType(file) {
-  const mimeType = String(file?.type || "");
+  const mimeType = normalizeMimeType(file?.type);
   const originalName = String(file?.name || "");
 
   if (mimeType) return mimeType;
@@ -205,6 +219,10 @@ export async function uploadPostAsset(file, user) {
 
   if (!mediaType) {
     throw new UploadError("Only image and video uploads are supported.");
+  }
+
+  if (mediaType === "image" && !SUPPORTED_POST_IMAGE_MIME_TYPES.has(mimeType)) {
+    throw new UploadError("Post images must be JPG, PNG, or GIF files.");
   }
 
   if (file.size > getMaxUploadBytes()) {

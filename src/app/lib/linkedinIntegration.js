@@ -17,9 +17,16 @@ import {getConfiguredSiteOrigin} from "./requestOrigin";
 const CONTENT_COLLECTION = "site_content";
 const LINKEDIN_SHARE_JOBS_COLLECTION = "linkedin_share_jobs";
 const LINKEDIN_INTEGRATION_ID = "linkedin_integration";
+const LINKEDIN_IMAGES_URL =
+  "https://api.linkedin.com/rest/images?action=initializeUpload";
 const LINKEDIN_POSTS_URL = "https://api.linkedin.com/rest/posts";
 const DEFAULT_LINKEDIN_API_VERSION = "202605";
 const DEFAULT_LINKEDIN_REQUEST_TIMEOUT_MS = 20000;
+const LINKEDIN_IMAGE_CONTENT_TYPES = new Set([
+  "image/gif",
+  "image/jpeg",
+  "image/png",
+]);
 const TOKEN_FORMAT = "v1";
 
 let shareJobsIndexPromise = null;
@@ -172,27 +179,108 @@ function normalizeShareLanguage(value) {
   return getSupportedSiteLanguage(value) || FALLBACK_LANGUAGE;
 }
 
-function getLocalizedPostTranslation(post, language) {
+function getBestTextValue(post, language, key, maxLength) {
   const supportedLanguage = normalizeShareLanguage(language);
-  const translation = post?.translations?.[supportedLanguage];
+  const translations = post?.translations || {};
+  const candidates = [
+    translations[supportedLanguage]?.[key],
+    translations[FALLBACK_LANGUAGE]?.[key],
+    ...Object.values(translations).map((translation) => translation?.[key]),
+    post?.[key],
+  ];
 
-  if (translation?.title || translation?.summary || translation?.contentHtml) {
-    return {
-      language: supportedLanguage,
-      title: translation.title || post.title || "",
-      summary: translation.summary || post.summary || "",
-      contentHtml: translation.contentHtml || post.contentHtml || "",
-    };
+  for (const candidate of candidates) {
+    const text = cleanText(candidate, maxLength);
+
+    if (text) return text;
   }
 
-  const fallback = post?.translations?.[FALLBACK_LANGUAGE];
+  return "";
+}
 
+function getBestSummary(post, language) {
+  const summary = getBestTextValue(post, language, "summary", 600);
+
+  if (summary) return summary;
+
+  const supportedLanguage = normalizeShareLanguage(language);
+  const translations = post?.translations || {};
+  const candidates = [
+    translations[supportedLanguage]?.contentHtml,
+    translations[FALLBACK_LANGUAGE]?.contentHtml,
+    ...Object.values(translations).map((translation) => translation?.contentHtml),
+    post?.contentHtml,
+  ];
+
+  for (const candidate of candidates) {
+    const text = cleanText(candidate, 600);
+
+    if (text) return text;
+  }
+
+  return "";
+}
+
+function getLinkedInHeaders(connection, headers = {}) {
   return {
-    language: FALLBACK_LANGUAGE,
-    title: fallback?.title || post.title || "",
-    summary: fallback?.summary || post.summary || "",
-    contentHtml: fallback?.contentHtml || post.contentHtml || "",
+    Authorization: `Bearer ${connection.accessToken}`,
+    "LinkedIn-Version": getLinkedInApiVersion(),
+    "X-Restli-Protocol-Version": "2.0.0",
+    ...headers,
   };
+}
+
+function getImageContentTypeFromUrl(url) {
+  try {
+    const pathname = new URL(url).pathname.toLowerCase();
+
+    if (pathname.endsWith(".gif")) return "image/gif";
+    if (pathname.endsWith(".jpg") || pathname.endsWith(".jpeg")) {
+      return "image/jpeg";
+    }
+    if (pathname.endsWith(".png")) return "image/png";
+  } catch {
+    return "";
+  }
+
+  return "";
+}
+
+function normalizeImageContentType(value) {
+  const contentType = String(value || "")
+    .split(";")[0]
+    .trim()
+    .toLowerCase();
+
+  if (contentType === "image/jpg") return "image/jpeg";
+
+  return contentType;
+}
+
+function getSupportedImageContentType(media, responseContentType = "") {
+  const contentType =
+    normalizeImageContentType(media?.mimeType) ||
+    normalizeImageContentType(responseContentType) ||
+    getImageContentTypeFromUrl(media?.url);
+
+  return LINKEDIN_IMAGE_CONTENT_TYPES.has(contentType) ? contentType : "";
+}
+
+function hasShareableLinkedInImage(post) {
+  const media = post?.media;
+
+  if (media?.type !== "image" || !media.url) return false;
+
+  return Boolean(
+    getSupportedImageContentType(media) || !normalizeImageContentType(media.mimeType)
+  );
+}
+
+function isOnlyPostUrl(value, postUrl) {
+  const normalizedValue = String(value || "").trim().replace(/\/+$/, "");
+  const normalizedPostUrl = String(postUrl || "").trim().replace(/\/+$/, "");
+
+  return Boolean(normalizedPostUrl && normalizedValue === normalizedPostUrl);
 }
 
 function normalizeProfile(profile = {}) {
@@ -366,6 +454,35 @@ async function markLinkedInConnectionNeedsReconnect(reason, user) {
   );
 }
 
+async function fetchWithTimeout(url, options = {}, errorMessage) {
+  const controller = new AbortController();
+  const timeout = setTimeout(
+    () => controller.abort(),
+    getLinkedInRequestTimeoutMs(),
+  );
+
+  try {
+    return await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      throw new LinkedInIntegrationError(
+        errorMessage || "LinkedIn did not respond in time.",
+        504,
+      );
+    }
+
+    throw new LinkedInIntegrationError(
+      errorMessage || "Unable to reach LinkedIn. Try again in a moment.",
+      502,
+    );
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 function buildPostUrl(post, origin, language) {
   if (!post?.slug) {
     throw new LinkedInIntegrationError("Only saved posts with a slug can be shared.");
@@ -388,19 +505,23 @@ function buildLinkedInPostUrl(postUrn) {
 
 function createCommentary(post, postUrl, options = {}) {
   const customCommentary = cleanText(options.commentary, 2800);
-
-  if (customCommentary) {
-    return customCommentary.includes(postUrl)
-      ? customCommentary
-      : `${customCommentary}\n\n${postUrl}`;
-  }
-
-  const translation = getLocalizedPostTranslation(post, options.language);
-  const title = cleanText(translation.title, 140);
-  const summary = cleanText(translation.summary, 600);
-  const lines = [title, summary, postUrl].filter(Boolean);
+  const title = getBestTextValue(post, options.language, "title", 140);
+  const summary = getBestSummary(post, options.language);
+  const customLines =
+    customCommentary && !isOnlyPostUrl(customCommentary, postUrl)
+      ? [customCommentary]
+      : [];
+  const lines = [...customLines, title, summary, postUrl].filter(Boolean);
 
   return lines.join("\n\n").slice(0, 2900);
+}
+
+function getImageAltText(post, language) {
+  return (
+    getBestTextValue(post, language, "title", 300) ||
+    getBestSummary(post, language).slice(0, 300) ||
+    "Blog post image"
+  );
 }
 
 function getLinkedInErrorMessage(data, fallback) {
@@ -413,54 +534,161 @@ function getLinkedInErrorMessage(data, fallback) {
   );
 }
 
-async function createLinkedInPost({connection, commentary}) {
-  const controller = new AbortController();
-  const timeout = setTimeout(
-    () => controller.abort(),
-    getLinkedInRequestTimeoutMs(),
-  );
-  let response;
-
-  try {
-    response = await fetch(LINKEDIN_POSTS_URL, {
+async function initializeLinkedInImageUpload(connection) {
+  const response = await fetchWithTimeout(
+    LINKEDIN_IMAGES_URL,
+    {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${connection.accessToken}`,
+      headers: getLinkedInHeaders(connection, {
         "Content-Type": "application/json",
-        "LinkedIn-Version": getLinkedInApiVersion(),
-        "X-Restli-Protocol-Version": "2.0.0",
-      },
+      }),
       body: JSON.stringify({
-        author: connection.authorUrn,
-        commentary,
-        visibility: "PUBLIC",
-        distribution: {
-          feedDistribution: "MAIN_FEED",
-          targetEntities: [],
-          thirdPartyDistributionChannels: [],
+        initializeUploadRequest: {
+          owner: connection.authorUrn,
         },
-        lifecycleState: "PUBLISHED",
-        isReshareDisabledByAuthor: false,
       }),
       cache: "no-store",
-      signal: controller.signal,
-    });
-  } catch (error) {
-    if (error?.name === "AbortError") {
-      throw new LinkedInIntegrationError(
-        "LinkedIn did not respond in time. Check LinkedIn app permissions and try again.",
-        504,
-      );
-    }
+    },
+    "Unable to initialize LinkedIn image upload.",
+  );
+  const data = await response.json().catch(() => ({}));
 
+  if (!response.ok) {
     throw new LinkedInIntegrationError(
-      "Unable to reach LinkedIn. Try again in a moment.",
-      502,
+      getLinkedInErrorMessage(data, "Unable to initialize LinkedIn image upload."),
+      response.status === 401 ? 401 : 502,
     );
-  } finally {
-    clearTimeout(timeout);
   }
 
+  const uploadUrl = data?.value?.uploadUrl;
+  const imageUrn = data?.value?.image;
+
+  if (!uploadUrl || !imageUrn) {
+    throw new LinkedInIntegrationError(
+      "LinkedIn did not return an image upload URL.",
+      502,
+    );
+  }
+
+  return {imageUrn, uploadUrl};
+}
+
+async function downloadPostImage(media) {
+  const response = await fetchWithTimeout(
+    media.url,
+    {cache: "no-store"},
+    "Unable to download the post image before sharing to LinkedIn.",
+  );
+
+  if (!response.ok) {
+    throw new LinkedInIntegrationError(
+      "Unable to download the post image before sharing to LinkedIn.",
+      502,
+    );
+  }
+
+  const contentType = getSupportedImageContentType(
+    media,
+    response.headers.get("content-type"),
+  );
+
+  if (!contentType) {
+    throw new LinkedInIntegrationError(
+      "LinkedIn image sharing supports JPG, PNG, and GIF images. Convert this post image before sharing it.",
+    );
+  }
+
+  return {
+    buffer: Buffer.from(await response.arrayBuffer()),
+    contentType,
+  };
+}
+
+async function uploadLinkedInImageBinary({
+  buffer,
+  connection,
+  contentType,
+  uploadUrl,
+}) {
+  const response = await fetchWithTimeout(
+    uploadUrl,
+    {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${connection.accessToken}`,
+        "Content-Type": contentType,
+      },
+      body: buffer,
+      cache: "no-store",
+    },
+    "Unable to upload the post image to LinkedIn.",
+  );
+
+  if (!response.ok) {
+    throw new LinkedInIntegrationError(
+      "Unable to upload the post image to LinkedIn.",
+      response.status === 401 ? 401 : 502,
+    );
+  }
+}
+
+async function uploadPostImageToLinkedIn({connection, language, post}) {
+  if (!hasShareableLinkedInImage(post)) return null;
+
+  const media = post.media;
+  const {buffer, contentType} = await downloadPostImage(media);
+  const {imageUrn, uploadUrl} = await initializeLinkedInImageUpload(connection);
+
+  await uploadLinkedInImageBinary({
+    buffer,
+    connection,
+    contentType,
+    uploadUrl,
+  });
+
+  return {
+    altText: getImageAltText(post, language),
+    imageUrn,
+    mimeType: contentType,
+    sourceUrl: media.url,
+  };
+}
+
+async function createLinkedInPost({connection, commentary, image}) {
+  const payload = {
+    author: connection.authorUrn,
+    commentary,
+    visibility: "PUBLIC",
+    distribution: {
+      feedDistribution: "MAIN_FEED",
+      targetEntities: [],
+      thirdPartyDistributionChannels: [],
+    },
+    lifecycleState: "PUBLISHED",
+    isReshareDisabledByAuthor: false,
+  };
+
+  if (image?.imageUrn) {
+    payload.content = {
+      media: {
+        altText: image.altText,
+        id: image.imageUrn,
+      },
+    };
+  }
+
+  const response = await fetchWithTimeout(
+    LINKEDIN_POSTS_URL,
+    {
+      method: "POST",
+      headers: getLinkedInHeaders(connection, {
+        "Content-Type": "application/json",
+      }),
+      body: JSON.stringify(payload),
+      cache: "no-store",
+    },
+    "Unable to reach LinkedIn. Try again in a moment.",
+  );
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
@@ -475,6 +703,7 @@ async function createLinkedInPost({connection, commentary}) {
 
 export async function publishPostToLinkedIn({
   commentary,
+  includeImage = true,
   language,
   postId,
   origin,
@@ -511,12 +740,21 @@ export async function publishPostToLinkedIn({
     commentary,
     language: normalizedLanguage,
   });
+  let linkedInImage = null;
   let linkedInPostUrn;
 
   try {
+    linkedInImage = includeImage
+      ? await uploadPostImageToLinkedIn({
+          connection,
+          language: normalizedLanguage,
+          post,
+        })
+      : null;
     linkedInPostUrn = await createLinkedInPost({
       connection,
       commentary: finalCommentary,
+      image: linkedInImage,
     });
   } catch (error) {
     if (error instanceof LinkedInIntegrationError && error.status === 401) {
@@ -540,6 +778,13 @@ export async function publishPostToLinkedIn({
     postUrl: buildLinkedInPostUrl(linkedInPostUrn),
     sharedPostUrl: postUrl,
     commentary: finalCommentary,
+    media: linkedInImage
+      ? {
+          imageUrn: linkedInImage.imageUrn,
+          mimeType: linkedInImage.mimeType,
+          sourceUrl: linkedInImage.sourceUrl,
+        }
+      : null,
     account: connection.profile,
     sharedAt,
   };
@@ -584,6 +829,7 @@ function normalizeScheduledAt(value) {
 
 export async function schedulePostToLinkedIn({
   commentary,
+  includeImage = true,
   language,
   postId,
   origin,
@@ -629,6 +875,7 @@ export async function schedulePostToLinkedIn({
     target: normalizedTarget,
     language: normalizedLanguage,
     commentary: finalCommentary,
+    includeImage: includeImage && hasShareableLinkedInImage(post),
     origin: publicOrigin,
     account: connection.profile,
     scheduledAt: scheduleDate,
@@ -647,6 +894,7 @@ export async function schedulePostToLinkedIn({
       jobId: job._id,
       target: normalizedTarget,
       language: normalizedLanguage,
+      includeImage: includeImage && hasShareableLinkedInImage(post),
       account: connection.profile,
       scheduledAt: scheduleDate,
     },
@@ -662,6 +910,7 @@ export async function schedulePostToLinkedIn({
       language: normalizedLanguage,
       scheduledAt: scheduleDate.toISOString(),
       commentary: finalCommentary,
+      includeImage: includeImage && hasShareableLinkedInImage(post),
     },
   };
 }
@@ -706,6 +955,7 @@ export async function publishDueLinkedInShares({limit = 5} = {}) {
     try {
       const result = await publishPostToLinkedIn({
         commentary: claimedJob.commentary,
+        includeImage: claimedJob.includeImage === true,
         language: claimedJob.language,
         postId: claimedJob.postId,
         origin: claimedJob.origin || getConfiguredSiteOrigin(),
@@ -723,6 +973,7 @@ export async function publishDueLinkedInShares({limit = 5} = {}) {
             publishedAt: now,
             linkedInPostUrn: result.linkedin.postUrn,
             linkedInPostUrl: result.linkedin.postUrl,
+            media: result.linkedin.media || null,
             updatedAt: now,
           },
         },

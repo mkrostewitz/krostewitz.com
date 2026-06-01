@@ -39,6 +39,7 @@ export async function POST(request, context) {
     const body = await request.json().catch(() => ({}));
     const payload = {
       commentary: body.commentary,
+      includeImage: body.includeImage !== false,
       language: body.language,
       postId,
       origin: getRequestOrigin(request),
