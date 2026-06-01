@@ -3,6 +3,7 @@ import {Geist, Geist_Mono} from "next/font/google";
 import {
   getDefaultSiteMetadata,
   getSiteMetadata,
+  toSiteThemeCss,
   toNextMetadata,
 } from "./lib/siteProfile";
 import {SnackbarProvider} from "./components/snackbar/SnackbarProvider";
@@ -62,10 +63,25 @@ export async function generateMetadata() {
   }
 }
 
-export default function RootLayout({children}) {
+async function getSiteThemeStyle() {
+  try {
+    return toSiteThemeCss(await getSiteMetadata());
+  } catch (error) {
+    console.warn("Unable to load site theme", error);
+    return toSiteThemeCss(getDefaultSiteMetadata());
+  }
+}
+
+export default async function RootLayout({children}) {
+  const siteThemeStyle = await getSiteThemeStyle();
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <style
+          data-site-theme=""
+          dangerouslySetInnerHTML={{__html: siteThemeStyle}}
+        />
         <script dangerouslySetInnerHTML={{__html: themeScript}} />
         {gaMeasurementId ? (
           <>

@@ -21,7 +21,11 @@
 }
 
 .copy h2 span {
-  background: -webkit-linear-gradient(120deg, #2af5e6 30%, #5773ff);
+  background: -webkit-linear-gradient(
+    120deg,
+    var(--hero-highlight-start) 30%,
+    var(--hero-highlight-end)
+  );
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }

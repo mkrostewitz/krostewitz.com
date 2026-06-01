@@ -11,6 +11,19 @@ const MAX_METADATA_DESCRIPTION_LENGTH = 320;
 const MAX_METADATA_URL_LENGTH = 500;
 const MAX_METADATA_TYPE_LENGTH = 120;
 const MAX_PROFILE_NAME_LENGTH = 80;
+const HEX_COLOR_PATTERN = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i;
+
+const DEFAULT_SITE_THEME = {
+  primaryColor: "#5773ff",
+  secondaryColor: "#2af5e6",
+  tertiaryColor: "#f7f8f5",
+};
+
+const DEFAULT_DARK_SITE_THEME = {
+  primaryColor: "#8ea2ff",
+  secondaryColor: "#2af5e6",
+  tertiaryColor: "#1b2a2a",
+};
 
 const DEFAULT_SITE_METADATA = {
   title: "Portfolio Site",
@@ -21,6 +34,7 @@ const DEFAULT_SITE_METADATA = {
   appIconType: "image/svg+xml",
   logoUrl: "/logo.svg",
   logoType: "image/svg+xml",
+  theme: DEFAULT_SITE_THEME,
 };
 
 class SiteProfileError extends Error {
@@ -96,6 +110,210 @@ function normalizeAssetUrl(value, fallback, strict = false) {
   return fallback;
 }
 
+function normalizeHexColor(value, fallback, options = {}) {
+  const rawValue = String(value || "").trim();
+  if (!rawValue) return fallback;
+
+  const match = rawValue.match(HEX_COLOR_PATTERN);
+
+  if (!match) {
+    if (options.strict) {
+      throw new SiteProfileError("Theme colors must be valid hex colors.");
+    }
+
+    return fallback;
+  }
+
+  const hex = match[1].toLowerCase();
+  const normalized =
+    hex.length === 3
+      ? hex
+          .split("")
+          .map((character) => `${character}${character}`)
+          .join("")
+      : hex;
+
+  return `#${normalized}`;
+}
+
+function getColorSource(source, field, legacyField) {
+  return source[field] || source[legacyField];
+}
+
+export function normalizeSiteTheme(input = {}, options = {}) {
+  const source =
+    input && typeof input === "object" && !Array.isArray(input) ? input : {};
+
+  return {
+    primaryColor: normalizeHexColor(
+      getColorSource(source, "primaryColor", "primary"),
+      DEFAULT_SITE_THEME.primaryColor,
+      options
+    ),
+    secondaryColor: normalizeHexColor(
+      getColorSource(source, "secondaryColor", "secondary"),
+      DEFAULT_SITE_THEME.secondaryColor,
+      options
+    ),
+    tertiaryColor: normalizeHexColor(
+      getColorSource(source, "tertiaryColor", "tertiary"),
+      DEFAULT_SITE_THEME.tertiaryColor,
+      options
+    ),
+  };
+}
+
+export function getDefaultSiteTheme() {
+  return normalizeSiteTheme();
+}
+
+function hexToRgb(color) {
+  const normalized = normalizeHexColor(color, DEFAULT_SITE_THEME.primaryColor);
+  const hex = normalized.slice(1);
+
+  return {
+    r: Number.parseInt(hex.slice(0, 2), 16),
+    g: Number.parseInt(hex.slice(2, 4), 16),
+    b: Number.parseInt(hex.slice(4, 6), 16),
+  };
+}
+
+function rgbToHex({r, g, b}) {
+  return `#${[r, g, b]
+    .map((value) =>
+      Math.round(value)
+        .toString(16)
+        .padStart(2, "0")
+    )
+    .join("")}`;
+}
+
+function mixHexColor(color, target, weight) {
+  const sourceRgb = hexToRgb(color);
+  const targetRgb = hexToRgb(target);
+  const sourceWeight = 1 - weight;
+
+  return rgbToHex({
+    r: sourceRgb.r * sourceWeight + targetRgb.r * weight,
+    g: sourceRgb.g * sourceWeight + targetRgb.g * weight,
+    b: sourceRgb.b * sourceWeight + targetRgb.b * weight,
+  });
+}
+
+function rgbCss(color, alpha) {
+  const {r, g, b} = hexToRgb(color);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function relativeLuminance(color) {
+  const {r, g, b} = hexToRgb(color);
+
+  return [r, g, b]
+    .map((component) => {
+      const channel = component / 255;
+      return channel <= 0.03928
+        ? channel / 12.92
+        : ((channel + 0.055) / 1.055) ** 2.4;
+    })
+    .reduce(
+      (total, component, index) =>
+        total + component * [0.2126, 0.7152, 0.0722][index],
+      0
+    );
+}
+
+function contrastColor(color) {
+  return relativeLuminance(color) > 0.52 ? "#111827" : "#ffffff";
+}
+
+function textOnSoftLight(color) {
+  return relativeLuminance(color) > 0.62
+    ? mixHexColor(color, "#000000", 0.62)
+    : mixHexColor(color, "#000000", 0.38);
+}
+
+function textOnSoftDark(color) {
+  return relativeLuminance(color) > 0.44
+    ? color
+    : mixHexColor(color, "#ffffff", 0.7);
+}
+
+function cssVariables(variables) {
+  return Object.entries(variables)
+    .map(([name, value]) => `  ${name}: ${value};`)
+    .join("\n");
+}
+
+function isDefaultSiteTheme(theme) {
+  return Object.entries(DEFAULT_SITE_THEME).every(
+    ([field, value]) => theme[field] === value
+  );
+}
+
+function commonThemeVariables({primaryColor, secondaryColor, tertiaryColor}) {
+  return {
+    "--theme-primary": primaryColor,
+    "--theme-secondary": secondaryColor,
+    "--theme-tertiary": tertiaryColor,
+    "--secondary-accent": secondaryColor,
+    "--tertiary-accent": tertiaryColor,
+    "--hero-highlight-start": secondaryColor,
+    "--hero-highlight-end": primaryColor,
+  };
+}
+
+export function toSiteThemeCss(input = {}) {
+  const source =
+    input?.theme && typeof input.theme === "object" ? input.theme : input;
+  const theme = normalizeSiteTheme(source);
+  const {primaryColor, secondaryColor, tertiaryColor} = theme;
+  const darkTheme = isDefaultSiteTheme(theme) ? DEFAULT_DARK_SITE_THEME : theme;
+  const {
+    primaryColor: darkPrimaryColor,
+    secondaryColor: darkSecondaryColor,
+    tertiaryColor: darkTertiaryColor,
+  } = darkTheme;
+  const chipText = contrastColor(tertiaryColor);
+
+  return `html:root {
+${cssVariables({
+  ...commonThemeVariables(theme),
+  "--accent": primaryColor,
+  "--accent-hover": mixHexColor(primaryColor, "#000000", 0.12),
+  "--accent-contrast": contrastColor(primaryColor),
+  "--accent-soft": rgbCss(primaryColor, 0.09),
+  "--accent-focus": rgbCss(primaryColor, 0.16),
+  "--accent-ring": rgbCss(primaryColor, 0.26),
+  "--accent-shadow": rgbCss(primaryColor, 0.22),
+  "--accent-shadow-strong": rgbCss(primaryColor, 0.3),
+  "--accent-text": textOnSoftLight(primaryColor),
+  "--secondary-accent-soft": rgbCss(secondaryColor, 0.12),
+  "--chip-background": tertiaryColor,
+  "--chip-border": mixHexColor(tertiaryColor, chipText, 0.2),
+  "--chip-text": chipText,
+})}
+}
+
+html:root[data-theme="dark"] {
+${cssVariables({
+  ...commonThemeVariables(darkTheme),
+  "--accent": darkPrimaryColor,
+  "--accent-hover": mixHexColor(darkPrimaryColor, "#ffffff", 0.18),
+  "--accent-contrast": contrastColor(darkPrimaryColor),
+  "--accent-soft": rgbCss(darkPrimaryColor, 0.18),
+  "--accent-focus": rgbCss(darkPrimaryColor, 0.24),
+  "--accent-ring": rgbCss(darkPrimaryColor, 0.32),
+  "--accent-shadow": rgbCss(darkPrimaryColor, 0.2),
+  "--accent-shadow-strong": rgbCss(darkPrimaryColor, 0.28),
+  "--accent-text": textOnSoftDark(darkPrimaryColor),
+  "--secondary-accent-soft": rgbCss(darkSecondaryColor, 0.18),
+  "--chip-background": rgbCss(darkTertiaryColor, 0.2),
+  "--chip-border": rgbCss(darkTertiaryColor, 0.34),
+  "--chip-text": textOnSoftDark(darkTertiaryColor),
+})}
+}`;
+}
+
 export function normalizeSiteMetadata(input = {}, options = {}) {
   const metadata =
     input && typeof input === "object" && !Array.isArray(input) ? input : {};
@@ -107,6 +325,10 @@ export function normalizeSiteMetadata(input = {}, options = {}) {
   const iconSource = getIconSource(metadata);
   const appIconSource = getAssetSource(metadata, "appIcon");
   const logoSource = getAssetSource(metadata, "logo");
+  const themeSource =
+    metadata.theme && typeof metadata.theme === "object"
+      ? metadata.theme
+      : metadata;
   const iconUrl = normalizeAssetUrl(
     iconSource.url,
     DEFAULT_SITE_METADATA.iconUrl,
@@ -131,6 +353,7 @@ export function normalizeSiteMetadata(input = {}, options = {}) {
   const logoType =
     cleanText(logoSource.type, MAX_METADATA_TYPE_LENGTH) ||
     DEFAULT_SITE_METADATA.logoType;
+  const theme = normalizeSiteTheme(themeSource, options);
   const icons = {
     icon: [{url: iconUrl, type: iconType}],
   };
@@ -156,6 +379,7 @@ export function normalizeSiteMetadata(input = {}, options = {}) {
     appIconType,
     logoUrl,
     logoType,
+    theme,
     icons,
   };
 }

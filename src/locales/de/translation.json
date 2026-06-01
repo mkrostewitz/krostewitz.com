@@ -36,6 +36,10 @@
           "title": "Website-Identität und Branding",
           "description": "Browser-Titel, Suchbeschreibung, Logo, Favicon und App-Icon der öffentlichen Website steuern."
         },
+        "theme": {
+          "title": "Theme-Farben",
+          "description": "Primär-, Sekundär- und Tertiärfarbe der öffentlichen Website festlegen."
+        },
         "address": {
           "title": "Aktuelle Adresse",
           "description": "Mit Mapbox suchen und ein Ergebnis auswählen, um es im Kontaktbereich zu veröffentlichen."
@@ -69,6 +73,9 @@
         "logoUrl": "Logo-URL",
         "iconUrl": "Icon-URL",
         "appIconUrl": "App-Icon-URL",
+        "primaryColor": "Primärfarbe",
+        "secondaryColor": "Sekundärfarbe",
+        "tertiaryColor": "Tertiärfarbe",
         "metaDescription": "Meta-Beschreibung",
         "metaDescriptionPlaceholder": "Kurze Beschreibung für Suche und Social Previews",
         "iconMimeType": "Icon-MIME-Typ",

@@ -52,8 +52,13 @@ export default function AddressMap({
       style: styleUrl,
       zoom,
     });
+    const markerColor =
+      window
+        .getComputedStyle(document.documentElement)
+        .getPropertyValue("--accent")
+        .trim() || "#5867f3";
 
-    const marker = new mapboxgl.Marker({color: "#5867f3", scale: markerScale})
+    const marker = new mapboxgl.Marker({color: markerColor, scale: markerScale})
       .setLngLat([longitude, latitude])
       .addTo(map);
 

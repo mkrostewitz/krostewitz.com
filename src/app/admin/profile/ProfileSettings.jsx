@@ -11,6 +11,30 @@ import {useSnackbar} from "../../components/snackbar/SnackbarProvider";
 import AdminHeader from "../AdminHeader";
 import styles from "../admin.module.css";
 
+const DEFAULT_THEME = {
+  primaryColor: "#5773ff",
+  secondaryColor: "#2af5e6",
+  tertiaryColor: "#f7f8f5",
+};
+
+const THEME_COLOR_FIELDS = [
+  {
+    field: "primaryColor",
+    labelKey: "fields.primaryColor",
+    fallback: DEFAULT_THEME.primaryColor,
+  },
+  {
+    field: "secondaryColor",
+    labelKey: "fields.secondaryColor",
+    fallback: DEFAULT_THEME.secondaryColor,
+  },
+  {
+    field: "tertiaryColor",
+    labelKey: "fields.tertiaryColor",
+    fallback: DEFAULT_THEME.tertiaryColor,
+  },
+];
+
 const EMPTY_PROFILE = {
   address: null,
   blogEnabled: true,
@@ -32,6 +56,7 @@ const EMPTY_PROFILE = {
     appIconType: "image/svg+xml",
     logoUrl: "",
     logoType: "image/svg+xml",
+    theme: DEFAULT_THEME,
   },
   updatedAt: null,
   updatedBy: null,
@@ -45,6 +70,44 @@ function formatDate(value, locale, emptyLabel) {
     day: "numeric",
     year: "numeric",
   }).format(new Date(value));
+}
+
+function normalizeHexColor(value, fallback) {
+  const rawValue = String(value || "").trim();
+  const match = rawValue.match(/^#?([0-9a-f]{3}|[0-9a-f]{6})$/i);
+
+  if (!match) return fallback;
+
+  const hex = match[1].toLowerCase();
+  const normalized =
+    hex.length === 3
+      ? hex
+          .split("")
+          .map((character) => `${character}${character}`)
+          .join("")
+      : hex;
+
+  return `#${normalized}`;
+}
+
+function normalizeThemeForm(theme = {}) {
+  const source =
+    theme && typeof theme === "object" && !Array.isArray(theme) ? theme : {};
+
+  return {
+    primaryColor: normalizeHexColor(
+      source.primaryColor || source.primary,
+      DEFAULT_THEME.primaryColor
+    ),
+    secondaryColor: normalizeHexColor(
+      source.secondaryColor || source.secondary,
+      DEFAULT_THEME.secondaryColor
+    ),
+    tertiaryColor: normalizeHexColor(
+      source.tertiaryColor || source.tertiary,
+      DEFAULT_THEME.tertiaryColor
+    ),
+  };
 }
 
 function getFeatureLabel(feature) {
@@ -97,6 +160,7 @@ function normalizeMetadataForm(metadata = {}) {
     ),
     logoUrl: String(metadata.logoUrl || ""),
     logoType: String(metadata.logoType || "image/svg+xml"),
+    theme: normalizeThemeForm(metadata.theme || metadata),
   };
 }
 
@@ -308,6 +372,16 @@ export default function ProfileSettings({user}) {
 
   function handleMetadataInput(field, value) {
     setMetadataForm((current) => ({...current, [field]: value}));
+  }
+
+  function handleThemeInput(field, value) {
+    setMetadataForm((current) => ({
+      ...current,
+      theme: {
+        ...(current.theme || DEFAULT_THEME),
+        [field]: value,
+      },
+    }));
   }
 
   function handleNameInput(field, value) {
@@ -703,6 +777,48 @@ export default function ProfileSettings({user}) {
                       }
                     />
                   </label>
+                </div>
+              </div>
+
+              <div className={styles.themePanel}>
+                <div className={styles.titleBlock}>
+                  <h3>{t("sections.theme.title")}</h3>
+                  <p className={styles.muted}>
+                    {t("sections.theme.description")}
+                  </p>
+                </div>
+
+                <div className={styles.colorPickerGrid}>
+                  {THEME_COLOR_FIELDS.map(({field, labelKey, fallback}) => (
+                    <label className={styles.field} key={field}>
+                      {t(labelKey)}
+                      <span className={styles.colorInputRow}>
+                        <input
+                          aria-label={t(labelKey)}
+                          className={styles.colorPicker}
+                          type="color"
+                          value={normalizeHexColor(
+                            metadataForm.theme?.[field],
+                            fallback
+                          )}
+                          onChange={(event) =>
+                            handleThemeInput(field, event.target.value)
+                          }
+                        />
+                        <input
+                          autoComplete="off"
+                          className={styles.colorTextInput}
+                          maxLength={7}
+                          pattern="#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})"
+                          spellCheck="false"
+                          value={metadataForm.theme?.[field] || fallback}
+                          onChange={(event) =>
+                            handleThemeInput(field, event.target.value)
+                          }
+                        />
+                      </span>
+                    </label>
+                  ))}
                 </div>
               </div>
 

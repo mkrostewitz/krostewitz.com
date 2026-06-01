@@ -36,6 +36,10 @@
           "title": "Site Identity and Branding",
           "description": "Control the browser title, search description, logo, favicon, and app icon emitted by the public site."
         },
+        "theme": {
+          "title": "Theme colors",
+          "description": "Set the primary, secondary, and tertiary colors used by the public site."
+        },
         "address": {
           "title": "Current address",
           "description": "Search with Mapbox and select a result to publish it in Contact."
@@ -69,6 +73,9 @@
         "logoUrl": "Logo URL",
         "iconUrl": "Icon URL",
         "appIconUrl": "App icon URL",
+        "primaryColor": "Primary color",
+        "secondaryColor": "Secondary color",
+        "tertiaryColor": "Tertiary color",
         "metaDescription": "Meta description",
         "metaDescriptionPlaceholder": "Short description for search and social previews",
         "iconMimeType": "Icon MIME type",
