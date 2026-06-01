@@ -162,6 +162,19 @@ function cleanText(value, maxLength = 3000) {
     .slice(0, maxLength);
 }
 
+function cleanMultilineText(value, maxLength = 3000) {
+  return sanitizeHtml(String(value || ""), {
+    allowedTags: [],
+    allowedAttributes: {},
+  })
+    .replace(/\r\n?/g, "\n")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .replace(/[ \t]{2,}/g, " ")
+    .trim()
+    .slice(0, maxLength);
+}
+
 function normalizeShareTarget(value) {
   const target = String(value || "personal_profile").trim();
 
@@ -517,14 +530,15 @@ function buildLinkedInPostUrl(postUrn) {
 }
 
 function createCommentary(post, postUrl, options = {}) {
-  const customCommentary = cleanText(options.commentary, 2800);
+  const customCommentary = cleanMultilineText(options.commentary, 2800);
   const title = getBestTextValue(post, options.language, "title", 140);
   const summary = getBestSummary(post, options.language);
   const customLines =
     customCommentary && !isOnlyPostUrl(customCommentary, postUrl)
       ? [customCommentary]
       : [];
-  const lines = [...customLines, title, summary, postUrl].filter(Boolean);
+  const fallbackLines = customLines.length > 0 ? [] : [title, summary];
+  const lines = [...customLines, ...fallbackLines, postUrl].filter(Boolean);
 
   return lines.join("\n\n").slice(0, 2900);
 }

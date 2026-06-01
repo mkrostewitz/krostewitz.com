@@ -605,7 +605,7 @@ export default function PostManager({user}) {
         data.scheduled
           ? {
               type: "success",
-              message: `LinkedIn share scheduled for ${formatDateTime(
+              message: `LinkedIn share queued in the admin scheduler for ${formatDateTime(
                 data.linkedin?.scheduledAt,
                 data.linkedin?.scheduledTimeZone || options.timeZone
               )}.`,
@@ -814,7 +814,7 @@ export default function PostManager({user}) {
                       )}
                       {nextLinkedInSchedule?.scheduledAt && (
                         <span className={styles.postListShareMeta}>
-                          Scheduled{" "}
+                          Admin scheduled{" "}
                           {formatDateTime(
                             nextLinkedInSchedule.scheduledAt,
                             nextLinkedInSchedule.scheduledTimeZone
@@ -1032,7 +1032,10 @@ export default function PostManager({user}) {
                 />
                 <span>
                   <strong>Schedule</strong>
-                  <small>Publish during the next scheduler run after this time.</small>
+                  <small>
+                    Queue in the admin scheduler. This does not appear in
+                    LinkedIn&apos;s native scheduled posts list.
+                  </small>
                 </span>
               </label>
 
@@ -1061,6 +1064,10 @@ export default function PostManager({user}) {
                       ))}
                     </select>
                   </label>
+                  <p className={`${styles.muted} ${styles.shareScheduleNote}`}>
+                    Netlify checks queued shares every 15 minutes and publishes
+                    after the selected time.
+                  </p>
                 </div>
               )}
             </fieldset>
