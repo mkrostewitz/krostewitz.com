@@ -8,19 +8,23 @@ import styles from "./timeline-section.module.css";
 const TimelineSection = () => {
   const {t} = useTranslation();
   const [sectionRef, inView] = useInViewOnce({threshold: 0.15});
-  const [selectedItem, setSelectedItem] = useState(null);
+  const [selectedIndex, setSelectedIndex] = useState(null);
   const timeline = t("timeline", {returnObjects: true});
+  const selectedItem =
+    Number.isInteger(selectedIndex) && Array.isArray(timeline)
+      ? timeline[selectedIndex]
+      : null;
   const selectedHighlights = Array.isArray(selectedItem?.highlights)
     ? selectedItem.highlights
     : [];
 
   useEffect(() => {
-    if (!selectedItem) return undefined;
+    if (selectedIndex === null) return undefined;
 
     const previousOverflow = document.body.style.overflow;
     const closeOnEscape = (event) => {
       if (event.key === "Escape") {
-        setSelectedItem(null);
+        setSelectedIndex(null);
       }
     };
 
@@ -31,13 +35,13 @@ const TimelineSection = () => {
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", closeOnEscape);
     };
-  }, [selectedItem]);
+  }, [selectedIndex]);
 
-  const closeDialog = () => setSelectedItem(null);
-  const openItemOnKeyDown = (event, item) => {
+  const closeDialog = () => setSelectedIndex(null);
+  const openItemOnKeyDown = (event, idx) => {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
-      setSelectedItem(item);
+      setSelectedIndex(idx);
     }
   };
 
@@ -55,8 +59,8 @@ const TimelineSection = () => {
               inView ? styles.timelineItemVisible : ""
             }`}
             style={{"--item-delay": `${idx * 120}ms`}}
-            onClick={() => setSelectedItem(item)}
-            onKeyDown={(event) => openItemOnKeyDown(event, item)}
+            onClick={() => setSelectedIndex(idx)}
+            onKeyDown={(event) => openItemOnKeyDown(event, idx)}
             role="button"
             tabIndex={0}
             aria-label={t("timelineDialog.open", {title: item.title})}

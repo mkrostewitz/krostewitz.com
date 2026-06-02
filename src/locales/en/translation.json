@@ -123,15 +123,15 @@
     }
   },
   "offer": {
-    "eyebrow": "How I help",
-    "title": "Industrial growth leadership for market expansion, scalable operations, and digital execution.",
-    "subtitle": "I help industrial companies enter new markets, reposition products and business models, build commercial and operational structures, and scale through pragmatic execution and digital systems.",
+    "eyebrow": "B2B Digitalization · Sales · Operations",
+    "title": "Sustainable growth needs digital structures.",
+    "subtitle": "I support mid-sized industrial and technology companies that want to enter new markets, digitalize sales processes, and make operations scalable, bringing more than 15 years of experience in building, scaling, and repositioning businesses.",
     "points": [
-      "Design sustainable GTM playbooks and partner routes that fit your market",
-      "Turnaround your operations and build efficient teams",
-      "Stabilize cash, supply, and delivery with pragmatic ops changes"
+      "<strong>Market Entry & Internationalization</strong>. Go-to-market, partners, distribution, and sales, including late market entries in Asia and the Americas.",
+      "<strong>Digital B2B Sales & E-Commerce</strong>. Efficient tools and processes for modern quoting, ordering, and customer requirements.",
+      "<strong>Process Automation & Operations</strong>. Lean structures, clear responsibilities, and scalable workflows for growing order volumes."
     ],
-    "cta": "Schedule a Call",
+    "cta": "Schedule a call",
     "alt": "Portrait of {{profileName}}",
     "altFallback": "Portrait"
   },
@@ -305,11 +305,12 @@
       "period": "Aug 2022 — Present",
       "title": "Founder & CEO, INTUTEC LLC",
       "location": "Palo Alto, USA",
-      "detail": "Founded INTUTEC to support industrial companies with U.S. market entry, sales development, and digital distribution solutions. Schlegel USA became the first reference customer, validating the model through a successful market-entry and commercial buildout project.",
+      "detail": "Founded INTUTEC to support industrial companies with market entry, commercial transformation, and digital execution systems. The model combines strategy, hands-on implementation, and practical tools for sales development, lead management, partner structures, and scalable market access. Schlegel USA became the first reference customer, validating the approach through a successful U.S. market-entry and commercial buildout project.",
       "highlights": [
-        "Developed digital processes for lead generation, local contact assignment, and customer qualification.",
-        "Conceptualized an online distribution model for small and mid-sized industrial companies.",
-        "Integrated platform logic as a white-label solution into the Schlegel website."
+        "Market-entry and transformation strategies for industrial companies.",
+        "Executional support for sales development, lead generation, and partner structures.",
+        "Digital tools for lead management, contact assignment, and customer qualification.",
+        "White-label platform logic and website-integrated sales workflows."
       ]
     },
     {
