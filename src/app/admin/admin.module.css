@@ -807,6 +807,107 @@
   margin: 0;
 }
 
+.shareHistoryPanel {
+  display: grid;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  background: var(--surface-subtle);
+}
+
+.shareHistoryList {
+  display: grid;
+  gap: 8px;
+}
+
+.shareHistoryItem {
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  padding: 10px 12px;
+  background: var(--surface);
+}
+
+.shareHistoryItemHeader {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.shareHistoryItemHeader strong {
+  overflow-wrap: anywhere;
+}
+
+.shareHistoryStatus {
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  padding: 4px 8px;
+  background: var(--surface-subtle);
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.shareHistoryStatusPublished {
+  border-color: rgba(34, 197, 94, 0.38);
+  background: rgba(34, 197, 94, 0.1);
+  color: #15803d;
+}
+
+.shareHistoryStatusFailed {
+  border-color: rgba(220, 38, 38, 0.36);
+  background: rgba(220, 38, 38, 0.1);
+  color: #b91c1c;
+}
+
+.shareHistoryStatusCanceled {
+  opacity: 0.76;
+}
+
+.shareHistoryStatusProcessing {
+  border-color: var(--accent-ring);
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+
+.shareHistoryMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.shareHistoryFailure {
+  margin: 0;
+  color: #b91c1c;
+  font-size: 0.86rem;
+  font-weight: 800;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.shareHistoryLink {
+  color: var(--accent-text);
+  font-size: 0.84rem;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.shareHistoryLink:hover {
+  color: var(--accent);
+}
+
 .leadStats {
   display: flex;
   flex-wrap: wrap;

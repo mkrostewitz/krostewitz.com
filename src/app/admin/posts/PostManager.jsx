@@ -338,6 +338,110 @@ function getShareImageStatus(post) {
   return media.fileName || "Attached blog image";
 }
 
+const SHARE_HISTORY_STATUS_LABELS = {
+  canceled: "Canceled",
+  failed: "Failed",
+  processing: "Processing",
+  published: "Published",
+  scheduled: "Scheduled",
+};
+
+function getShareHistoryStatusTime(entry) {
+  return (
+    entry.failedAt ||
+    entry.publishedAt ||
+    entry.canceledAt ||
+    entry.processingStartedAt ||
+    entry.sharedAt ||
+    entry.attemptedAt ||
+    entry.scheduledAt ||
+    entry.createdAt
+  );
+}
+
+function getShareHistoryStatusClass(status) {
+  if (status === "failed") return styles.shareHistoryStatusFailed;
+  if (status === "published") return styles.shareHistoryStatusPublished;
+  if (status === "canceled") return styles.shareHistoryStatusCanceled;
+  if (status === "processing") return styles.shareHistoryStatusProcessing;
+  return "";
+}
+
+function getLinkedInShareHistory(post) {
+  const schedules = Array.isArray(post?.linkedinShareSchedules)
+    ? post.linkedinShareSchedules
+    : [];
+  const shares = Array.isArray(post?.linkedinShares) ? post.linkedinShares : [];
+  const attempts = Array.isArray(post?.linkedinShareAttempts)
+    ? post.linkedinShareAttempts
+    : [];
+  const sharesByJobId = new Map(
+    shares
+      .filter((share) => share.scheduledJobId)
+      .map((share) => [share.scheduledJobId, share])
+  );
+  const scheduledJobIds = new Set(
+    schedules.map((schedule) => schedule.jobId).filter(Boolean)
+  );
+  const scheduleHistory = schedules.map((schedule) => {
+    const linkedShare = sharesByJobId.get(schedule.jobId);
+
+    return {
+      id: `schedule-${schedule.jobId || schedule.createdAt}`,
+      account: schedule.account,
+      commentary: schedule.commentary,
+      createdAt: schedule.createdAt,
+      failedAt: schedule.failedAt,
+      failure: schedule.failure,
+      includeImage: schedule.includeImage,
+      kind: "Scheduled share",
+      language: schedule.language,
+      linkedInPostUrl: schedule.linkedInPostUrl || linkedShare?.postUrl || "",
+      processingStartedAt: schedule.processingStartedAt,
+      publishedAt: schedule.publishedAt,
+      canceledAt: schedule.canceledAt,
+      scheduledAt: schedule.scheduledAt,
+      scheduledTimeZone: schedule.scheduledTimeZone,
+      status: schedule.status || "scheduled",
+    };
+  });
+  const immediateSuccessHistory = shares
+    .filter((share) => !share.scheduledJobId || !scheduledJobIds.has(share.scheduledJobId))
+    .map((share) => ({
+      id: `share-${share.postUrn || share.sharedAt}`,
+      account: share.account,
+      commentary: share.commentary,
+      kind: "Immediate share",
+      language: share.language,
+      linkedInPostUrl: share.postUrl,
+      publishedAt: share.sharedAt,
+      sharedAt: share.sharedAt,
+      status: "published",
+    }));
+  const failedAttemptHistory = attempts.map((attempt) => ({
+    id: `attempt-${attempt.attemptedAt || attempt.createdAt}`,
+    account: attempt.account,
+    attemptedAt: attempt.attemptedAt,
+    commentary: attempt.commentary,
+    failedAt: attempt.failedAt,
+    failure: attempt.failure,
+    includeImage: attempt.includeImage,
+    kind: attempt.attemptType === "scheduled" ? "Scheduled share" : "Immediate share",
+    language: attempt.language,
+    status: attempt.status || "failed",
+  }));
+
+  return [
+    ...scheduleHistory,
+    ...immediateSuccessHistory,
+    ...failedAttemptHistory,
+  ].sort((left, right) => {
+    const leftTime = new Date(getShareHistoryStatusTime(left) || 0).getTime();
+    const rightTime = new Date(getShareHistoryStatusTime(right) || 0).getTime();
+    return rightTime - leftTime;
+  });
+}
+
 export default function PostManager({user}) {
   const {closeSnackbar, showSnackbar} = useSnackbar();
   const [posts, setPosts] = useState([]);
@@ -351,8 +455,10 @@ export default function PostManager({user}) {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isDisconnectingLinkedin, setIsDisconnectingLinkedin] = useState(false);
+  const [cancelingScheduleId, setCancelingScheduleId] = useState("");
   const [sharingPostId, setSharingPostId] = useState("");
   const [pendingSharePost, setPendingSharePost] = useState(null);
+  const [pendingShareSchedule, setPendingShareSchedule] = useState(null);
   const [shareTarget, setShareTarget] = useState("personal_profile");
   const [shareLanguage, setShareLanguage] = useState(FALLBACK_LANGUAGE);
   const [shareCommentary, setShareCommentary] = useState("");
@@ -365,6 +471,10 @@ export default function PostManager({user}) {
   const timeZoneOptions = useMemo(
     () => getTimeZoneOptions(shareTimeZone),
     [shareTimeZone]
+  );
+  const pendingShareHistory = useMemo(
+    () => getLinkedInShareHistory(pendingSharePost).slice(0, 8),
+    [pendingSharePost]
   );
 
   const counts = useMemo(
@@ -479,19 +589,29 @@ export default function PostManager({user}) {
     }
   }
 
-  function openShareDialog(post) {
-    setShareTarget("personal_profile");
-    setShareLanguage(getDefaultShareLanguage(post));
-    setShareCommentary("");
-    setShareIncludeImage(canIncludeLinkedInImage(post));
-    setShareTiming("now");
-    setShareScheduledAt("");
-    setShareTimeZone(getDefaultTimeZone());
+  function openShareDialog(post, schedule = null) {
+    const scheduleTimeZone = schedule?.scheduledTimeZone || getDefaultTimeZone();
+
+    setShareTarget(schedule?.target || "personal_profile");
+    setShareLanguage(schedule?.language || getDefaultShareLanguage(post));
+    setShareCommentary(schedule?.commentary || "");
+    setShareIncludeImage(
+      schedule ? schedule.includeImage === true : canIncludeLinkedInImage(post)
+    );
+    setShareTiming(schedule ? "scheduled" : "now");
+    setShareScheduledAt(
+      schedule?.scheduledAt
+        ? toDateTimeLocalValue(schedule.scheduledAt, scheduleTimeZone)
+        : ""
+    );
+    setShareTimeZone(scheduleTimeZone);
+    setPendingShareSchedule(schedule);
     setPendingSharePost(post);
   }
 
   function closeShareDialog() {
     if (sharingPostId || isGeneratingThoughts) return;
+    setPendingShareSchedule(null);
     setPendingSharePost(null);
   }
 
@@ -596,6 +716,7 @@ export default function PostManager({user}) {
           includeImage: options.includeImage,
           language: options.language,
           scheduledAt,
+          scheduledJobId: options.scheduledJobId,
           scheduledTimeZone: options.timeZone,
           target: options.target,
         }),
@@ -603,6 +724,15 @@ export default function PostManager({user}) {
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
+        if (data.post) {
+          setPosts((current) =>
+            current.map((item) => (item.id === post.id ? data.post : item))
+          );
+          setPendingSharePost((current) =>
+            current?.id === post.id ? data.post : current
+          );
+        }
+
         if (response.status === 401) {
           setLinkedin((current) => ({
             ...current,
@@ -624,7 +754,9 @@ export default function PostManager({user}) {
         data.scheduled
           ? {
               type: "success",
-              message: `LinkedIn share queued for ${formatDateTime(
+              message: `LinkedIn share ${
+                data.updated ? "updated" : "queued"
+              } for ${formatDateTime(
                 data.linkedin?.scheduledAt,
                 data.linkedin?.scheduledTimeZone || options.timeZone
               )}. Netlify checks due shares every minute.`,
@@ -634,6 +766,7 @@ export default function PostManager({user}) {
               message: "Post shared to LinkedIn.",
             }
       );
+      setPendingShareSchedule(null);
       setPendingSharePost(null);
     } catch (error) {
       const isAbortError = error?.name === "AbortError";
@@ -646,6 +779,44 @@ export default function PostManager({user}) {
     } finally {
       window.clearTimeout(timeoutId);
       setSharingPostId("");
+    }
+  }
+
+  async function cancelLinkedInSchedule(post, schedule) {
+    if (!schedule?.jobId) return;
+
+    const shouldCancel = window.confirm(
+      "Cancel this scheduled LinkedIn share?"
+    );
+
+    if (!shouldCancel) return;
+
+    setCancelingScheduleId(schedule.jobId);
+    closeSnackbar();
+
+    try {
+      const response = await fetch(`/api/admin/posts/${post.id}/linkedin`, {
+        method: "DELETE",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({jobId: schedule.jobId}),
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || "Unable to cancel scheduled share.");
+      }
+
+      setPosts((current) =>
+        current.map((item) => (item.id === post.id ? data.post : item))
+      );
+      showSnackbar({
+        type: "success",
+        message: "Scheduled LinkedIn share canceled.",
+      });
+    } catch (error) {
+      showSnackbar({type: "error", message: error.message});
+    } finally {
+      setCancelingScheduleId("");
     }
   }
 
@@ -763,12 +934,18 @@ export default function PostManager({user}) {
                 const extraCategoryCount = categories.length - visibleCategories.length;
                 const editHref = `/admin/posts/${post.id}`;
                 const latestLinkedInShare = post.linkedinShares?.[0];
+                const latestLinkedInHistory = getLinkedInShareHistory(post)[0];
                 const nextLinkedInSchedule = post.linkedinShareSchedules?.find(
                   (schedule) =>
                     schedule.status === "scheduled" &&
                     schedule.scheduledAt &&
                     new Date(schedule.scheduledAt).getTime() > Date.now()
                 );
+                const nextLinkedInScheduleId =
+                  nextLinkedInSchedule?.jobId || "";
+                const isCancelingSchedule =
+                  nextLinkedInScheduleId &&
+                  cancelingScheduleId === nextLinkedInScheduleId;
                 const canShareToLinkedIn =
                   linkedin.connected &&
                   !linkedin.needsReconnect &&
@@ -838,14 +1015,56 @@ export default function PostManager({user}) {
                           LinkedIn {formatDate(latestLinkedInShare.sharedAt)}
                         </span>
                       )}
-                      {nextLinkedInSchedule?.scheduledAt && (
+                      {latestLinkedInHistory?.status === "failed" && (
                         <span className={styles.postListShareMeta}>
-                          Admin scheduled{" "}
+                          LinkedIn failed{" "}
                           {formatDateTime(
-                            nextLinkedInSchedule.scheduledAt,
-                            nextLinkedInSchedule.scheduledTimeZone
+                            getShareHistoryStatusTime(latestLinkedInHistory),
+                            latestLinkedInHistory.scheduledTimeZone
                           )}
                         </span>
+                      )}
+                      {nextLinkedInSchedule?.scheduledAt && (
+                        <>
+                          <span className={styles.postListShareMeta}>
+                            Admin scheduled{" "}
+                            {formatDateTime(
+                              nextLinkedInSchedule.scheduledAt,
+                              nextLinkedInSchedule.scheduledTimeZone
+                            )}
+                          </span>
+                          <button
+                            className={styles.secondaryButton}
+                            disabled={
+                              Boolean(isCancelingSchedule) ||
+                              sharingPostId === post.id
+                            }
+                            type="button"
+                            onClick={() =>
+                              openShareDialog(post, nextLinkedInSchedule)
+                            }
+                          >
+                            Edit schedule
+                          </button>
+                          <button
+                            className={styles.dangerButton}
+                            disabled={
+                              Boolean(isCancelingSchedule) ||
+                              sharingPostId === post.id
+                            }
+                            type="button"
+                            onClick={() =>
+                              cancelLinkedInSchedule(
+                                post,
+                                nextLinkedInSchedule
+                              )
+                            }
+                          >
+                            {isCancelingSchedule
+                              ? "Canceling..."
+                              : "Cancel schedule"}
+                          </button>
+                        </>
                       )}
                     </span>
                   </article>
@@ -878,7 +1097,11 @@ export default function PostManager({user}) {
           >
             <div className={styles.modalHeader}>
               <div className={styles.titleBlock}>
-                <h2 id="linkedin-share-title">Share to LinkedIn</h2>
+                <h2 id="linkedin-share-title">
+                  {pendingShareSchedule
+                    ? "Edit scheduled LinkedIn share"
+                    : "Share to LinkedIn"}
+                </h2>
                 <p className={styles.muted}>{pendingSharePost.title}</p>
               </div>
               <button
@@ -1024,9 +1247,14 @@ export default function PostManager({user}) {
 
             <fieldset className={styles.shareTargetList}>
               <legend>Timing</legend>
-              <label className={styles.shareTargetOption}>
+              <label
+                className={`${styles.shareTargetOption} ${
+                  pendingShareSchedule ? styles.shareTargetOptionDisabled : ""
+                }`}
+              >
                 <input
                   checked={shareTiming === "now"}
+                  disabled={Boolean(pendingShareSchedule)}
                   name="linkedin-share-timing"
                   type="radio"
                   value="now"
@@ -1114,6 +1342,105 @@ export default function PostManager({user}) {
               )}
             </fieldset>
 
+            <section className={styles.shareHistoryPanel}>
+              <div className={styles.fieldHeader}>
+                <span className={styles.fieldLabel}>Sharing history</span>
+                <span className={styles.muted}>
+                  {pendingShareHistory.length} event
+                  {pendingShareHistory.length === 1 ? "" : "s"}
+                </span>
+              </div>
+
+              {pendingShareHistory.length > 0 ? (
+                <div className={styles.shareHistoryList}>
+                  {pendingShareHistory.map((entry) => {
+                    const status = entry.status || "scheduled";
+                    const statusTime = getShareHistoryStatusTime(entry);
+                    const statusLabel =
+                      SHARE_HISTORY_STATUS_LABELS[status] || status;
+
+                    return (
+                      <article className={styles.shareHistoryItem} key={entry.id}>
+                        <div className={styles.shareHistoryItemHeader}>
+                          <strong>{entry.kind}</strong>
+                          <span
+                            className={`${styles.shareHistoryStatus} ${getShareHistoryStatusClass(
+                              status
+                            )}`}
+                          >
+                            {statusLabel}
+                          </span>
+                        </div>
+                        <div className={styles.shareHistoryMeta}>
+                          <span>
+                            {status === "scheduled"
+                              ? "Scheduled for"
+                              : status === "processing"
+                              ? "Attempted"
+                              : status === "failed"
+                              ? "Failed"
+                              : status === "canceled"
+                              ? "Canceled"
+                              : "Published"}{" "}
+                            {formatDateTime(
+                              statusTime,
+                              entry.scheduledTimeZone
+                            )}
+                          </span>
+                          {entry.scheduledAt && status !== "scheduled" && (
+                            <span>
+                              Scheduled for{" "}
+                              {formatDateTime(
+                                entry.scheduledAt,
+                                entry.scheduledTimeZone
+                              )}
+                            </span>
+                          )}
+                          {entry.processingStartedAt &&
+                            status !== "processing" && (
+                              <span>
+                                Attempted{" "}
+                                {formatDateTime(
+                                  entry.processingStartedAt,
+                                  entry.scheduledTimeZone
+                                )}
+                              </span>
+                            )}
+                          {entry.language && (
+                            <span>
+                              Language: {getSiteLanguageLabel(entry.language)}
+                            </span>
+                          )}
+                          {entry.account?.email && (
+                            <span>Account: {entry.account.email}</span>
+                          )}
+                        </div>
+                        {entry.failure && (
+                          <p className={styles.shareHistoryFailure}>
+                            {entry.failure}
+                          </p>
+                        )}
+                        {entry.linkedInPostUrl && (
+                          <Link
+                            className={styles.shareHistoryLink}
+                            href={entry.linkedInPostUrl}
+                            rel="noreferrer"
+                            target="_blank"
+                          >
+                            Open LinkedIn post
+                          </Link>
+                        )}
+                      </article>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className={styles.muted}>
+                  No LinkedIn share attempts have been recorded for this post.
+                </p>
+              )}
+            </section>
+
             <div className={styles.modalFooter}>
               <button
                 className={styles.secondaryButton}
@@ -1133,6 +1460,7 @@ export default function PostManager({user}) {
                     includeImage: shareIncludeImage,
                     language: shareLanguage,
                     scheduledAt: shareScheduledAt,
+                    scheduledJobId: pendingShareSchedule?.jobId || "",
                     target: shareTarget,
                     timeZone: shareTimeZone,
                     timing: shareTiming,
@@ -1141,10 +1469,14 @@ export default function PostManager({user}) {
               >
                 {sharingPostId
                   ? shareTiming === "scheduled"
-                    ? "Scheduling..."
+                    ? pendingShareSchedule
+                      ? "Saving..."
+                      : "Scheduling..."
                     : "Sharing..."
                   : shareTiming === "scheduled"
-                  ? "Schedule"
+                  ? pendingShareSchedule
+                    ? "Save schedule"
+                    : "Schedule"
                   : "Share"}
               </button>
             </div>

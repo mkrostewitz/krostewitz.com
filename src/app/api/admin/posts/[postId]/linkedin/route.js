@@ -6,9 +6,11 @@ import {
   unauthorizedResponse,
 } from "../../../../../lib/adminAuth";
 import {
+  cancelScheduledPostToLinkedIn,
   LinkedInIntegrationError,
   publishPostToLinkedIn,
   schedulePostToLinkedIn,
+  updateScheduledPostToLinkedIn,
 } from "../../../../../lib/linkedinIntegration";
 import {getRequestOrigin} from "../../../../../lib/requestOrigin";
 
@@ -16,7 +18,10 @@ export const runtime = "nodejs";
 
 function errorResponse(error) {
   if (error instanceof LinkedInIntegrationError) {
-    return NextResponse.json({error: error.message}, {status: error.status});
+    return NextResponse.json(
+      {error: error.message, post: error.post || null},
+      {status: error.status},
+    );
   }
 
   console.error("Admin LinkedIn post share error", error);
@@ -47,12 +52,42 @@ export async function POST(request, context) {
       user,
     };
     const result = body.scheduledAt
-      ? await schedulePostToLinkedIn({
-          ...payload,
-          scheduledAt: body.scheduledAt,
-          scheduledTimeZone: body.scheduledTimeZone,
-        })
+      ? body.scheduledJobId
+        ? await updateScheduledPostToLinkedIn({
+            ...payload,
+            jobId: body.scheduledJobId,
+            scheduledAt: body.scheduledAt,
+            scheduledTimeZone: body.scheduledTimeZone,
+          })
+        : await schedulePostToLinkedIn({
+            ...payload,
+            scheduledAt: body.scheduledAt,
+            scheduledTimeZone: body.scheduledTimeZone,
+          })
       : await publishPostToLinkedIn(payload);
+
+    return NextResponse.json(result);
+  } catch (error) {
+    return errorResponse(error);
+  }
+}
+
+export async function DELETE(request, context) {
+  if (!isSameOriginRequest(request)) {
+    return NextResponse.json({error: "Invalid request origin."}, {status: 403});
+  }
+
+  const user = await getCurrentAdminUser();
+  if (!user) return unauthorizedResponse();
+
+  try {
+    const {postId} = await context.params;
+    const body = await request.json().catch(() => ({}));
+    const result = await cancelScheduledPostToLinkedIn({
+      jobId: body.jobId,
+      postId,
+      user,
+    });
 
     return NextResponse.json(result);
   } catch (error) {

@@ -486,11 +486,18 @@ function serializeLinkedInShareSchedules(value) {
       status: schedule.status || "scheduled",
       scheduledAt: toIsoDate(schedule.scheduledAt),
       scheduledTimeZone: schedule.scheduledTimeZone || "",
+      processingStartedAt: toIsoDate(schedule.processingStartedAt),
       publishedAt: toIsoDate(schedule.publishedAt),
+      linkedInPostUrn: schedule.linkedInPostUrn || "",
+      linkedInPostUrl: schedule.linkedInPostUrl || "",
       failedAt: toIsoDate(schedule.failedAt),
+      canceledAt: toIsoDate(schedule.canceledAt),
+      canceledBy: schedule.canceledBy || null,
       failure: schedule.failure || "",
       createdAt: toIsoDate(schedule.createdAt),
       createdBy: schedule.createdBy || null,
+      updatedAt: toIsoDate(schedule.updatedAt),
+      updatedBy: schedule.updatedBy || null,
       account: schedule.account
         ? {
             sub: schedule.account.sub || "",
@@ -506,6 +513,43 @@ function serializeLinkedInShareSchedules(value) {
         ? new Date(right.scheduledAt).getTime()
         : 0;
       return leftTime - rightTime;
+    });
+}
+
+function serializeLinkedInShareAttempts(value) {
+  return (Array.isArray(value) ? value : [])
+    .filter((attempt) => attempt && typeof attempt === "object")
+    .map((attempt) => ({
+      provider: "linkedin",
+      attemptType: attempt.attemptType || "immediate",
+      target: attempt.target || "personal_profile",
+      language: attempt.language || null,
+      commentary: attempt.commentary || "",
+      includeImage: attempt.includeImage === true,
+      status: attempt.status || "failed",
+      scheduledJobId: attempt.scheduledJobId || "",
+      attemptedAt: toIsoDate(attempt.attemptedAt),
+      failedAt: toIsoDate(attempt.failedAt),
+      failure: attempt.failure || "",
+      createdAt: toIsoDate(attempt.createdAt),
+      createdBy: attempt.createdBy || null,
+      account: attempt.account
+        ? {
+            sub: attempt.account.sub || "",
+            email: attempt.account.email || "",
+            name: attempt.account.name || "",
+            picture: attempt.account.picture || "",
+          }
+        : null,
+    }))
+    .sort((left, right) => {
+      const leftTime = new Date(
+        left.failedAt || left.attemptedAt || left.createdAt || 0
+      ).getTime();
+      const rightTime = new Date(
+        right.failedAt || right.attemptedAt || right.createdAt || 0
+      ).getTime();
+      return rightTime - leftTime;
     });
 }
 
@@ -578,6 +622,9 @@ export function serializePost(document, options = {}) {
     post.linkedinShares = serializeLinkedInShares(document.linkedinShares);
     post.linkedinShareSchedules = serializeLinkedInShareSchedules(
       document.linkedinShareSchedules
+    );
+    post.linkedinShareAttempts = serializeLinkedInShareAttempts(
+      document.linkedinShareAttempts
     );
   }
 
@@ -798,6 +845,8 @@ export async function recordPostLinkedInShareSchedule(postId, schedule = {}, use
       : null,
     createdAt: now,
     createdBy: user?.email || null,
+    updatedAt: now,
+    updatedBy: user?.email || null,
   };
   const result = await getPostsCollection(db).findOneAndUpdate(
     {_id},
@@ -824,6 +873,65 @@ export async function recordPostLinkedInShareSchedule(postId, schedule = {}, use
   }
 
   revalidatePublicPosts();
+
+  return serializePost(post, {includeContent: true, includeAdmin: true});
+}
+
+export async function recordPostLinkedInShareAttempt(postId, attempt = {}, user) {
+  const db = await getDb();
+  await ensurePostIndexes(db);
+
+  const _id = toObjectId(postId);
+  const now = new Date();
+  const document = {
+    provider: "linkedin",
+    attemptType: String(attempt.attemptType || "immediate"),
+    target: String(attempt.target || "personal_profile"),
+    language: attempt.language ? String(attempt.language) : null,
+    commentary: String(attempt.commentary || ""),
+    includeImage: attempt.includeImage === true,
+    status: String(attempt.status || "failed"),
+    scheduledJobId: attempt.scheduledJobId
+      ? String(attempt.scheduledJobId)
+      : "",
+    attemptedAt:
+      attempt.attemptedAt instanceof Date ? attempt.attemptedAt : now,
+    failedAt: attempt.failedAt instanceof Date ? attempt.failedAt : null,
+    failure: String(attempt.failure || ""),
+    account: attempt.account
+      ? {
+          sub: String(attempt.account.sub || ""),
+          email: String(attempt.account.email || ""),
+          name: String(attempt.account.name || ""),
+          picture: String(attempt.account.picture || ""),
+        }
+      : null,
+    createdAt: now,
+    createdBy: user?.email || null,
+  };
+  const result = await getPostsCollection(db).findOneAndUpdate(
+    {_id},
+    {
+      $set: {
+        updatedAt: now,
+        updatedBy: user?.email || null,
+        lastLinkedInShareAttempt: document,
+      },
+      $push: {
+        linkedinShareAttempts: {
+          $each: [document],
+          $position: 0,
+          $slice: 30,
+        },
+      },
+    },
+    {returnDocument: "after"}
+  );
+  const post = result?.value || result;
+
+  if (!post) {
+    throw new PostValidationError("Post not found.", 404);
+  }
 
   return serializePost(post, {includeContent: true, includeAdmin: true});
 }

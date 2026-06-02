@@ -8,6 +8,7 @@ import {getSupportedSiteLanguage} from "../../lib/siteLanguages";
 import {getDb} from "./mongo";
 import {
   getAdminPostById,
+  recordPostLinkedInShareAttempt,
   recordPostLinkedInShare,
   recordPostLinkedInShareSchedule,
   updatePostLinkedInShareSchedule,
@@ -578,6 +579,14 @@ function getLinkedInErrorMessage(data, fallback) {
   );
 }
 
+function attachPostToError(error, post) {
+  if (error && typeof error === "object" && post) {
+    error.post = post;
+  }
+
+  return error;
+}
+
 async function initializeLinkedInImageUpload(connection) {
   const response = await fetchWithTimeout(
     LINKEDIN_IMAGES_URL,
@@ -768,26 +777,28 @@ export async function publishPostToLinkedIn({
     throw new LinkedInIntegrationError("Only published posts can be shared.");
   }
 
-  const connection = await getLinkedInConnection({includeAccessToken: true});
-
-  if (!connection.connected || !connection.accessToken) {
-    throw new LinkedInIntegrationError("Connect LinkedIn before sharing posts.", 409);
-  }
-
-  if (connection.needsReconnect) {
-    throw new LinkedInIntegrationError("Reconnect LinkedIn before sharing posts.", 401);
-  }
-
   const publicOrigin = getConfiguredSiteOrigin() || origin;
   const postUrl = buildPostUrl(post, publicOrigin, normalizedLanguage);
   const finalCommentary = createCommentary(post, postUrl, {
     commentary,
     language: normalizedLanguage,
   });
+  const attemptedAt = new Date();
+  let connection = null;
   let linkedInImage = null;
   let linkedInPostUrn;
 
   try {
+    connection = await getLinkedInConnection({includeAccessToken: true});
+
+    if (!connection.connected || !connection.accessToken) {
+      throw new LinkedInIntegrationError("Connect LinkedIn before sharing posts.", 409);
+    }
+
+    if (connection.needsReconnect) {
+      throw new LinkedInIntegrationError("Reconnect LinkedIn before sharing posts.", 401);
+    }
+
     linkedInImage = includeImage
       ? await uploadPostImageToLinkedIn({
           connection,
@@ -801,15 +812,43 @@ export async function publishPostToLinkedIn({
       image: linkedInImage,
     });
   } catch (error) {
+    let updatedPost = null;
+
+    if (!scheduledJobId) {
+      try {
+        updatedPost = await recordPostLinkedInShareAttempt(
+          post.id,
+          {
+            attemptType: "immediate",
+            target: normalizedTarget,
+            language: normalizedLanguage,
+            commentary: finalCommentary,
+            includeImage: includeImage && hasShareableLinkedInImage(post),
+            status: "failed",
+            attemptedAt,
+            failedAt: new Date(),
+            failure: error?.message || "Unable to share post to LinkedIn.",
+            account: connection?.profile || null,
+          },
+          user,
+        );
+      } catch (historyError) {
+        console.warn("Unable to record LinkedIn share attempt", historyError);
+      }
+    }
+
     if (error instanceof LinkedInIntegrationError && error.status === 401) {
       await markLinkedInConnectionNeedsReconnect(error.message, user);
-      throw new LinkedInIntegrationError(
-        "LinkedIn publishing access was revoked. Reconnect LinkedIn before sharing posts.",
-        401,
+      throw attachPostToError(
+        new LinkedInIntegrationError(
+          "LinkedIn publishing access was revoked. Reconnect LinkedIn before sharing posts.",
+          401,
+        ),
+        updatedPost,
       );
     }
 
-    throw error;
+    throw attachPostToError(error, updatedPost);
   }
 
   const sharedAt = new Date();
@@ -871,6 +910,16 @@ function normalizeScheduledAt(value) {
   return date;
 }
 
+function normalizeScheduledJobId(value) {
+  const jobId = String(value || "").trim();
+
+  if (!jobId) {
+    throw new LinkedInIntegrationError("Scheduled LinkedIn share not found.", 404);
+  }
+
+  return jobId;
+}
+
 export async function schedulePostToLinkedIn({
   commentary,
   includeImage = true,
@@ -916,8 +965,9 @@ export async function schedulePostToLinkedIn({
 
   const publicOrigin = getConfiguredSiteOrigin() || origin;
   const postUrl = buildPostUrl(post, publicOrigin, normalizedLanguage);
+  const customCommentary = cleanMultilineText(commentary, 2800);
   const finalCommentary = createCommentary(post, postUrl, {
-    commentary,
+    commentary: customCommentary,
     language: normalizedLanguage,
   });
   const now = new Date();
@@ -929,6 +979,7 @@ export async function schedulePostToLinkedIn({
     target: normalizedTarget,
     language: normalizedLanguage,
     commentary: finalCommentary,
+    customCommentary,
     includeImage: includeImage && hasShareableLinkedInImage(post),
     origin: publicOrigin,
     account: connection.profile,
@@ -949,6 +1000,7 @@ export async function schedulePostToLinkedIn({
       jobId: job._id,
       target: normalizedTarget,
       language: normalizedLanguage,
+      commentary: customCommentary,
       includeImage: includeImage && hasShareableLinkedInImage(post),
       account: connection.profile,
       scheduledAt: scheduleDate,
@@ -967,7 +1019,211 @@ export async function schedulePostToLinkedIn({
       scheduledAt: scheduleDate.toISOString(),
       scheduledTimeZone: normalizedTimeZone,
       commentary: finalCommentary,
+      customCommentary,
       includeImage: includeImage && hasShareableLinkedInImage(post),
+    },
+  };
+}
+
+export async function updateScheduledPostToLinkedIn({
+  commentary,
+  includeImage = true,
+  jobId,
+  language,
+  postId,
+  origin,
+  scheduledAt,
+  scheduledTimeZone,
+  target = "personal_profile",
+  user,
+}) {
+  const normalizedJobId = normalizeScheduledJobId(jobId);
+  const normalizedTarget = normalizeShareTarget(target);
+  const normalizedLanguage = normalizeShareLanguage(language);
+  const normalizedTimeZone = normalizeTimeZone(scheduledTimeZone);
+  const scheduleDate = normalizeScheduledAt(scheduledAt);
+
+  if (!isLinkedInSchedulerConfigured()) {
+    throw new LinkedInIntegrationError(
+      "LinkedIn scheduler is disabled. Enable LINKEDIN_SCHEDULER_ENABLED and LINKEDIN_SCHEDULER_SECRET before scheduling posts.",
+      409,
+    );
+  }
+
+  const post = await getAdminPostById(postId);
+
+  if (!post) {
+    throw new LinkedInIntegrationError("Post not found.", 404);
+  }
+
+  if (post.status !== "published") {
+    throw new LinkedInIntegrationError("Only published posts can be scheduled.");
+  }
+
+  const db = await getDb();
+  await ensureShareJobsIndexes(db);
+
+  const existingJob = await getShareJobsCollection(db).findOne({
+    _id: normalizedJobId,
+    postId: post.id,
+  });
+
+  if (!existingJob) {
+    throw new LinkedInIntegrationError("Scheduled LinkedIn share not found.", 404);
+  }
+
+  if (existingJob.status !== "scheduled") {
+    throw new LinkedInIntegrationError(
+      "Only pending scheduled LinkedIn shares can be edited.",
+      409,
+    );
+  }
+
+  const connection = await getLinkedInConnection();
+
+  if (!connection.connected) {
+    throw new LinkedInIntegrationError("Connect LinkedIn before scheduling posts.", 409);
+  }
+
+  if (connection.needsReconnect) {
+    throw new LinkedInIntegrationError("Reconnect LinkedIn before scheduling posts.", 401);
+  }
+
+  const publicOrigin = getConfiguredSiteOrigin() || origin;
+  const postUrl = buildPostUrl(post, publicOrigin, normalizedLanguage);
+  const customCommentary = cleanMultilineText(commentary, 2800);
+  const finalCommentary = createCommentary(post, postUrl, {
+    commentary: customCommentary,
+    language: normalizedLanguage,
+  });
+  const now = new Date();
+  const normalizedIncludeImage = includeImage && hasShareableLinkedInImage(post);
+  const jobPatch = {
+    target: normalizedTarget,
+    language: normalizedLanguage,
+    commentary: finalCommentary,
+    customCommentary,
+    includeImage: normalizedIncludeImage,
+    origin: publicOrigin,
+    account: connection.profile,
+    scheduledAt: scheduleDate,
+    scheduledTimeZone: normalizedTimeZone,
+    updatedAt: now,
+    updatedBy: user?.email || null,
+  };
+  const updatedJob = await getShareJobsCollection(db).findOneAndUpdate(
+    {_id: normalizedJobId, postId: post.id, status: "scheduled"},
+    {$set: jobPatch},
+    {returnDocument: "after"},
+  );
+  const nextJob = updatedJob?.value || updatedJob;
+
+  if (!nextJob) {
+    throw new LinkedInIntegrationError(
+      "This scheduled LinkedIn share is already being processed.",
+      409,
+    );
+  }
+
+  await updatePostLinkedInShareSchedule(post.id, normalizedJobId, {
+    target: normalizedTarget,
+    language: normalizedLanguage,
+    commentary: customCommentary,
+    includeImage: normalizedIncludeImage,
+    account: connection.profile,
+    scheduledAt: scheduleDate,
+    scheduledTimeZone: normalizedTimeZone,
+    updatedAt: now,
+    updatedBy: user?.email || null,
+    failure: "",
+  });
+
+  const updatedPost = await getAdminPostById(post.id);
+
+  return {
+    scheduled: true,
+    updated: true,
+    post: updatedPost,
+    linkedin: {
+      jobId: normalizedJobId,
+      target: normalizedTarget,
+      language: normalizedLanguage,
+      scheduledAt: scheduleDate.toISOString(),
+      scheduledTimeZone: normalizedTimeZone,
+      commentary: finalCommentary,
+      customCommentary,
+      includeImage: normalizedIncludeImage,
+    },
+  };
+}
+
+export async function cancelScheduledPostToLinkedIn({jobId, postId, user}) {
+  const normalizedJobId = normalizeScheduledJobId(jobId);
+  const post = await getAdminPostById(postId);
+
+  if (!post) {
+    throw new LinkedInIntegrationError("Post not found.", 404);
+  }
+
+  const db = await getDb();
+  await ensureShareJobsIndexes(db);
+
+  const existingJob = await getShareJobsCollection(db).findOne({
+    _id: normalizedJobId,
+    postId: post.id,
+  });
+
+  if (!existingJob) {
+    throw new LinkedInIntegrationError("Scheduled LinkedIn share not found.", 404);
+  }
+
+  if (existingJob.status !== "scheduled") {
+    throw new LinkedInIntegrationError(
+      "Only pending scheduled LinkedIn shares can be canceled.",
+      409,
+    );
+  }
+
+  const now = new Date();
+  const result = await getShareJobsCollection(db).findOneAndUpdate(
+    {_id: normalizedJobId, postId: post.id, status: "scheduled"},
+    {
+      $set: {
+        canceledAt: now,
+        canceledBy: user?.email || null,
+        status: "canceled",
+        updatedAt: now,
+      },
+    },
+    {returnDocument: "after"},
+  );
+  const canceledJob = result?.value || result;
+
+  if (!canceledJob) {
+    throw new LinkedInIntegrationError(
+      "This scheduled LinkedIn share is already being processed.",
+      409,
+    );
+  }
+
+  await updatePostLinkedInShareSchedule(post.id, normalizedJobId, {
+    canceledAt: now,
+    canceledBy: user?.email || null,
+    failure: "",
+    status: "canceled",
+    updatedAt: now,
+    updatedBy: user?.email || null,
+  });
+
+  const updatedPost = await getAdminPostById(post.id);
+
+  return {
+    canceled: true,
+    post: updatedPost,
+    linkedin: {
+      canceledAt: now.toISOString(),
+      jobId: normalizedJobId,
+      status: "canceled",
     },
   };
 }
@@ -1010,6 +1266,13 @@ export async function publishDueLinkedInShares({limit = 5} = {}) {
     if (!claimedJob) continue;
 
     try {
+      await updatePostLinkedInShareSchedule(claimedJob.postId, claimedJob._id, {
+        status: "processing",
+        processingStartedAt: claimedJob.processingStartedAt || new Date(),
+        failure: "",
+        updatedAt: claimedJob.processingStartedAt || new Date(),
+      });
+
       const result = await publishPostToLinkedIn({
         commentary: claimedJob.commentary,
         includeImage: claimedJob.includeImage === true,
@@ -1037,8 +1300,12 @@ export async function publishDueLinkedInShares({limit = 5} = {}) {
       );
       await updatePostLinkedInShareSchedule(claimedJob.postId, claimedJob._id, {
         status: "published",
+        processingStartedAt: claimedJob.processingStartedAt || now,
         publishedAt: now,
+        linkedInPostUrn: result.linkedin.postUrn,
+        linkedInPostUrl: result.linkedin.postUrl,
         failure: "",
+        updatedAt: now,
       });
       results.push({jobId: claimedJob._id, status: "published"});
     } catch (error) {
@@ -1058,8 +1325,10 @@ export async function publishDueLinkedInShares({limit = 5} = {}) {
       );
       await updatePostLinkedInShareSchedule(claimedJob.postId, claimedJob._id, {
         status: "failed",
+        processingStartedAt: claimedJob.processingStartedAt || now,
         failedAt: now,
         failure,
+        updatedAt: now,
       });
       results.push({jobId: claimedJob._id, status: "failed", error: failure});
     }
