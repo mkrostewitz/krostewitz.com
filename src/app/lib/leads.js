@@ -3,6 +3,11 @@ import "server-only";
 import crypto from "crypto";
 import {ObjectId} from "mongodb";
 
+import {FALLBACK_LANGUAGE} from "../../lib/languageDetection";
+import {
+  getSupportedSiteLanguage,
+  LANGUAGE_COOKIE_NAME,
+} from "../../lib/siteLanguages";
 import {getDb} from "./mongo";
 import {normalizeCvLanguage} from "./cvFiles";
 
@@ -80,6 +85,38 @@ function normalizeEmail(value) {
   return String(value || "")
     .trim()
     .toLowerCase();
+}
+
+function languageFromAcceptLanguage(value) {
+  const headerValue = String(value || "");
+
+  for (const part of headerValue.split(",")) {
+    const language = getSupportedSiteLanguage(part.split(";")[0]);
+    if (language) return language;
+  }
+
+  return null;
+}
+
+function getPreferredLeadLanguage(input = {}, request, sourceType) {
+  const explicitLanguage = getSupportedSiteLanguage(
+    input.language || input.locale
+  );
+  if (explicitLanguage) return explicitLanguage;
+
+  const cvLanguage =
+    sourceType === "cv_download" ? getSupportedSiteLanguage(input.cvLanguage) : null;
+  if (cvLanguage) return cvLanguage;
+
+  const cookieLanguage = getSupportedSiteLanguage(
+    request?.cookies?.get?.(LANGUAGE_COOKIE_NAME)?.value
+  );
+  if (cookieLanguage) return cookieLanguage;
+
+  return (
+    languageFromAcceptLanguage(request?.headers?.get?.("accept-language")) ||
+    FALLBACK_LANGUAGE
+  );
 }
 
 function isObjectId(value) {
@@ -281,13 +318,14 @@ function getRequestTracking(request, input = {}) {
   };
 }
 
-function normalizeLeadInput(input = {}) {
+function normalizeLeadInput(input = {}, request) {
   const sourceType = normalizeSourceType(input.sourceType);
   const name = cleanText(input.name, 160);
   const email = normalizeEmail(input.email);
   const requestType = normalizeRequestType(input.requestType, sourceType);
   const phone = normalizePhone(input.phone, sourceType === "cv_download");
   const message = cleanText(input.message, 4000);
+  const language = getPreferredLeadLanguage(input, request, sourceType);
 
   if (!name || !email) {
     throw new LeadValidationError(
@@ -323,6 +361,7 @@ function normalizeLeadInput(input = {}) {
   }
 
   return {
+    language,
     contact: {name, email, phone},
     request: {type: requestType, message},
     source: {
@@ -400,6 +439,13 @@ export function serializeLead(document) {
     name: contact.name || document.name || "",
     email: contact.email || document.email || "",
     phone: contact.phone || document.phone || "",
+    language:
+      getSupportedSiteLanguage(
+        document.language ||
+          source.context?.language ||
+          source.context?.cvLanguage ||
+          document.tracking?.language
+      ) || FALLBACK_LANGUAGE,
     requestType: request.type || document.requestType || "general",
     message: request.message || document.message || "",
     source: {
@@ -424,7 +470,7 @@ export async function createPendingLead(input, request) {
   const db = await getDb();
   await ensureLeadIndexes(db);
 
-  const normalized = normalizeLeadInput(input);
+  const normalized = normalizeLeadInput(input, request);
   const now = new Date();
   const verificationCode = crypto.randomInt(100000, 999999).toString();
   const document = {

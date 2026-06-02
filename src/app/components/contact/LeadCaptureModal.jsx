@@ -45,7 +45,7 @@ export default function LeadCaptureModal({
   onVerified,
   sourceType = "contact_form",
 }) {
-  const {t} = useTranslation();
+  const {i18n, t} = useTranslation();
   const {closeSnackbar, showSnackbar} = useSnackbar();
   const [phase, setPhase] = useState("form");
   const [pendingEmail, setPendingEmail] = useState("");
@@ -192,6 +192,7 @@ export default function LeadCaptureModal({
                     ...values,
                     sourceType,
                     cvLanguage,
+                    language: i18n.resolvedLanguage || i18n.language || cvLanguage,
                     pageUrl: pageUrl(),
                   }),
                 });

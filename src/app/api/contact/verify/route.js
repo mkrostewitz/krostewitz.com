@@ -7,6 +7,8 @@ import {
   getDefaultSender,
 } from "../../../lib/mail";
 import {
+  getRequesterCopyEmailSubject,
+  getRequesterCopyEmailText,
   renderOwnerLeadNotificationEmail,
   renderRequesterCopyEmail,
 } from "../../../lib/emailTemplates";
@@ -20,26 +22,6 @@ function getRequestSummaryLines(lead) {
     `Name: ${lead.name}`,
     `Email: ${lead.email}`,
     lead.phone ? `Phone: ${lead.phone}` : "",
-    lead.message ? `Message:\n${lead.message}` : "",
-  ].filter(Boolean);
-}
-
-function formatRequestType(value) {
-  return String(value || "")
-    .split(/[_-]/)
-    .filter(Boolean)
-    .map((word) => `${word.charAt(0).toUpperCase()}${word.slice(1)}`)
-    .join(" ");
-}
-
-function getRequesterSummaryLines(lead) {
-  const isCvRequest = lead.source.type === "cv_download";
-
-  return [
-    `Name: ${lead.name}`,
-    `Email: ${lead.email}`,
-    lead.phone ? `Phone: ${lead.phone}` : "",
-    isCvRequest ? `Request type: ${formatRequestType(lead.requestType)}` : "",
     lead.message ? `Message:\n${lead.message}` : "",
   ].filter(Boolean);
 }
@@ -58,27 +40,6 @@ function getOwnerNotificationText(lead) {
     `Page: ${tracking.pageUrl || tracking.referrer || "Unknown"}`,
     `User agent: ${tracking.userAgent || "Unknown"}`,
   ].join("\n");
-}
-
-function getRequesterCopyText(lead, downloadUrl) {
-  const isCvRequest = lead.source.type === "cv_download";
-
-  return [
-    `Hi ${lead.name || "there"},`,
-    "",
-    `Your ${isCvRequest ? "CV access request" : "contact request"} has been confirmed and received.`,
-    "Here is a copy of the details you submitted:",
-    "",
-    ...getRequesterSummaryLines(lead),
-    downloadUrl ? "" : null,
-    downloadUrl ? `CV download: ${downloadUrl}` : null,
-    "",
-    isCvRequest
-      ? "If anything needs to be corrected, please reply to this email."
-      : "I will review your message and reply shortly.",
-  ]
-    .filter((line) => line !== null)
-    .join("\n");
 }
 
 export async function POST(request) {
@@ -138,11 +99,12 @@ export async function POST(request) {
   const requesterCopyMailOptions = {
     from,
     to: lead.email,
-    subject: isCvRequest
-      ? "Copy of your CV access request"
-      : "Copy of your contact request",
+    subject: await getRequesterCopyEmailSubject(lead),
     replyTo: APPLE_MAIL_TO || APPLE_MAIL_USER,
-    text: getRequesterCopyText(lead, requesterDownloadUrl || downloadUrl),
+    text: await getRequesterCopyEmailText(
+      lead,
+      requesterDownloadUrl || downloadUrl
+    ),
     html: await renderRequesterCopyEmail({
       lead,
       origin,

@@ -497,6 +497,80 @@
       }
     }
   },
+  "email": {
+    "common": {
+      "verificationCode": "Verification code",
+      "greetingNamed": "Hi {{name}},",
+      "greetingGeneric": "Hi there,",
+      "fields": {
+        "source": "Source",
+        "requestType": "Request type",
+        "name": "Name",
+        "email": "Email",
+        "phone": "Phone",
+        "message": "Message"
+      },
+      "sources": {
+        "contact_form": "Contact form",
+        "cv_download": "CV download"
+      },
+      "requestTypes": {
+        "general": "General",
+        "headhunter": "Headhunter",
+        "employer": "Employer",
+        "potential_client": "Potential client",
+        "fan": "Fan",
+        "other": "Other"
+      }
+    },
+    "verification": {
+      "subject": {
+        "cv": "Verify your CV request",
+        "contact": "Verify your contact request"
+      },
+      "preheader": "Verification code: {{code}}",
+      "eyebrow": "Verification",
+      "title": {
+        "cv": "Confirm your CV access request",
+        "contact": "Confirm your message"
+      },
+      "instruction": {
+        "cv": "Please confirm your email to access the CV download.",
+        "contact": "Please confirm your email to send your message."
+      },
+      "footer": "This code confirms that the request came from your email address. If you did not request this, you can ignore this email."
+    },
+    "requesterCopy": {
+      "subject": {
+        "cv": "Copy of your CV access request",
+        "contact": "Copy of your contact request"
+      },
+      "preheader": {
+        "cv": "Your CV access request has been confirmed.",
+        "contact": "Your contact request has been confirmed."
+      },
+      "eyebrow": "Request received",
+      "title": {
+        "cv": "Your CV access request is confirmed",
+        "contact": "Message received"
+      },
+      "confirmed": {
+        "cv": "Your CV access request has been confirmed and received.",
+        "contact": "Your contact request has been confirmed and received."
+      },
+      "nextStep": {
+        "cv": "You can use the secure download link below. It is personal to your verified request.",
+        "contact": "I will review your message and reply shortly."
+      },
+      "cta": "Download CV",
+      "submittedDetails": "Here is a copy of the details you submitted:",
+      "downloadLabel": "CV download",
+      "footer": {
+        "cv": "If anything needs to be corrected, please reply to this email.",
+        "contact": "This is a copy of the details you submitted."
+      }
+    }
+  },
   "notFound": {
     "metaTitle": "Page not found",
     "eyebrow": "404 / Not found",

@@ -498,6 +498,80 @@
       }
     }
   },
+  "email": {
+    "common": {
+      "verificationCode": "Bestätigungscode",
+      "greetingNamed": "Hallo {{name}},",
+      "greetingGeneric": "Hallo,",
+      "fields": {
+        "source": "Quelle",
+        "requestType": "Art der Anfrage",
+        "name": "Name",
+        "email": "E-Mail",
+        "phone": "Telefon",
+        "message": "Nachricht"
+      },
+      "sources": {
+        "contact_form": "Kontaktformular",
+        "cv_download": "Lebenslauf-Download"
+      },
+      "requestTypes": {
+        "general": "Allgemein",
+        "headhunter": "Headhunter",
+        "employer": "Arbeitgeber",
+        "potential_client": "Potenzieller Kunde",
+        "fan": "Fan",
+        "other": "Sonstiges"
+      }
+    },
+    "verification": {
+      "subject": {
+        "cv": "Lebenslauf-Anfrage bestätigen",
+        "contact": "Kontaktanfrage bestätigen"
+      },
+      "preheader": "Bestätigungscode: {{code}}",
+      "eyebrow": "Bestätigung",
+      "title": {
+        "cv": "Bestätigen Sie Ihre Anfrage zum Lebenslauf-Zugriff",
+        "contact": "Bestätigen Sie Ihre Nachricht"
+      },
+      "instruction": {
+        "cv": "Bitte bestätigen Sie Ihre E-Mail-Adresse, um den Lebenslauf herunterzuladen.",
+        "contact": "Bitte bestätigen Sie Ihre E-Mail-Adresse, damit Ihre Nachricht gesendet wird."
+      },
+      "footer": "Dieser Code bestätigt, dass die Anfrage von Ihrer E-Mail-Adresse stammt. Wenn Sie diese Anfrage nicht gestellt haben, können Sie diese E-Mail ignorieren."
+    },
+    "requesterCopy": {
+      "subject": {
+        "cv": "Kopie Ihrer Lebenslauf-Anfrage",
+        "contact": "Kopie Ihrer Kontaktanfrage"
+      },
+      "preheader": {
+        "cv": "Ihre Lebenslauf-Zugriffsanfrage wurde bestätigt.",
+        "contact": "Ihre Kontaktanfrage wurde bestätigt."
+      },
+      "eyebrow": "Anfrage erhalten",
+      "title": {
+        "cv": "Ihre Lebenslauf-Anfrage ist bestätigt",
+        "contact": "Nachricht erhalten"
+      },
+      "confirmed": {
+        "cv": "Ihre Lebenslauf-Zugriffsanfrage wurde bestätigt und empfangen.",
+        "contact": "Ihre Kontaktanfrage wurde bestätigt und empfangen."
+      },
+      "nextStep": {
+        "cv": "Sie können den sicheren Download-Link unten verwenden. Er ist Ihrer bestätigten Anfrage persönlich zugeordnet.",
+        "contact": "Ich prüfe Ihre Nachricht und melde mich zeitnah."
+      },
+      "cta": "Lebenslauf herunterladen",
+      "submittedDetails": "Hier ist eine Kopie der von Ihnen übermittelten Angaben:",
+      "downloadLabel": "Lebenslauf-Download",
+      "footer": {
+        "cv": "Falls etwas korrigiert werden muss, antworten Sie bitte auf diese E-Mail.",
+        "contact": "Dies ist eine Kopie der von Ihnen übermittelten Angaben."
+      }
+    }
+  },
   "notFound": {
     "metaTitle": "Seite nicht gefunden",
     "eyebrow": "404 / Nicht gefunden",

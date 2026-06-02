@@ -6,7 +6,11 @@ import {
   getAppleMailTransport,
   getDefaultSender,
 } from "../../lib/mail";
-import {renderLeadVerificationEmail} from "../../lib/emailTemplates";
+import {
+  getLeadVerificationEmailSubject,
+  getLeadVerificationEmailText,
+  renderLeadVerificationEmail,
+} from "../../lib/emailTemplates";
 import {createPendingLead, LeadValidationError} from "../../lib/leads";
 import {getRequestOrigin} from "../../lib/requestOrigin";
 
@@ -42,16 +46,11 @@ export async function POST(request) {
     );
   }
 
-  const isCvRequest = lead.source.type === "cv_download";
   const mailOptions = {
     from: getDefaultSender(),
     to: lead.email,
-    subject: isCvRequest ? "Verify your CV request" : "Verify your contact request",
-    text: `Hi ${
-      lead.name || "there"
-    },\n\nPlease confirm your email to ${
-      isCvRequest ? "access the CV download" : "send your message"
-    }:\n\nVerification code: ${verificationCode}\n\nIf you did not request this, you can ignore the email.`,
+    subject: await getLeadVerificationEmailSubject(lead),
+    text: await getLeadVerificationEmailText({lead, verificationCode}),
     html: await renderLeadVerificationEmail({
       lead,
       origin: getRequestOrigin(request),

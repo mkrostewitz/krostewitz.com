@@ -1,5 +1,9 @@
 import "server-only";
 
+import {FALLBACK_LANGUAGE} from "../../lib/languageDetection";
+import {getSupportedSiteLanguage} from "../../lib/siteLanguages";
+import {resources as bundledTranslationResources} from "../../lib/translationResources";
+import {getRuntimeTranslationResources} from "./siteContent";
 import {getDefaultSiteMetadata, getSiteMetadata} from "./siteProfile";
 
 const THEME = {
@@ -17,13 +21,28 @@ const THEME = {
   accentSoft: "rgba(142, 162, 255, 0.14)",
 };
 
-const REQUEST_TYPE_LABELS = {
+const INTERNAL_REQUEST_TYPE_LABELS = {
   general: "General",
   headhunter: "Headhunter",
   employer: "Employer",
   potential_client: "Potential client",
   fan: "Fan",
   other: "Other",
+};
+
+const INTERNAL_EMAIL_COPY = {
+  fields: {
+    source: "Source",
+    requestType: "Request type",
+    name: "Name",
+    email: "Email",
+    phone: "Phone",
+    message: "Message",
+  },
+  sources: {
+    contact_form: "Contact form",
+    cv_download: "CV download",
+  },
 };
 
 function escapeHtml(value) {
@@ -41,6 +60,102 @@ function htmlText(value) {
 
 function cleanText(value) {
   return String(value || "").trim();
+}
+
+function getEmailLanguage(language) {
+  return getSupportedSiteLanguage(language) || FALLBACK_LANGUAGE;
+}
+
+function getLeadEmailLanguage(lead) {
+  return getEmailLanguage(
+    lead?.language ||
+      lead?.source?.context?.language ||
+      lead?.source?.context?.cvLanguage
+  );
+}
+
+function getPathValue(source, path) {
+  return String(path || "")
+    .split(".")
+    .filter(Boolean)
+    .reduce((current, part) => {
+      if (!current || typeof current !== "object") return undefined;
+      return current[part];
+    }, source);
+}
+
+function interpolate(value, variables = {}) {
+  return String(value || "").replace(
+    /\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g,
+    (match, key) =>
+      Object.prototype.hasOwnProperty.call(variables, key)
+        ? String(variables[key] ?? "")
+        : match
+  );
+}
+
+async function getEmailTranslationResources() {
+  try {
+    return await getRuntimeTranslationResources();
+  } catch {
+    return bundledTranslationResources;
+  }
+}
+
+function createTranslator(resourceSet, language) {
+  const emailLanguage = getEmailLanguage(language);
+  const primary =
+    resourceSet?.[emailLanguage]?.translation || {};
+  const bundledPrimary =
+    bundledTranslationResources[emailLanguage]?.translation || {};
+  const fallback =
+    resourceSet?.[FALLBACK_LANGUAGE]?.translation || {};
+  const bundledFallback =
+    bundledTranslationResources[FALLBACK_LANGUAGE]?.translation || {};
+
+  return {
+    language: emailLanguage,
+    t(key, variables = {}, fallbackValue = "") {
+      const value =
+        getPathValue(primary, key) ??
+        getPathValue(bundledPrimary, key) ??
+        getPathValue(fallback, key) ??
+        getPathValue(bundledFallback, key) ??
+        fallbackValue;
+
+      return typeof value === "string"
+        ? interpolate(value, variables)
+        : fallbackValue;
+    },
+  };
+}
+
+async function getEmailTranslator(language) {
+  const resourceSet = await getEmailTranslationResources();
+  return createTranslator(resourceSet, language);
+}
+
+function tEmail(translator, key, variables = {}, fallbackValue = "") {
+  return translator.t(`email.${key}`, variables, fallbackValue);
+}
+
+function getRequestVariant(lead) {
+  return lead.source?.type === "cv_download" ? "cv" : "contact";
+}
+
+function getGreeting(lead, translator) {
+  return cleanText(lead.name)
+    ? tEmail(translator, "common.greetingNamed", {name: lead.name}, `Hi ${lead.name},`)
+    : tEmail(translator, "common.greetingGeneric", {}, "Hi there,");
+}
+
+function getLocalizedRequestTypeLabel(value, translator) {
+  return tEmail(
+    translator,
+    `common.requestTypes.${value}`,
+    {},
+    INTERNAL_REQUEST_TYPE_LABELS[value] || cleanText(value) || "General"
+  );
 }
 
 function absoluteUrl(value, origin) {
@@ -88,12 +203,14 @@ function renderParagraphs(paragraphs = []) {
     .join("");
 }
 
-function renderCode(code) {
+function renderCode(code, label = "Verification code") {
   if (!code) return "";
 
   return `
     <div style="margin:24px 0 10px;padding:18px;border:1px solid ${THEME.borderStrong};border-radius:8px;background:${THEME.surfaceMuted};text-align:center;">
-      <div style="color:${THEME.textMuted};font-size:12px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;">Verification code</div>
+      <div style="color:${THEME.textMuted};font-size:12px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;">${escapeHtml(
+        label
+      )}</div>
       <div style="margin-top:8px;color:${THEME.foreground};font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:34px;font-weight:800;letter-spacing:6px;">${escapeHtml(
         code
       )}</div>
@@ -165,18 +282,21 @@ function renderSections(sections = []) {
 }
 
 export async function renderBrandedEmail({
+  language = FALLBACK_LANGUAGE,
   origin = "",
   preheader = "",
   eyebrow = "",
   title = "",
   paragraphs = [],
   code = "",
+  codeLabel = "Verification code",
   cta = null,
   details = [],
   sections = [],
   footer = "",
 }) {
   const brand = await getEmailBrand(origin);
+  const htmlLanguage = getEmailLanguage(language);
   const logo = brand.logoUrl
     ? `<img src="${escapeHtml(
         brand.logoUrl
@@ -188,7 +308,7 @@ export async function renderBrandedEmail({
       )}</div>`;
 
   return `<!doctype html>
-<html>
+<html lang="${escapeHtml(htmlLanguage)}">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -234,7 +354,7 @@ export async function renderBrandedEmail({
                   title
                 )}</h1>
                 ${renderParagraphs(paragraphs)}
-                ${renderCode(code)}
+                ${renderCode(code, codeLabel)}
                 ${renderCta(cta)}
                 ${renderDetails(details)}
                 ${renderSections(sections)}
@@ -256,21 +376,200 @@ export async function renderBrandedEmail({
 </html>`;
 }
 
-function formatRequestType(value) {
-  return REQUEST_TYPE_LABELS[value] || cleanText(value) || "General";
+function formatInternalRequestType(value) {
+  return INTERNAL_REQUEST_TYPE_LABELS[value] || cleanText(value) || "General";
 }
 
-function leadBaseDetails(lead, options = {}) {
+function internalLeadBaseDetails(lead, options = {}) {
+  const fields = INTERNAL_EMAIL_COPY.fields;
   const isCvRequest = lead.source?.type === "cv_download";
+  const sourceValue =
+    INTERNAL_EMAIL_COPY.sources[lead.source?.type] ||
+    lead.source?.label ||
+    lead.source?.type;
 
   return [
-    {label: "Source", value: lead.source?.label || lead.source?.type},
-    {label: "Request type", value: isCvRequest ? formatRequestType(lead.requestType) : lead.requestType},
-    {label: "Name", value: lead.name},
-    {label: "Email", value: lead.email},
-    {label: "Phone", value: lead.phone},
-    options.includeMessage ? {label: "Message", value: lead.message} : null,
+    {label: fields.source, value: sourceValue},
+    {
+      label: fields.requestType,
+      value: isCvRequest
+        ? formatInternalRequestType(lead.requestType)
+        : lead.requestType,
+    },
+    {label: fields.name, value: lead.name},
+    {label: fields.email, value: lead.email},
+    {label: fields.phone, value: lead.phone},
+    options.includeMessage ? {label: fields.message, value: lead.message} : null,
   ].filter(Boolean);
+}
+
+function localizedLeadBaseDetails(lead, translator, options = {}) {
+  const sourceType = lead.source?.type || "contact_form";
+  const sourceValue = tEmail(
+    translator,
+    `common.sources.${sourceType}`,
+    {},
+    lead.source?.label || sourceType
+  );
+
+  return [
+    {label: tEmail(translator, "common.fields.source", {}, "Source"), value: sourceValue},
+    {
+      label: tEmail(translator, "common.fields.requestType", {}, "Request type"),
+      value: getLocalizedRequestTypeLabel(lead.requestType, translator),
+    },
+    {label: tEmail(translator, "common.fields.name", {}, "Name"), value: lead.name},
+    {label: tEmail(translator, "common.fields.email", {}, "Email"), value: lead.email},
+    {label: tEmail(translator, "common.fields.phone", {}, "Phone"), value: lead.phone},
+    options.includeMessage
+      ? {
+          label: tEmail(translator, "common.fields.message", {}, "Message"),
+          value: lead.message,
+        }
+      : null,
+  ].filter(Boolean);
+}
+
+function requesterSummaryLines(lead, translator) {
+  const isCvRequest = lead.source?.type === "cv_download";
+  const fields = {
+    name: tEmail(translator, "common.fields.name", {}, "Name"),
+    email: tEmail(translator, "common.fields.email", {}, "Email"),
+    phone: tEmail(translator, "common.fields.phone", {}, "Phone"),
+    requestType: tEmail(
+      translator,
+      "common.fields.requestType",
+      {},
+      "Request type"
+    ),
+    message: tEmail(translator, "common.fields.message", {}, "Message"),
+  };
+
+  return [
+    `${fields.name}: ${lead.name}`,
+    `${fields.email}: ${lead.email}`,
+    lead.phone ? `${fields.phone}: ${lead.phone}` : "",
+    isCvRequest
+      ? `${fields.requestType}: ${getLocalizedRequestTypeLabel(
+          lead.requestType,
+          translator
+        )}`
+      : "",
+    lead.message ? `${fields.message}:\n${lead.message}` : "",
+  ].filter(Boolean);
+}
+
+export async function getLeadVerificationEmailSubject(lead) {
+  const translator = await getEmailTranslator(getLeadEmailLanguage(lead));
+  const variant = getRequestVariant(lead);
+
+  return tEmail(
+    translator,
+    `verification.subject.${variant}`,
+    {},
+    variant === "cv" ? "Verify your CV request" : "Verify your contact request"
+  );
+}
+
+export async function getLeadVerificationEmailText({lead, verificationCode}) {
+  const translator = await getEmailTranslator(getLeadEmailLanguage(lead));
+  const variant = getRequestVariant(lead);
+
+  return [
+    getGreeting(lead, translator),
+    "",
+    tEmail(
+      translator,
+      `verification.instruction.${variant}`,
+      {},
+      variant === "cv"
+        ? "Please confirm your email to access the CV download."
+        : "Please confirm your email to send your message."
+    ),
+    "",
+    `${tEmail(
+      translator,
+      "common.verificationCode",
+      {},
+      "Verification code"
+    )}: ${verificationCode}`,
+    "",
+    tEmail(
+      translator,
+      "verification.footer",
+      {},
+      "This code confirms that the request came from your email address. If you did not request this, you can ignore this email."
+    ),
+  ].join("\n");
+}
+
+export async function getRequesterCopyEmailSubject(lead) {
+  const translator = await getEmailTranslator(getLeadEmailLanguage(lead));
+  const variant = getRequestVariant(lead);
+
+  return tEmail(
+    translator,
+    `requesterCopy.subject.${variant}`,
+    {},
+    variant === "cv"
+      ? "Copy of your CV access request"
+      : "Copy of your contact request"
+  );
+}
+
+export async function getRequesterCopyEmailText(lead, downloadUrl) {
+  const translator = await getEmailTranslator(getLeadEmailLanguage(lead));
+  const variant = getRequestVariant(lead);
+
+  return [
+    getGreeting(lead, translator),
+    "",
+    tEmail(
+      translator,
+      `requesterCopy.confirmed.${variant}`,
+      {},
+      variant === "cv"
+        ? "Your CV access request has been confirmed and received."
+        : "Your contact request has been confirmed and received."
+    ),
+    tEmail(
+      translator,
+      `requesterCopy.nextStep.${variant}`,
+      {},
+      variant === "cv"
+        ? "You can use the secure download link below. It is personal to your verified request."
+        : "I will review your message and reply shortly."
+    ),
+    "",
+    tEmail(
+      translator,
+      "requesterCopy.submittedDetails",
+      {},
+      "Here is a copy of the details you submitted:"
+    ),
+    "",
+    ...requesterSummaryLines(lead, translator),
+    downloadUrl ? "" : null,
+    downloadUrl
+      ? `${tEmail(
+          translator,
+          "requesterCopy.downloadLabel",
+          {},
+          "CV download"
+        )}: ${downloadUrl}`
+      : null,
+    "",
+    tEmail(
+      translator,
+      `requesterCopy.footer.${variant}`,
+      {},
+      variant === "cv"
+        ? "If anything needs to be corrected, please reply to this email."
+        : "This is a copy of the details you submitted."
+    ),
+  ]
+    .filter((line) => line !== null)
+    .join("\n");
 }
 
 export async function renderLeadVerificationEmail({
@@ -278,22 +577,52 @@ export async function renderLeadVerificationEmail({
   origin,
   verificationCode,
 }) {
-  const isCvRequest = lead.source?.type === "cv_download";
+  const language = getLeadEmailLanguage(lead);
+  const translator = await getEmailTranslator(language);
+  const variant = getRequestVariant(lead);
 
   return renderBrandedEmail({
+    language,
     origin,
-    preheader: `Verification code: ${verificationCode}`,
-    eyebrow: "Verification",
-    title: isCvRequest ? "Confirm your CV access request" : "Confirm your message",
+    preheader: tEmail(
+      translator,
+      "verification.preheader",
+      {code: verificationCode},
+      `Verification code: ${verificationCode}`
+    ),
+    eyebrow: tEmail(translator, "verification.eyebrow", {}, "Verification"),
+    title: tEmail(
+      translator,
+      `verification.title.${variant}`,
+      {},
+      variant === "cv"
+        ? "Confirm your CV access request"
+        : "Confirm your message"
+    ),
     paragraphs: [
-      `Hi ${lead.name || "there"},`,
-      `Please confirm your email to ${
-        isCvRequest ? "access the CV download" : "send your message"
-      }.`,
+      getGreeting(lead, translator),
+      tEmail(
+        translator,
+        `verification.instruction.${variant}`,
+        {},
+        variant === "cv"
+          ? "Please confirm your email to access the CV download."
+          : "Please confirm your email to send your message."
+      ),
     ],
     code: verificationCode,
-    footer:
-      "This code confirms that the request came from your email address. If you did not request this, you can ignore this email.",
+    codeLabel: tEmail(
+      translator,
+      "common.verificationCode",
+      {},
+      "Verification code"
+    ),
+    footer: tEmail(
+      translator,
+      "verification.footer",
+      {},
+      "This code confirms that the request came from your email address. If you did not request this, you can ignore this email."
+    ),
   });
 }
 
@@ -314,7 +643,7 @@ export async function renderOwnerLeadNotificationEmail({lead, origin}) {
       "A verified lead was created from the website. Review the details below and manage the lead in the admin area.",
     ],
     cta: origin ? {href: `${origin}/admin/leads`, label: "Open leads"} : null,
-    details: leadBaseDetails(lead, {includeMessage: true}),
+    details: internalLeadBaseDetails(lead, {includeMessage: true}),
     sections: [
       {
         title: "Tracking",
@@ -332,29 +661,64 @@ export async function renderOwnerLeadNotificationEmail({lead, origin}) {
 }
 
 export async function renderRequesterCopyEmail({lead, origin, downloadUrl}) {
-  const isCvRequest = lead.source?.type === "cv_download";
+  const language = getLeadEmailLanguage(lead);
+  const translator = await getEmailTranslator(language);
+  const variant = getRequestVariant(lead);
 
   return renderBrandedEmail({
+    language,
     origin,
-    preheader: `Your ${
-      isCvRequest ? "CV access request" : "contact request"
-    } has been confirmed.`,
-    eyebrow: "Request received",
-    title: isCvRequest ? "Your CV access request is confirmed" : "Message received",
+    preheader: tEmail(
+      translator,
+      `requesterCopy.preheader.${variant}`,
+      {},
+      variant === "cv"
+        ? "Your CV access request has been confirmed."
+        : "Your contact request has been confirmed."
+    ),
+    eyebrow: tEmail(translator, "requesterCopy.eyebrow", {}, "Request received"),
+    title: tEmail(
+      translator,
+      `requesterCopy.title.${variant}`,
+      {},
+      variant === "cv"
+        ? "Your CV access request is confirmed"
+        : "Message received"
+    ),
     paragraphs: [
-      `Hi ${lead.name || "there"},`,
-      `Your ${
-        isCvRequest ? "CV access request" : "contact request"
-      } has been confirmed and received.`,
-      isCvRequest
-        ? "You can use the secure download link below. It is personal to your verified request."
-        : "I will review your message and reply shortly.",
+      getGreeting(lead, translator),
+      tEmail(
+        translator,
+        `requesterCopy.confirmed.${variant}`,
+        {},
+        variant === "cv"
+          ? "Your CV access request has been confirmed and received."
+          : "Your contact request has been confirmed and received."
+      ),
+      tEmail(
+        translator,
+        `requesterCopy.nextStep.${variant}`,
+        {},
+        variant === "cv"
+          ? "You can use the secure download link below. It is personal to your verified request."
+          : "I will review your message and reply shortly."
+      ),
     ],
-    cta: downloadUrl ? {href: downloadUrl, label: "Download CV"} : null,
-    details: leadBaseDetails(lead, {includeMessage: true}),
-    footer: isCvRequest
-      ? "If anything needs to be corrected, please reply to this email."
-      : "This is a copy of the details you submitted.",
+    cta: downloadUrl
+      ? {
+          href: downloadUrl,
+          label: tEmail(translator, "requesterCopy.cta", {}, "Download CV"),
+        }
+      : null,
+    details: localizedLeadBaseDetails(lead, translator, {includeMessage: true}),
+    footer: tEmail(
+      translator,
+      `requesterCopy.footer.${variant}`,
+      {},
+      variant === "cv"
+        ? "If anything needs to be corrected, please reply to this email."
+        : "This is a copy of the details you submitted."
+    ),
   });
 }
 
