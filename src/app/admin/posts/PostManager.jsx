@@ -340,11 +340,46 @@ function getShareImageStatus(post) {
 
 const SHARE_HISTORY_STATUS_LABELS = {
   canceled: "Canceled",
+  due: "Due",
   failed: "Failed",
   processing: "Processing",
   published: "Published",
   scheduled: "Scheduled",
 };
+
+async function loadPostManagerData() {
+  const [postsResponse, linkedinResponse] = await Promise.all([
+    fetch("/api/admin/posts", {cache: "no-store"}),
+    fetch("/api/admin/linkedin", {cache: "no-store"}),
+  ]);
+  const postsData = await postsResponse.json().catch(() => ({}));
+  const linkedinData = await linkedinResponse.json().catch(() => ({}));
+
+  if (!postsResponse.ok) {
+    throw new Error(postsData.error || "Unable to load posts.");
+  }
+
+  return {
+    integration: linkedinResponse.ok ? linkedinData.integration || {} : null,
+    posts: postsData.posts || [],
+  };
+}
+
+function getScheduleTime(entry) {
+  const time = entry?.scheduledAt ? new Date(entry.scheduledAt).getTime() : 0;
+
+  return Number.isFinite(time) ? time : 0;
+}
+
+function isScheduledShareDue(entry, now = Date.now()) {
+  const scheduleTime = getScheduleTime(entry);
+
+  return entry?.status === "scheduled" && scheduleTime > 0 && scheduleTime <= now;
+}
+
+function getShareHistoryDisplayStatus(entry) {
+  return isScheduledShareDue(entry) ? "due" : entry.status || "scheduled";
+}
 
 function getShareHistoryStatusTime(entry) {
   return (
@@ -360,6 +395,7 @@ function getShareHistoryStatusTime(entry) {
 }
 
 function getShareHistoryStatusClass(status) {
+  if (status === "due") return styles.shareHistoryStatusDue;
   if (status === "failed") return styles.shareHistoryStatusFailed;
   if (status === "published") return styles.shareHistoryStatusPublished;
   if (status === "canceled") return styles.shareHistoryStatusCanceled;
@@ -458,6 +494,7 @@ export default function PostManager({user}) {
   const [isLoading, setIsLoading] = useState(true);
   const [isDisconnectingLinkedin, setIsDisconnectingLinkedin] = useState(false);
   const [cancelingScheduleId, setCancelingScheduleId] = useState("");
+  const [isRunningScheduler, setIsRunningScheduler] = useState(false);
   const [sharingPostId, setSharingPostId] = useState("");
   const [pendingSharePost, setPendingSharePost] = useState(null);
   const [pendingShareSchedule, setPendingShareSchedule] = useState(null);
@@ -478,6 +515,23 @@ export default function PostManager({user}) {
     () => getLinkedInShareHistory(pendingSharePost).slice(0, 8),
     [pendingSharePost]
   );
+  const pendingShareHasDueSchedules = pendingShareHistory.some((entry) =>
+    isScheduledShareDue(entry)
+  );
+  const dueLinkedInScheduleCount = useMemo(
+    () =>
+      posts.reduce(
+        (count, post) =>
+          count +
+          (Array.isArray(post.linkedinShareSchedules)
+            ? post.linkedinShareSchedules.filter((schedule) =>
+                isScheduledShareDue(schedule)
+              ).length
+            : 0),
+        0
+      ),
+    [posts]
+  );
 
   const counts = useMemo(
     () =>
@@ -496,23 +550,14 @@ export default function PostManager({user}) {
 
     async function loadPosts() {
       try {
-        const [postsResponse, linkedinResponse] = await Promise.all([
-          fetch("/api/admin/posts", {cache: "no-store"}),
-          fetch("/api/admin/linkedin", {cache: "no-store"}),
-        ]);
-        const postsData = await postsResponse.json().catch(() => ({}));
-        const linkedinData = await linkedinResponse.json().catch(() => ({}));
-
-        if (!postsResponse.ok) {
-          throw new Error(postsData.error || "Unable to load posts.");
-        }
+        const data = await loadPostManagerData();
 
         if (!cancelled) {
-          setPosts(postsData.posts || []);
-          if (linkedinResponse.ok) {
+          setPosts(data.posts);
+          if (data.integration) {
             setLinkedin((current) => ({
               ...current,
-              ...(linkedinData.integration || {}),
+              ...data.integration,
             }));
           }
           closeSnackbar();
@@ -534,6 +579,24 @@ export default function PostManager({user}) {
       cancelled = true;
     };
   }, [closeSnackbar, showSnackbar]);
+
+  async function refreshPostManagerData(activePostId = "") {
+    const data = await loadPostManagerData();
+
+    setPosts(data.posts);
+    if (data.integration) {
+      setLinkedin((current) => ({
+        ...current,
+        ...data.integration,
+      }));
+    }
+    if (activePostId) {
+      const updatedPost = data.posts.find((post) => post.id === activePostId);
+      if (updatedPost) {
+        setPendingSharePost(updatedPost);
+      }
+    }
+  }
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -588,6 +651,58 @@ export default function PostManager({user}) {
       showSnackbar({type: "error", message: error.message});
     } finally {
       setIsDisconnectingLinkedin(false);
+    }
+  }
+
+  async function runDueLinkedInShares() {
+    setIsRunningScheduler(true);
+    closeSnackbar();
+
+    try {
+      const response = await fetch("/api/admin/linkedin/scheduled", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({limit: 5}),
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || "Unable to run LinkedIn scheduler.");
+      }
+
+      const results = Array.isArray(data.results) ? data.results : [];
+      const publishedCount = results.filter(
+        (result) => result.status === "published"
+      ).length;
+      const failedResults = results.filter((result) => result.status === "failed");
+      const firstFailure = failedResults[0]?.error || "";
+
+      await refreshPostManagerData(pendingSharePost?.id || "");
+
+      if (Number(data.checked) === 0) {
+        showSnackbar({
+          type: "success",
+          message: "No due LinkedIn scheduled shares were found.",
+        });
+      } else if (failedResults.length > 0) {
+        showSnackbar({
+          type: "error",
+          message: firstFailure
+            ? `LinkedIn scheduler published ${publishedCount} and failed ${failedResults.length}: ${firstFailure}`
+            : `LinkedIn scheduler published ${publishedCount} and failed ${failedResults.length}.`,
+        });
+      } else {
+        showSnackbar({
+          type: "success",
+          message: `LinkedIn scheduler published ${publishedCount} due share${
+            publishedCount === 1 ? "" : "s"
+          }.`,
+        });
+      }
+    } catch (error) {
+      showSnackbar({type: "error", message: error.message});
+    } finally {
+      setIsRunningScheduler(false);
     }
   }
 
@@ -877,6 +992,13 @@ export default function PostManager({user}) {
                         )}`}
                   </span>
                 )}
+                {linkedin.schedulerConfigured && dueLinkedInScheduleCount > 0 && (
+                  <span>
+                    {dueLinkedInScheduleCount} scheduled LinkedIn share
+                    {dueLinkedInScheduleCount === 1 ? " is" : "s are"} due.
+                    Run the scheduler to publish or reveal the failure reason.
+                  </span>
+                )}
               </div>
 
               <div className={styles.buttonRow}>
@@ -898,6 +1020,24 @@ export default function PostManager({user}) {
                     onClick={disconnectLinkedIn}
                   >
                     {isDisconnectingLinkedin ? "Disconnecting..." : "Disconnect"}
+                  </button>
+                )}
+                {linkedin.schedulerConfigured && (
+                  <button
+                    className={styles.secondaryButton}
+                    disabled={
+                      isRunningScheduler ||
+                      !linkedin.connected ||
+                      linkedin.needsReconnect
+                    }
+                    type="button"
+                    onClick={runDueLinkedInShares}
+                  >
+                    {isRunningScheduler
+                      ? "Running..."
+                      : dueLinkedInScheduleCount > 0
+                      ? `Run due shares (${dueLinkedInScheduleCount})`
+                      : "Check due shares"}
                   </button>
                 )}
               </div>
@@ -937,17 +1077,22 @@ export default function PostManager({user}) {
                 const editHref = `/admin/posts/${post.id}`;
                 const latestLinkedInShare = post.linkedinShares?.[0];
                 const latestLinkedInHistory = getLinkedInShareHistory(post)[0];
+                const dueLinkedInSchedule = post.linkedinShareSchedules?.find(
+                  (schedule) => isScheduledShareDue(schedule)
+                );
                 const nextLinkedInSchedule = post.linkedinShareSchedules?.find(
                   (schedule) =>
                     schedule.status === "scheduled" &&
                     schedule.scheduledAt &&
                     new Date(schedule.scheduledAt).getTime() > Date.now()
                 );
-                const nextLinkedInScheduleId =
-                  nextLinkedInSchedule?.jobId || "";
+                const activeLinkedInSchedule =
+                  dueLinkedInSchedule || nextLinkedInSchedule;
+                const activeLinkedInScheduleId =
+                  activeLinkedInSchedule?.jobId || "";
                 const isCancelingSchedule =
-                  nextLinkedInScheduleId &&
-                  cancelingScheduleId === nextLinkedInScheduleId;
+                  activeLinkedInScheduleId &&
+                  cancelingScheduleId === activeLinkedInScheduleId;
                 const canShareToLinkedIn =
                   linkedin.connected &&
                   !linkedin.needsReconnect &&
@@ -1026,13 +1171,15 @@ export default function PostManager({user}) {
                           )}
                         </span>
                       )}
-                      {nextLinkedInSchedule?.scheduledAt && (
+                      {activeLinkedInSchedule?.scheduledAt && (
                         <>
                           <span className={styles.postListShareMeta}>
-                            Admin scheduled{" "}
+                            {dueLinkedInSchedule
+                              ? "LinkedIn due since"
+                              : "Admin scheduled"}{" "}
                             {formatDateTime(
-                              nextLinkedInSchedule.scheduledAt,
-                              nextLinkedInSchedule.scheduledTimeZone
+                              activeLinkedInSchedule.scheduledAt,
+                              activeLinkedInSchedule.scheduledTimeZone
                             )}
                           </span>
                           <button
@@ -1043,7 +1190,7 @@ export default function PostManager({user}) {
                             }
                             type="button"
                             onClick={() =>
-                              openShareDialog(post, nextLinkedInSchedule)
+                              openShareDialog(post, activeLinkedInSchedule)
                             }
                           >
                             Edit schedule
@@ -1058,7 +1205,7 @@ export default function PostManager({user}) {
                             onClick={() =>
                               cancelLinkedInSchedule(
                                 post,
-                                nextLinkedInSchedule
+                                activeLinkedInSchedule
                               )
                             }
                           >
@@ -1347,16 +1494,28 @@ export default function PostManager({user}) {
             <section className={styles.shareHistoryPanel}>
               <div className={styles.fieldHeader}>
                 <span className={styles.fieldLabel}>Sharing history</span>
-                <span className={styles.muted}>
-                  {pendingShareHistory.length} event
-                  {pendingShareHistory.length === 1 ? "" : "s"}
-                </span>
+                <div className={styles.shareHistoryHeaderActions}>
+                  {pendingShareHasDueSchedules && (
+                    <button
+                      className={styles.secondaryButton}
+                      disabled={isRunningScheduler || Boolean(sharingPostId)}
+                      type="button"
+                      onClick={runDueLinkedInShares}
+                    >
+                      {isRunningScheduler ? "Running..." : "Run due shares"}
+                    </button>
+                  )}
+                  <span className={styles.muted}>
+                    {pendingShareHistory.length} event
+                    {pendingShareHistory.length === 1 ? "" : "s"}
+                  </span>
+                </div>
               </div>
 
               {pendingShareHistory.length > 0 ? (
                 <div className={styles.shareHistoryList}>
                   {pendingShareHistory.map((entry) => {
-                    const status = entry.status || "scheduled";
+                    const status = getShareHistoryDisplayStatus(entry);
                     const statusTime = getShareHistoryStatusTime(entry);
                     const statusLabel =
                       SHARE_HISTORY_STATUS_LABELS[status] || status;
@@ -1375,7 +1534,9 @@ export default function PostManager({user}) {
                         </div>
                         <div className={styles.shareHistoryMeta}>
                           <span>
-                            {status === "scheduled"
+                            {status === "due"
+                              ? "Due since"
+                              : status === "scheduled"
                               ? "Scheduled for"
                               : status === "processing"
                               ? "Attempted"
@@ -1432,7 +1593,7 @@ export default function PostManager({user}) {
                             Open LinkedIn post
                           </Link>
                         )}
-                        {status === "scheduled" && entry.jobId && (
+                        {entry.status === "scheduled" && entry.jobId && (
                           <div className={styles.shareHistoryActions}>
                             <button
                               className={styles.secondaryButton}

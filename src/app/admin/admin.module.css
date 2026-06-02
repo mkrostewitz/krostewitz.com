@@ -856,6 +856,12 @@
   text-transform: uppercase;
 }
 
+.shareHistoryStatusDue {
+  border-color: rgba(245, 158, 11, 0.42);
+  background: rgba(245, 158, 11, 0.12);
+  color: #b45309;
+}
+
 .shareHistoryStatusPublished {
   border-color: rgba(34, 197, 94, 0.38);
   background: rgba(34, 197, 94, 0.1);
@@ -895,6 +901,14 @@
   font-weight: 800;
   line-height: 1.45;
   overflow-wrap: anywhere;
+}
+
+.shareHistoryHeaderActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
 }
 
 .shareHistoryActions {
