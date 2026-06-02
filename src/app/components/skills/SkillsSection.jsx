@@ -4,6 +4,7 @@ import mapboxgl from "mapbox-gl";
 
 import {useInViewOnce} from "@/lib/useInViewOnce";
 import pageStyles from "../../page.module.css";
+import {useCookieConsent} from "../consent/CookieConsent";
 import styles from "./skills-section.module.css";
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "";
@@ -69,6 +70,10 @@ const labelFeatures = {
 
 const SkillsSection = ({skills}) => {
   const {t} = useTranslation(undefined, {keyPrefix: "skills"});
+  const {t: tConsent} = useTranslation(undefined, {
+    keyPrefix: "cookieConsent",
+  });
+  const {allowExternalServices, openConsentSettings} = useCookieConsent();
   const [sectionRef, isInView] = useInViewOnce({
     threshold: 0.2,
     rootMargin: "0px 0px -5% 0px",
@@ -93,7 +98,9 @@ const SkillsSection = ({skills}) => {
   });
 
   useEffect(() => {
-    if (!mapInView || !token || !mapContainer.current) return;
+    if (!allowExternalServices || !mapInView || !token || !mapContainer.current) {
+      return;
+    }
     if (mapRef.current) return;
 
     mapRef.current = new mapboxgl.Map({
@@ -189,7 +196,7 @@ const SkillsSection = ({skills}) => {
         mapRef.current = null;
       }
     };
-  }, [mapInView, token]);
+  }, [allowExternalServices, mapInView, token]);
 
   return (
     <section id="skills" className={pageStyles.section} ref={sectionRef}>
@@ -264,7 +271,7 @@ const SkillsSection = ({skills}) => {
         </div>
 
         <div className={styles.mapShell}>
-          {token ? (
+          {token && allowExternalServices ? (
             <>
               <div ref={mapRefObserver}>
                 <div ref={mapContainer} className={styles.map} />
@@ -282,7 +289,16 @@ const SkillsSection = ({skills}) => {
             </>
           ) : (
             <div className={styles.mapFallback}>
-              <p>{t("map.missingToken")}</p>
+              <p>
+                {token
+                  ? tConsent("externalServicesBlocked")
+                  : t("map.missingToken")}
+              </p>
+              {token ? (
+                <button onClick={openConsentSettings} type="button">
+                  {tConsent("actions.manage")}
+                </button>
+              ) : null}
             </div>
           )}
         </div>

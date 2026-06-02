@@ -7,6 +7,7 @@ import {ChevronDown} from "lucide-react";
 import mapboxgl from "mapbox-gl";
 
 import pageStyles from "../../page.module.css";
+import {useCookieConsent} from "../consent/CookieConsent";
 import styles from "./personal-section.module.css";
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "";
@@ -660,6 +661,10 @@ function buildOpenMeteoUrl() {
 
 const PersonalSection = () => {
   const {t, i18n} = useTranslation(undefined, {keyPrefix: "personal"});
+  const {t: tConsent} = useTranslation(undefined, {
+    keyPrefix: "cookieConsent",
+  });
+  const {allowExternalServices, openConsentSettings} = useCookieConsent();
   const canvasRef = useRef(null);
   const windMapDragRef = useRef({
     active: false,
@@ -710,6 +715,7 @@ const PersonalSection = () => {
   const temperature = station?.temperature;
   const weatherCode = station?.weatherCode;
   const waterTemperature = waterTemperatureReport.data?.value;
+  const externalDataStatus = allowExternalServices ? windReport.status : "blocked";
   const cloudCoverValue = cloudCover == null ? "--" : `${Math.round(cloudCover)}%`;
   const pressureValue = pressure == null ? "--" : `${Math.round(pressure)} hPa`;
   const temperatureValue = temperature == null ? "--" : `${temperature.toFixed(1)} °C`;
@@ -1044,6 +1050,16 @@ const PersonalSection = () => {
   );
 
   useEffect(() => {
+    if (!allowExternalServices) {
+      setWindReport({
+        error: null,
+        points: [],
+        station: null,
+        status: "blocked",
+      });
+      return undefined;
+    }
+
     const controller = new AbortController();
     let active = true;
 
@@ -1118,9 +1134,17 @@ const PersonalSection = () => {
       controller.abort();
       window.clearInterval(interval);
     };
-  }, []);
+  }, [allowExternalServices]);
 
   useEffect(() => {
+    if (!allowExternalServices) {
+      setWaterTemperatureReport({
+        data: null,
+        status: "blocked",
+      });
+      return undefined;
+    }
+
     const controller = new AbortController();
     let active = true;
 
@@ -1170,18 +1194,27 @@ const PersonalSection = () => {
       controller.abort();
       window.clearInterval(interval);
     };
-  }, []);
+  }, [allowExternalServices]);
 
   useEffect(() => {
+    if (!allowExternalServices) return undefined;
+
     const interval = window.setInterval(() => {
       setWebcamTick(Date.now());
     }, WEBCAM_REFRESH_MS);
 
     return () => window.clearInterval(interval);
-  }, []);
+  }, [allowExternalServices]);
 
   useEffect(() => {
-    if (!mapboxToken || !mapContainerRef.current || mapRef.current) return undefined;
+    if (
+      !allowExternalServices ||
+      !mapboxToken ||
+      !mapContainerRef.current ||
+      mapRef.current
+    ) {
+      return undefined;
+    }
 
     mapboxgl.accessToken = mapboxToken;
 
@@ -1216,7 +1249,7 @@ const PersonalSection = () => {
       mapRef.current = null;
       setWindMapReady(false);
     };
-  }, [mapboxToken]);
+  }, [allowExternalServices, mapboxToken]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -1374,11 +1407,14 @@ const PersonalSection = () => {
             <h3>{t("sailing.title")}</h3>
             <p>{t("sailing.subtitle", {location: stationName})}</p>
           </div>
-          <div className={styles.dataStatus} data-state={windReport.status}>
-            {windReport.status === "loading" && t("sailing.loading")}
-            {windReport.status === "error" && t("sailing.error")}
-            {windReport.status !== "loading" &&
-              windReport.status !== "error" &&
+          <div className={styles.dataStatus} data-state={externalDataStatus}>
+            {externalDataStatus === "blocked" &&
+              tConsent("externalServicesBlockedShort")}
+            {externalDataStatus === "loading" && t("sailing.loading")}
+            {externalDataStatus === "error" && t("sailing.error")}
+            {externalDataStatus !== "blocked" &&
+              externalDataStatus !== "loading" &&
+              externalDataStatus !== "error" &&
               updatedLabel &&
               t("sailing.updated", {time: updatedLabel})}
           </div>
@@ -1486,7 +1522,7 @@ const PersonalSection = () => {
               </div>
             </div>
             <div className={styles.windMapFrame}>
-              {mapboxToken && (
+              {mapboxToken && allowExternalServices && (
                 <div
                   ref={mapContainerRef}
                   className={styles.windMapBackground}
@@ -1502,6 +1538,14 @@ const PersonalSection = () => {
                 onPointerMove={handleWindMapPointerMove}
                 onPointerUp={handleWindMapPointerUp}
               />
+              {!allowExternalServices && (
+                <div className={styles.consentNotice}>
+                  <p>{tConsent("externalServicesBlocked")}</p>
+                  <button onClick={openConsentSettings} type="button">
+                    {tConsent("actions.manage")}
+                  </button>
+                </div>
+              )}
               {windMapHover && (
                 <div
                   className={styles.windMapTooltip}
@@ -1759,7 +1803,14 @@ const PersonalSection = () => {
           </div>
         </div>
         <div className={styles.webcamFrame}>
-          {webcamAvailable ? (
+          {!allowExternalServices ? (
+            <div className={styles.webcamFallback}>
+              <p>{tConsent("externalServicesBlocked")}</p>
+              <button onClick={openConsentSettings} type="button">
+                {tConsent("actions.manage")}
+              </button>
+            </div>
+          ) : webcamAvailable ? (
             <Image
               src={webcamSrc}
               alt={t("sailing.webcamTitle")}

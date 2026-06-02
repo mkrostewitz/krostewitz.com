@@ -516,7 +516,36 @@
   "footer": {
     "legalLabel": "Rechtliche Links",
     "impressum": "Impressum",
-    "privacy": "Datenschutzerklärung"
+    "privacy": "Datenschutzerklärung",
+    "privacySettings": "Datenschutzeinstellungen"
+  },
+  "cookieConsent": {
+    "eyebrow": "Datenschutzauswahl",
+    "title": "Datenschutzeinstellungen",
+    "intro": "Erforderliche Einstellungen halten die Website funktionsfähig und merken sich Entscheidungen wie Sprache, Design und diese Datenschutzauswahl. Optionale Extras können Sie erlauben; wenn sie aktiv sind, können sie beim Browsen automatisch laden.",
+    "alwaysActive": "Immer aktiv",
+    "privacyLink": "Datenschutzerklärung",
+    "externalServicesBlocked": "Optionale eingebettete Inhalte sind deaktiviert. Aktivieren Sie sie, um Karten, Live-Daten und Medienvorschauen zu laden.",
+    "externalServicesBlockedShort": "Optionale Inhalte aus",
+    "actions": {
+      "save": "Auswahl speichern",
+      "close": "Schließen",
+      "manage": "Datenschutzeinstellungen"
+    },
+    "categories": {
+      "necessary": {
+        "title": "Erforderliche Website-Funktionen",
+        "description": "Nötig für Sicherheit, Formulare, Downloads, Anmeldung und von Ihnen gewählte Einstellungen."
+      },
+      "analytics": {
+        "title": "Nutzungsstatistik",
+        "description": "Hilft zu verstehen, welche Seiten und Bereiche genutzt werden, damit die Website verbessert werden kann. Namen, Kontaktdaten, Nachrichten, CV-Anfragen und Admin-Daten werden nicht an diesen Dienst gesendet."
+      },
+      "externalServices": {
+        "title": "Eingebettete Inhalte und Live-Daten",
+        "description": "Erlaubt Karten, Live-Informationen, Medienvorschauen und automatische Sprachvorschläge. Namen, Kontaktdaten, Nachrichten, CV-Anfragen und Admin-Daten werden nicht an diese Anbieter gesendet; sie können technische Browserdaten erhalten, die zum Laden der Inhalte nötig sind."
+      }
+    }
   },
   "legal": {
     "fields": {
@@ -558,7 +587,7 @@
       "eyebrow": "Datenschutz",
       "title": "Datenschutzerklärung",
       "lead": "Diese Datenschutzerklärung erklärt, wie {{siteName}} personenbezogene Daten verarbeitet, wenn Sie die Website besuchen, das Kontaktformular nutzen oder Drittanbieter-Funktionen zum Veröffentlichen verbinden.",
-      "updated": "Stand: 30. Mai 2026",
+      "updated": "Stand: 2. Juni 2026",
       "controller": {
         "title": "Verantwortlicher",
         "addressPending": "Adresse noch zu ergänzen"
@@ -579,19 +608,21 @@
       },
       "storage": {
         "title": "Local Storage, Cookies und Admin-Sitzungen",
-        "body": "Die öffentliche Website speichert Sprach- und Designpräferenzen im Browser, damit die gewählte Sprache und Darstellung erhalten bleiben. Admin-Bereiche verwenden sichere Session-Cookies für Authentifizierung und Kontoschutz."
+        "body": "Die öffentliche Website speichert notwendige Präferenzen im Browser, darunter manuell gewählte Sprach- und Designpräferenzen sowie die Datenschutzauswahl selbst. Admin-Bereiche verwenden sichere Session-Cookies für Authentifizierung und Kontoschutz. Optionale Kategorien können über den Link zu den Datenschutzeinstellungen im Footer akzeptiert, abgelehnt, geändert oder widerrufen werden."
       },
       "analytics": {
         "title": "Google Analytics",
         "paragraphs": [
-          "Diese Website verwendet Google Analytics, um die Nutzung der Website aggregiert auszuwerten und die Website zu verbessern. Google kann Geräte-, Browser-, Interaktions- und ungefähre Standortdaten nach eigenen Datenschutzbedingungen verarbeiten.",
-          "Sie können Tracking durch Datenschutzeinstellungen im Browser, Script-Blocker oder, soweit verfügbar, durch das Browser-Add-on von Google einschränken."
+          "Google Analytics wird nur geladen, wenn Sie in den Datenschutzeinstellungen in die Kategorie Analyse einwilligen. Es dient dazu, die aggregierte Nutzung auszuwerten und die öffentliche Website zu verbessern.",
+          "Die Website sendet keine Namen, Kontaktdaten, Nachrichten, CV-Anfragen oder Admin-Daten an Google Analytics. Wenn aktiviert, kann Google Geräte-, Browser-, Interaktions- und ungefähre Standortdaten nach eigenen Datenschutzbedingungen verarbeiten. Sie können Ihre Einwilligung jederzeit über den Link zu den Datenschutzeinstellungen im Footer widerrufen."
         ]
       },
       "external": {
         "title": "Karten, Wetter, Medien und externe Dienste",
         "paragraphs": [
-          "Einige öffentliche Bereiche laden Dienste oder Inhalte Dritter. Dazu können Mapbox-Karten, Open-Meteo-Wetterdaten, externe Webcam-Bilder, GitHub-Projektlinks, LinkedIn-Links/Teilen-URLs und Koalendar-Buchungslinks gehören. Wenn diese Dienste geladen oder geöffnet werden, kann der jeweilige Anbieter technische Daten wie IP-Adresse und Browserinformationen erhalten.",
+          "Einige öffentliche Bereiche können Dienste oder Inhalte Dritter laden. Das automatische Laden von Mapbox-Karten, Open-Meteo-Wetterdaten, externen Webcam-Bildern und länderbasierter Spracherkennung bleibt blockiert, bis Sie in optionale externe Dienste einwilligen. Wenn diese Dienste geladen werden, kann der jeweilige Anbieter technische Daten wie IP-Adresse und Browserinformationen erhalten.",
+          "Die Website sendet keine Namen, Kontaktdaten, Nachrichten, CV-Anfragen oder Admin-Daten an diese optionalen Anbieter eingebetteter Inhalte.",
+          "Ausgehende Links zu GitHub, LinkedIn, Koalendar, Webcam-Quellseiten oder ähnlichen Drittanbietern werden erst geöffnet, wenn Sie sie auswählen.",
           "Hochgeladene Beitragsmedien, Website-Assets und CV-Dateien können bei einem konfigurierten Objektspeicheranbieter gespeichert und über öffentliche Asset-URLs ausgeliefert werden."
         ]
       },
@@ -609,9 +640,9 @@
       "legalBases": {
         "title": "Rechtsgrundlagen",
         "items": [
-          "Art. 6 Abs. 1 lit. a DSGVO für einwilligungsbasierte Integrationen.",
+          "Art. 6 Abs. 1 lit. a DSGVO für einwilligungsbasierte Integrationen, optionale Analyse, externe Medien/Karten und automatische Spracherkennung.",
           "Art. 6 Abs. 1 lit. b DSGVO, wenn die Verarbeitung zur Beantwortung einer Anfrage oder zur Bereitstellung einer angefragten Funktion erforderlich ist.",
-          "Art. 6 Abs. 1 lit. f DSGVO für sicheren Betrieb, Missbrauchsprävention, Analyse und Verbesserung der Website.",
+          "Art. 6 Abs. 1 lit. f DSGVO für sicheren Betrieb, Missbrauchsprävention und Verbesserung der Website.",
           "Art. 6 Abs. 1 lit. c DSGVO, wenn eine gesetzliche Aufbewahrungspflicht besteht."
         ]
       },

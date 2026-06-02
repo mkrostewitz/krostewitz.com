@@ -69,6 +69,10 @@ LinkedIn admin sign-in:
 
 The public site calls `/api/language` on first load unless the visitor has manually selected a language. The route first reads platform country headers derived from the visitor IP, such as `x-vercel-ip-country`, `cf-ipcountry`, and `cloudfront-viewer-country`. If those are unavailable, it uses `IP_INFO_TOKEN` with IPinfo Lite to read the visitor country code from a forwarded public IP. German is shown for `AT`, `CH`, `DE`, `LI`, and `LU`; English is used for every other country or when detection is unavailable.
 
+## Privacy consent
+
+The public consent preference is stored in browser local storage. `NEXT_PUBLIC_CONSENT_STORAGE_KEY` can override the storage key; it defaults to `site-consent-preferences`.
+
 ## Site profile settings
 
 Public profile settings are managed in `/admin/profile` and stored in MongoDB under the `site_content` document `_id: "profile_settings"`. This includes first and last name, site metadata, blog visibility, the contact address, and the Koalendar booking integration. The Impressum and privacy pages use the saved profile name and address for provider/controller details. Missing Koalendar settings initialize as disabled with an empty booking URL, and public booking CTAs read only from the saved profile setting.

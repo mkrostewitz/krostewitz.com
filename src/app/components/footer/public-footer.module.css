@@ -26,15 +26,29 @@
   flex-wrap: wrap;
 }
 
-.links a {
+.links a,
+.links button {
+  appearance: none;
+  background: transparent;
+  border: 0;
   color: var(--text-secondary);
+  cursor: pointer;
+  font: inherit;
+  font-weight: inherit;
+  padding: 0;
   text-decoration: none;
 }
 
-.links a:hover {
+.links a:hover,
+.links button:hover {
   color: var(--foreground);
   text-decoration: underline;
   text-underline-offset: 4px;
+}
+
+.links button:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 3px;
 }
 
 @media (max-width: 640px) {

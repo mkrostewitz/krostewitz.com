@@ -1,8 +1,12 @@
 "use client";
 
 import mapboxgl from "mapbox-gl";
+import {usePathname} from "next/navigation";
 import {useEffect, useRef} from "react";
+import {useTranslation} from "react-i18next";
 
+import "../../../lib/i18n";
+import {useCookieConsent} from "../consent/CookieConsent";
 import styles from "./address-map.module.css";
 
 function getCoordinate(value) {
@@ -30,12 +34,17 @@ export default function AddressMap({
   styleUrl = "mapbox://styles/mapbox/light-v11",
   zoom = 14,
 }) {
+  const pathname = usePathname();
+  const {t} = useTranslation(undefined, {keyPrefix: "cookieConsent"});
+  const {allowExternalServices, openConsentSettings} = useCookieConsent();
   const containerRef = useRef(null);
   const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "";
   const longitude = getCoordinate(address?.longitude);
   const latitude = getCoordinate(address?.latitude);
+  const consentRequired = !pathname?.startsWith("/admin");
+  const canUseExternalServices = !consentRequired || allowExternalServices;
   const canRenderMap = Boolean(
-    token && hasValidCoordinates(longitude, latitude)
+    canUseExternalServices && token && hasValidCoordinates(longitude, latitude)
   );
 
   useEffect(() => {
@@ -98,6 +107,17 @@ export default function AddressMap({
 
   if (!address?.label) {
     return null;
+  }
+
+  if (!canUseExternalServices) {
+    return (
+      <div className={`${styles.mapRoot} ${styles.placeholder} ${className}`}>
+        <span>{t("externalServicesBlocked")}</span>
+        <button onClick={openConsentSettings} type="button">
+          {t("actions.manage")}
+        </button>
+      </div>
+    );
   }
 
   if (!canRenderMap) {

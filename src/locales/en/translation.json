@@ -515,7 +515,36 @@
   "footer": {
     "legalLabel": "Legal links",
     "impressum": "Impressum",
-    "privacy": "Privacy policy"
+    "privacy": "Privacy policy",
+    "privacySettings": "Privacy settings"
+  },
+  "cookieConsent": {
+    "eyebrow": "Privacy choices",
+    "title": "Privacy preferences",
+    "intro": "Required settings keep the site working and remember choices like language, theme, and this privacy selection. You can also allow optional extras; when enabled, they may load automatically while you browse.",
+    "alwaysActive": "Always active",
+    "privacyLink": "Privacy policy",
+    "externalServicesBlocked": "Optional embedded content is off. Enable it to load maps, live data, and media previews.",
+    "externalServicesBlockedShort": "Optional content off",
+    "actions": {
+      "save": "Save choices",
+      "close": "Close",
+      "manage": "Privacy settings"
+    },
+    "categories": {
+      "necessary": {
+        "title": "Required site functions",
+        "description": "Needed for security, forms, downloads, sign-in, and preferences you choose."
+      },
+      "analytics": {
+        "title": "Usage statistics",
+        "description": "Helps understand which pages and sections are used so the site can be improved. Names, contact details, messages, CV requests, and admin data are not sent to this service."
+      },
+      "externalServices": {
+        "title": "Embedded content and live data",
+        "description": "Allows maps, live information, media previews, and automatic language suggestions. Names, contact details, messages, CV requests, and admin data are not sent to these providers; they may receive technical browser data needed to load the content."
+      }
+    }
   },
   "legal": {
     "fields": {
@@ -557,7 +586,7 @@
       "eyebrow": "Privacy",
       "title": "Privacy Policy",
       "lead": "This policy explains how {{siteName}} processes personal data when you visit the website, use the contact form, or connect third-party publishing features.",
-      "updated": "Last updated: May 30, 2026",
+      "updated": "Last updated: June 2, 2026",
       "controller": {
         "title": "Controller",
         "addressPending": "Address pending"
@@ -578,19 +607,21 @@
       },
       "storage": {
         "title": "Local storage, cookies, and admin sessions",
-        "body": "The public website stores language and theme preferences in your browser so the site can remember your selected language and visual mode. Admin-only areas use secure session cookies for authentication and account protection."
+        "body": "The public website stores necessary preferences in your browser, including manual language and theme choices and the privacy preference itself. Admin-only areas use secure session cookies for authentication and account protection. Optional categories can be accepted, rejected, changed, or withdrawn through the privacy settings link in the footer."
       },
       "analytics": {
         "title": "Google Analytics",
         "paragraphs": [
-          "This website uses Google Analytics to understand aggregate website usage and improve the site. Google may process device, browser, interaction, and approximate location data according to its own privacy terms.",
-          "You can reduce tracking by using browser privacy settings, blocking scripts, or using Google's browser add-on where available."
+          "Google Analytics is loaded only if you consent to the Analytics category in the privacy preferences. It is used to understand aggregate website usage and improve the public website.",
+          "The site does not send your name, contact details, messages, CV requests, or admin data to Google Analytics. If enabled, Google may process device, browser, interaction, and approximate location data according to its own privacy terms. You can withdraw consent at any time through the privacy settings link in the footer."
         ]
       },
       "external": {
         "title": "Maps, weather, media, and external services",
         "paragraphs": [
-          "Some public sections load third-party services or content. This can include Mapbox maps, Open-Meteo weather data, external webcam images, GitHub project links, LinkedIn links/share URLs, and Koalendar booking links. When those services are loaded or opened, the respective provider may receive technical data such as your IP address and browser information.",
+          "Some public sections can load third-party services or content. Automatic loading of Mapbox maps, Open-Meteo weather data, external webcam images, and country-based language detection is blocked until you consent to optional external services. When those services are loaded, the respective provider may receive technical data such as your IP address and browser information.",
+          "The site does not send your name, contact details, messages, CV requests, or admin data to these optional external content providers.",
+          "Outbound links to GitHub, LinkedIn, Koalendar, webcam source pages, or similar third-party sites are opened only when you choose them.",
           "Uploaded post media, site assets, and CV files may be stored with a configured object storage provider and delivered through public asset URLs."
         ]
       },
@@ -608,9 +639,9 @@
       "legalBases": {
         "title": "Legal bases",
         "items": [
-          "Art. 6(1)(a) GDPR for consent-based integrations.",
+          "Art. 6(1)(a) GDPR for consent-based integrations, optional analytics, external media/maps, and automatic language detection.",
           "Art. 6(1)(b) GDPR where processing is needed to respond to a request or provide a requested function.",
-          "Art. 6(1)(f) GDPR for secure operation, abuse prevention, analytics, and improvement of the website.",
+          "Art. 6(1)(f) GDPR for secure operation, abuse prevention, and improvement of the website.",
           "Art. 6(1)(c) GDPR where retention is required by law."
         ]
       },

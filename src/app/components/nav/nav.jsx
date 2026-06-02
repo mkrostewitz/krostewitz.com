@@ -11,6 +11,7 @@ import {
   MANUAL_LANGUAGE_STORAGE_KEY,
   normalizeLanguage,
 } from "../../../lib/languageDetection";
+import {useCookieConsent} from "../consent/CookieConsent";
 import {usePublicSettings} from "../public-settings/PublicSettingsProvider";
 import ThemeToggle from "../theme/ThemeToggle";
 import "./nav.component.css";
@@ -82,6 +83,7 @@ function storeLanguage(language) {
 
 const NavBar = () => {
   const {t, i18n} = useTranslation();
+  const {allowExternalServices} = useCookieConsent();
   const {blogEnabled, siteMetadata} = usePublicSettings();
 
   const [menuOpen, setMenuOpen] = useState(false);
@@ -119,6 +121,8 @@ const NavBar = () => {
       return undefined;
     }
 
+    if (!allowExternalServices) return undefined;
+
     const controller = new AbortController();
 
     async function detectLanguage() {
@@ -151,7 +155,7 @@ const NavBar = () => {
     return () => {
       controller.abort();
     };
-  }, [i18n]);
+  }, [allowExternalServices, i18n]);
 
   useEffect(() => {
     if (typeof document === "undefined" || !menuOpen) return undefined;

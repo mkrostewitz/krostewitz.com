@@ -6,20 +6,12 @@ import {
   toSiteThemeCss,
   toNextMetadata,
 } from "./lib/siteProfile";
+import {CookieConsentProvider} from "./components/consent/CookieConsent";
 import {PublicSettingsProvider} from "./components/public-settings/PublicSettingsProvider";
 import {SnackbarProvider} from "./components/snackbar/SnackbarProvider";
 import "./globals.css";
 
 const gaMeasurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim();
-
-const googleAnalyticsScript = gaMeasurementId
-  ? `
-window.dataLayer = window.dataLayer || [];
-function gtag(){window.dataLayer.push(arguments);}
-gtag("js", new Date());
-gtag("config", ${JSON.stringify(gaMeasurementId)});
-`
-  : "";
 
 const themeScript = `
 (function () {
@@ -84,23 +76,16 @@ export default async function RootLayout({children}) {
           dangerouslySetInnerHTML={{__html: siteThemeStyle}}
         />
         <script dangerouslySetInnerHTML={{__html: themeScript}} />
-        {gaMeasurementId ? (
-          <>
-            <script
-              async
-              src={`https://www.googletagmanager.com/gtag/js?id=${gaMeasurementId}`}
-            />
-            <script dangerouslySetInnerHTML={{__html: googleAnalyticsScript}} />
-          </>
-        ) : null}
       </head>
       <body
         suppressHydrationWarning
         className={`${geistSans.variable} ${geistMono.variable}`}
       >
-        <PublicSettingsProvider>
-          <SnackbarProvider>{children}</SnackbarProvider>
-        </PublicSettingsProvider>
+        <CookieConsentProvider gaMeasurementId={gaMeasurementId}>
+          <PublicSettingsProvider>
+            <SnackbarProvider>{children}</SnackbarProvider>
+          </PublicSettingsProvider>
+        </CookieConsentProvider>
       </body>
     </html>
   );
