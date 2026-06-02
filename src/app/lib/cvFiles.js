@@ -1,7 +1,14 @@
 import "server-only";
 
+import {unstable_cache} from "next/cache";
+
 import {supportedLanguages} from "../../lib/translationResources";
 import {getDb} from "./mongo";
+import {
+  PUBLIC_CACHE_REVALIDATE_SECONDS,
+  PUBLIC_CACHE_TAGS,
+  revalidatePublicTags,
+} from "./publicCache";
 import {getCvFileName} from "./storage";
 
 const CONTENT_COLLECTION = "site_content";
@@ -105,7 +112,7 @@ export function getDefaultCvDownloads() {
   return serializeCvDownloads(null);
 }
 
-export async function getCvDownloads() {
+async function readCvDownloads() {
   const db = await getDb();
   const document = await db
     .collection(CONTENT_COLLECTION)
@@ -113,6 +120,15 @@ export async function getCvDownloads() {
 
   return serializeCvDownloads(document);
 }
+
+export const getCvDownloads = unstable_cache(
+  readCvDownloads,
+  ["public-cv-downloads"],
+  {
+    revalidate: PUBLIC_CACHE_REVALIDATE_SECONDS,
+    tags: [PUBLIC_CACHE_TAGS.cv],
+  }
+);
 
 export async function saveCvDownload(language, asset, user) {
   const normalizedLanguage = normalizeCvLanguage(language);
@@ -144,5 +160,7 @@ export async function saveCvDownload(language, asset, user) {
     {upsert: true}
   );
 
-  return getCvDownloads();
+  revalidatePublicTags(PUBLIC_CACHE_TAGS.cv);
+
+  return readCvDownloads();
 }

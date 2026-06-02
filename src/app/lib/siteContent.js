@@ -1,11 +1,18 @@
 import "server-only";
 
+import {unstable_cache} from "next/cache";
+
 import {
   buildResourcesFromTranslations,
   resources,
   supportedLanguages,
 } from "../../lib/translationResources";
 import {getDb} from "./mongo";
+import {
+  PUBLIC_CACHE_REVALIDATE_SECONDS,
+  PUBLIC_CACHE_TAGS,
+  revalidatePublicTags,
+} from "./publicCache";
 import {getSiteProfile} from "./siteProfile";
 
 const CONTENT_COLLECTION = "site_content";
@@ -106,7 +113,7 @@ export async function getMergedTranslations() {
   }, {});
 }
 
-export async function getRuntimeTranslationResources() {
+async function readRuntimeTranslationResources() {
   const translations = await getMergedTranslations();
   const profile = await getSiteProfile();
   const hydratedTranslations = hydrateProfilePlaceholders(
@@ -116,6 +123,15 @@ export async function getRuntimeTranslationResources() {
 
   return buildResourcesFromTranslations(hydratedTranslations);
 }
+
+export const getRuntimeTranslationResources = unstable_cache(
+  readRuntimeTranslationResources,
+  ["public-runtime-translations"],
+  {
+    revalidate: PUBLIC_CACHE_REVALIDATE_SECONDS,
+    tags: [PUBLIC_CACHE_TAGS.translations, PUBLIC_CACHE_TAGS.profile],
+  }
+);
 
 export async function saveTranslations(translations, user) {
   const validationError = validateTranslations(translations);
@@ -140,6 +156,8 @@ export async function saveTranslations(translations, user) {
     },
     {upsert: true}
   );
+
+  revalidatePublicTags(PUBLIC_CACHE_TAGS.translations);
 
   return {
     translations,

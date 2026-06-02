@@ -34,7 +34,7 @@ const CvSection = () => {
 
     async function loadDownloads() {
       try {
-        const response = await fetch("/api/cv", {cache: "no-store"});
+        const response = await fetch("/api/cv");
         const data = await response.json().catch(() => ({}));
 
         if (!response.ok || cancelled) return;

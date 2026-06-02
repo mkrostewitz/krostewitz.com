@@ -94,9 +94,7 @@ export default function BlogSection() {
     async function loadPosts() {
       try {
         const searchParams = new URLSearchParams({language});
-        const response = await fetch(`/api/posts?${searchParams.toString()}`, {
-          cache: "no-store",
-        });
+        const response = await fetch(`/api/posts?${searchParams.toString()}`);
         const data = await response.json().catch(() => ({}));
 
         if (!response.ok) {

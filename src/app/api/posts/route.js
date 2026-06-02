@@ -1,21 +1,28 @@
 import {NextResponse} from "next/server";
 
 import {getSupportedSiteLanguage} from "../../../lib/siteLanguages";
+import {
+  PUBLIC_CACHE_HEADERS,
+} from "../../lib/publicCache";
 import {isBlogEnabled} from "../../lib/siteProfile";
 import {getPublishedPostCategories, getPublishedPosts} from "../../lib/posts";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export async function GET(request) {
   try {
     const blogEnabled = await isBlogEnabled();
 
     if (!blogEnabled) {
-      return NextResponse.json({
-        blogEnabled: false,
-        categories: [],
-        posts: [],
-      });
+      return NextResponse.json(
+        {
+          blogEnabled: false,
+          categories: [],
+          posts: [],
+        },
+        {headers: PUBLIC_CACHE_HEADERS}
+      );
     }
 
     const {searchParams} = new URL(request.url);
@@ -30,12 +37,15 @@ export async function GET(request) {
       getPublishedPostCategories(),
     ]);
 
-    return NextResponse.json({blogEnabled: true, posts, categories});
+    return NextResponse.json(
+      {blogEnabled: true, posts, categories},
+      {headers: PUBLIC_CACHE_HEADERS}
+    );
   } catch (error) {
     console.error("Public posts API error", error);
     return NextResponse.json(
       {blogEnabled: false, posts: [], categories: []},
-      {status: 200}
+      {headers: PUBLIC_CACHE_HEADERS, status: 200}
     );
   }
 }

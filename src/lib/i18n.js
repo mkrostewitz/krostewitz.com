@@ -30,9 +30,7 @@ export async function loadRuntimeTranslations() {
   if (!isBrowser) return;
 
   try {
-    const response = await fetch("/api/content/translations", {
-      cache: "no-store",
-    });
+    const response = await fetch("/api/content/translations");
 
     if (!response.ok) return;
 

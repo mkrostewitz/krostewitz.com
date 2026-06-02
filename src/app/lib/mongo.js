@@ -11,20 +11,30 @@ if (!uri || !dbName || !user || !pass) {
 
 let cachedClient = null;
 let cachedDb = null;
+let connectionPromise = null;
 let initPromise = null;
 
 export async function getDb() {
   if (cachedDb) return cachedDb;
 
-  const client = new MongoClient(uri, {
-    auth: {username: user, password: pass},
-  });
-  await client.connect();
-  const db = client.db(dbName);
+  if (!connectionPromise) {
+    connectionPromise = (async () => {
+      const client = new MongoClient(uri, {
+        auth: {username: user, password: pass},
+      });
+      await client.connect();
+      const db = client.db(dbName);
 
-  cachedClient = client;
-  cachedDb = db;
-  return db;
+      cachedClient = client;
+      cachedDb = db;
+      return db;
+    })().catch((error) => {
+      connectionPromise = null;
+      throw error;
+    });
+  }
+
+  return connectionPromise;
 }
 
 export async function initMongoConnection() {
@@ -56,5 +66,6 @@ export async function closeDb() {
     await cachedClient.close();
     cachedClient = null;
     cachedDb = null;
+    connectionPromise = null;
   }
 }

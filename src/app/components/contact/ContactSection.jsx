@@ -1,8 +1,9 @@
 import Link from "next/link";
-import {useEffect, useState} from "react";
+import {useState} from "react";
 import {useTranslation} from "react-i18next";
 
 import AddressMap from "../address-map/AddressMap";
+import {usePublicSettings} from "../public-settings/PublicSettingsProvider";
 import {useSnackbar} from "../snackbar/SnackbarProvider";
 import pageStyles from "../../page.module.css";
 import "../../buttons.css";
@@ -14,44 +15,15 @@ const CONTACT_EMAIL = String(process.env.NEXT_PUBLIC_CONTACT_EMAIL || "").trim()
 const ContactSection = () => {
   const {i18n, t} = useTranslation();
   const {closeSnackbar} = useSnackbar();
+  const {bookingUrl, profile} = usePublicSettings();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [profile, setProfile] = useState({address: null});
   const address = profile.address?.label ? profile.address : null;
-  const bookingUrl =
-    profile.koalendar?.enabled && profile.koalendar?.bookingUrl
-      ? profile.koalendar.bookingUrl
-      : "";
   const addressLabelDefault = i18n.language?.toLowerCase().startsWith("de")
     ? "Adresse"
     : "Address";
   const addressMapLabelDefault = i18n.language?.toLowerCase().startsWith("de")
     ? "Karte der Adresse"
     : "Address map";
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadProfile() {
-      try {
-        const response = await fetch("/api/content/profile", {
-          cache: "no-store",
-        });
-        const data = await response.json().catch(() => ({}));
-
-        if (!cancelled && response.ok) {
-          setProfile(data.profile || {address: null});
-        }
-      } catch (error) {
-        console.warn("Unable to load contact profile", error);
-      }
-    }
-
-    loadProfile();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   function openContactModal() {
     closeSnackbar();

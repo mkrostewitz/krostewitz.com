@@ -1,15 +1,14 @@
 import Image from "next/image";
 import Link from "next/link";
-import {useEffect, useState} from "react";
 import {Trans, useTranslation} from "react-i18next";
 
 import pageStyles from "../../page.module.css";
+import {usePublicSettings} from "../public-settings/PublicSettingsProvider";
 import styles from "./fold-section.module.css";
 import "../../buttons.css";
 
 const FoldSection = () => {
-  const [bookingUrl, setBookingUrl] = useState("");
-  const [profileName, setProfileName] = useState("");
+  const {bookingUrl, profileName} = usePublicSettings();
   const {t} = useTranslation(undefined, {
     keyPrefix: "offer",
   });
@@ -17,45 +16,6 @@ const FoldSection = () => {
     keyPrefix: "buttons",
   });
   const points = t("points", {returnObjects: true});
-
-  useEffect(() => {
-    const controller = new AbortController();
-
-    async function loadProfileSettings() {
-      try {
-        const response = await fetch("/api/content/profile", {
-          cache: "no-store",
-          signal: controller.signal,
-        });
-        const data = await response.json().catch(() => ({}));
-
-        if (!response.ok) {
-          throw new Error("Unable to load booking settings.");
-        }
-
-        const profile = data.profile || {};
-        const koalendar = profile.koalendar;
-        setProfileName(profile.name?.fullName || "");
-        setBookingUrl(
-          koalendar?.enabled && koalendar?.bookingUrl
-            ? koalendar.bookingUrl
-            : ""
-        );
-      } catch (error) {
-        if (error?.name !== "AbortError") {
-          console.warn("Unable to load profile settings", error);
-          setProfileName("");
-          setBookingUrl("");
-        }
-      }
-    }
-
-    void loadProfileSettings();
-
-    return () => {
-      controller.abort();
-    };
-  }, []);
 
   return (
     <header className={styles.hero}>

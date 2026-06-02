@@ -1,6 +1,7 @@
 import "server-only";
 
 import {ObjectId} from "mongodb";
+import {unstable_cache} from "next/cache";
 import sanitizeHtml from "sanitize-html";
 
 import {FALLBACK_LANGUAGE} from "../../lib/languageDetection";
@@ -9,6 +10,11 @@ import {
   SITE_LANGUAGE_CODES,
 } from "../../lib/siteLanguages";
 import {getDb} from "./mongo";
+import {
+  PUBLIC_CACHE_REVALIDATE_SECONDS,
+  PUBLIC_CACHE_TAGS,
+  revalidatePublicTags,
+} from "./publicCache";
 
 const POSTS_COLLECTION = "posts";
 
@@ -76,6 +82,10 @@ async function ensurePostIndexes(db) {
   }
 
   await indexPromise;
+}
+
+function revalidatePublicPosts() {
+  revalidatePublicTags(PUBLIC_CACHE_TAGS.posts);
 }
 
 function isPostObjectId(value) {
@@ -471,6 +481,7 @@ function serializeLinkedInShareSchedules(value) {
       jobId: schedule.jobId || "",
       target: schedule.target || "personal_profile",
       language: schedule.language || null,
+      commentary: schedule.commentary || "",
       includeImage: schedule.includeImage === true,
       status: schedule.status || "scheduled",
       scheduledAt: toIsoDate(schedule.scheduledAt),
@@ -633,6 +644,8 @@ export async function createPost(input, user) {
   const result = await posts.insertOne(document);
   const post = await posts.findOne({_id: result.insertedId});
 
+  revalidatePublicPosts();
+
   return serializePost(post, {includeContent: true, includeAdmin: true});
 }
 
@@ -690,6 +703,8 @@ export async function updatePost(postId, input, user) {
     {returnDocument: "after"}
   );
   const post = result?.value || result;
+
+  revalidatePublicPosts();
 
   return serializePost(post, {includeContent: true, includeAdmin: true});
 }
@@ -751,6 +766,8 @@ export async function recordPostLinkedInShare(postId, share = {}, user) {
     throw new PostValidationError("Post not found.", 404);
   }
 
+  revalidatePublicPosts();
+
   return serializePost(post, {includeContent: true, includeAdmin: true});
 }
 
@@ -765,6 +782,7 @@ export async function recordPostLinkedInShareSchedule(postId, schedule = {}, use
     jobId: String(schedule.jobId || ""),
     target: String(schedule.target || "personal_profile"),
     language: schedule.language ? String(schedule.language) : null,
+    commentary: String(schedule.commentary || ""),
     includeImage: schedule.includeImage === true,
     status: "scheduled",
     scheduledAt:
@@ -805,6 +823,8 @@ export async function recordPostLinkedInShareSchedule(postId, schedule = {}, use
     throw new PostValidationError("Post not found.", 404);
   }
 
+  revalidatePublicPosts();
+
   return serializePost(post, {includeContent: true, includeAdmin: true});
 }
 
@@ -831,9 +851,8 @@ export async function updatePostLinkedInShareSchedule(
   );
 }
 
-export async function getPublishedPosts(filters = {}) {
+async function readPublishedPosts(filters = {}) {
   const db = await getDb();
-  await ensurePostIndexes(db);
 
   const query = {status: "published"};
   const category = normalizeCategorySlug(filters.category || filters.tag);
@@ -864,9 +883,17 @@ export async function getPublishedPosts(filters = {}) {
   );
 }
 
-export async function getPublishedPostCategories() {
+export const getPublishedPosts = unstable_cache(
+  readPublishedPosts,
+  ["public-published-posts"],
+  {
+    revalidate: PUBLIC_CACHE_REVALIDATE_SECONDS,
+    tags: [PUBLIC_CACHE_TAGS.posts],
+  }
+);
+
+async function readPublishedPostCategories() {
   const db = await getDb();
-  await ensurePostIndexes(db);
 
   const categories = await getPostsCollection(db)
     .aggregate([
@@ -892,9 +919,17 @@ export async function getPublishedPostCategories() {
     .filter((category) => category.label && category.slug);
 }
 
-export async function getPublishedPostBySlug(slug, options = {}) {
+export const getPublishedPostCategories = unstable_cache(
+  readPublishedPostCategories,
+  ["public-published-post-categories"],
+  {
+    revalidate: PUBLIC_CACHE_REVALIDATE_SECONDS,
+    tags: [PUBLIC_CACHE_TAGS.posts],
+  }
+);
+
+async function readPublishedPostBySlug(slug, options = {}) {
   const db = await getDb();
-  await ensurePostIndexes(db);
 
   const post = await getPostsCollection(db).findOne({
     slug: String(slug || ""),
@@ -906,3 +941,12 @@ export async function getPublishedPostBySlug(slug, options = {}) {
     language: options.language,
   });
 }
+
+export const getPublishedPostBySlug = unstable_cache(
+  readPublishedPostBySlug,
+  ["public-published-post-by-slug"],
+  {
+    revalidate: PUBLIC_CACHE_REVALIDATE_SECONDS,
+    tags: [PUBLIC_CACHE_TAGS.posts],
+  }
+);

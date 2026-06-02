@@ -1,6 +1,13 @@
 import "server-only";
 
+import {unstable_cache} from "next/cache";
+
 import {getDb} from "./mongo";
+import {
+  PUBLIC_CACHE_REVALIDATE_SECONDS,
+  PUBLIC_CACHE_TAGS,
+  revalidatePublicTags,
+} from "./publicCache";
 
 const CONTENT_COLLECTION = "site_content";
 const PROFILE_ID = "profile_settings";
@@ -574,7 +581,7 @@ function serializeProfile(document = {}) {
   };
 }
 
-export async function getSiteProfile() {
+async function readSiteProfile() {
   const db = await getDb();
   const collection = db.collection(CONTENT_COLLECTION);
   let document = await collection.findOne({_id: PROFILE_ID});
@@ -615,6 +622,15 @@ export async function getSiteProfile() {
 
   return serializeProfile(document || {});
 }
+
+export const getSiteProfile = unstable_cache(
+  readSiteProfile,
+  ["public-site-profile"],
+  {
+    revalidate: PUBLIC_CACHE_REVALIDATE_SECONDS,
+    tags: [PUBLIC_CACHE_TAGS.profile],
+  }
+);
 
 export async function getSiteMetadata() {
   const profile = await getSiteProfile();
@@ -692,6 +708,11 @@ export async function saveSiteProfile(input = {}, user) {
   const nextDocument = await db
     .collection(CONTENT_COLLECTION)
     .findOne({_id: PROFILE_ID});
+
+  revalidatePublicTags(
+    PUBLIC_CACHE_TAGS.profile,
+    PUBLIC_CACHE_TAGS.translations
+  );
 
   return serializeProfile(nextDocument || document);
 }

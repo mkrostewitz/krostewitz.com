@@ -11,6 +11,7 @@ import {
   MANUAL_LANGUAGE_STORAGE_KEY,
   normalizeLanguage,
 } from "../../../lib/languageDetection";
+import {usePublicSettings} from "../public-settings/PublicSettingsProvider";
 import ThemeToggle from "../theme/ThemeToggle";
 import "./nav.component.css";
 
@@ -81,13 +82,9 @@ function storeLanguage(language) {
 
 const NavBar = () => {
   const {t, i18n} = useTranslation();
+  const {blogEnabled, siteMetadata} = usePublicSettings();
 
   const [menuOpen, setMenuOpen] = useState(false);
-  const [blogEnabled, setBlogEnabled] = useState(null);
-  const [siteMetadata, setSiteMetadata] = useState({
-    logoUrl: DEFAULT_LOGO_URL,
-    title: "",
-  });
 
   const [lang, setLang] = useState(
     () =>
@@ -155,40 +152,6 @@ const NavBar = () => {
       controller.abort();
     };
   }, [i18n]);
-
-  useEffect(() => {
-    const controller = new AbortController();
-
-    async function loadPublicSettings() {
-      try {
-        const response = await fetch("/api/content/profile", {
-          cache: "no-store",
-          signal: controller.signal,
-        });
-        const data = await response.json().catch(() => ({}));
-
-        if (!response.ok) {
-          throw new Error("Unable to load public settings.");
-        }
-
-        const metadata = data.profile?.metadata || {};
-        setBlogEnabled(data.profile?.blogEnabled !== false);
-        setSiteMetadata({
-          logoUrl: metadata.logoUrl || DEFAULT_LOGO_URL,
-          title: metadata.title || "",
-        });
-      } catch (error) {
-        if (error?.name === "AbortError") return;
-        setBlogEnabled(true);
-      }
-    }
-
-    void loadPublicSettings();
-
-    return () => {
-      controller.abort();
-    };
-  }, []);
 
   useEffect(() => {
     if (typeof document === "undefined" || !menuOpen) return undefined;

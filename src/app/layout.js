@@ -6,6 +6,7 @@ import {
   toSiteThemeCss,
   toNextMetadata,
 } from "./lib/siteProfile";
+import {PublicSettingsProvider} from "./components/public-settings/PublicSettingsProvider";
 import {SnackbarProvider} from "./components/snackbar/SnackbarProvider";
 import "./globals.css";
 
@@ -52,7 +53,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 export async function generateMetadata() {
   try {
@@ -97,7 +98,9 @@ export default async function RootLayout({children}) {
         suppressHydrationWarning
         className={`${geistSans.variable} ${geistMono.variable}`}
       >
-        <SnackbarProvider>{children}</SnackbarProvider>
+        <PublicSettingsProvider>
+          <SnackbarProvider>{children}</SnackbarProvider>
+        </PublicSettingsProvider>
       </body>
     </html>
   );

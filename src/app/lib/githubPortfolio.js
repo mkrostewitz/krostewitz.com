@@ -1,6 +1,13 @@
 import "server-only";
 
+import {unstable_cache} from "next/cache";
+
 import {getDb} from "./mongo";
+import {
+  PUBLIC_CACHE_REVALIDATE_SECONDS,
+  PUBLIC_CACHE_TAGS,
+  revalidatePublicTags,
+} from "./publicCache";
 
 const CONTENT_COLLECTION = "site_content";
 const PORTFOLIO_ID = "github_portfolio";
@@ -155,6 +162,8 @@ export async function savePortfolioSettings(input = {}, user) {
     {upsert: true}
   );
 
+  revalidatePublicTags(PUBLIC_CACHE_TAGS.portfolio);
+
   return serializeSettings(document);
 }
 
@@ -226,7 +235,7 @@ export async function getAvailableGitHubRepos(username) {
     );
 }
 
-export async function getPortfolioProjects() {
+async function readPortfolioProjects() {
   const settings = await getPortfolioSettings();
   const selectedRepos = uniqueRepoRefs(settings.selectedRepos, settings.username);
 
@@ -259,3 +268,12 @@ export async function getPortfolioProjects() {
     profileUrl: `https://github.com/${settings.username}`,
   };
 }
+
+export const getPortfolioProjects = unstable_cache(
+  readPortfolioProjects,
+  ["public-github-portfolio"],
+  {
+    revalidate: PUBLIC_CACHE_REVALIDATE_SECONDS,
+    tags: [PUBLIC_CACHE_TAGS.portfolio],
+  }
+);
