@@ -2,7 +2,7 @@
 
 import mapboxgl from "mapbox-gl";
 import {usePathname} from "next/navigation";
-import {useEffect, useRef} from "react";
+import {useCallback, useEffect, useState} from "react";
 import {useTranslation} from "react-i18next";
 
 import "../../../lib/i18n";
@@ -37,7 +37,10 @@ export default function AddressMap({
   const pathname = usePathname();
   const {t} = useTranslation(undefined, {keyPrefix: "cookieConsent"});
   const {allowExternalServices, openConsentSettings} = useCookieConsent();
-  const containerRef = useRef(null);
+  const [containerNode, setContainerNode] = useState(null);
+  const handleContainerRef = useCallback((node) => {
+    setContainerNode(node);
+  }, []);
   const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "";
   const longitude = getCoordinate(address?.longitude);
   const latitude = getCoordinate(address?.latitude);
@@ -48,18 +51,21 @@ export default function AddressMap({
   );
 
   useEffect(() => {
-    if (!canRenderMap || !containerRef.current) return undefined;
+    if (!canRenderMap || !containerNode) return undefined;
 
     mapboxgl.accessToken = token;
 
     const map = new mapboxgl.Map({
       attributionControl: false,
       center: [longitude, latitude],
-      container: containerRef.current,
+      container: containerNode,
       interactive,
       pitch: 0,
       style: styleUrl,
       zoom,
+    });
+    const resizeFrame = window.requestAnimationFrame(() => {
+      map.resize();
     });
     const markerColor =
       window
@@ -91,11 +97,13 @@ export default function AddressMap({
     });
 
     return () => {
+      window.cancelAnimationFrame(resizeFrame);
       marker.remove();
       map.remove();
     };
   }, [
     canRenderMap,
+    containerNode,
     interactive,
     latitude,
     longitude,
@@ -130,7 +138,7 @@ export default function AddressMap({
 
   return (
     <div className={`${styles.mapRoot} ${className}`} aria-label={label}>
-      <div className={styles.mapCanvas} ref={containerRef} />
+      <div className={styles.mapCanvas} ref={handleContainerRef} />
     </div>
   );
 }
