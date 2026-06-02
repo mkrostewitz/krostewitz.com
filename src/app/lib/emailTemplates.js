@@ -139,6 +139,45 @@ function tEmail(translator, key, variables = {}, fallbackValue = "") {
   return translator.t(`email.${key}`, variables, fallbackValue);
 }
 
+function getDownloadLanguageLabel(translator, language) {
+  const normalizedLanguage = cleanText(language).toLowerCase();
+  if (!normalizedLanguage) {
+    return tEmail(translator, "requesterCopy.cta", {}, "Download CV");
+  }
+
+  return tEmail(
+    translator,
+    `requesterCopy.downloadLanguages.${normalizedLanguage}`,
+    {},
+    normalizedLanguage.toUpperCase()
+  );
+}
+
+function normalizeDownloadLinks(translator, downloadUrl, downloadLinks = []) {
+  const links = Array.isArray(downloadLinks)
+    ? downloadLinks
+        .filter((link) => cleanText(link?.href))
+        .map((link) => ({
+          href: cleanText(link.href),
+          label:
+            cleanText(link.label) ||
+            getDownloadLanguageLabel(translator, link.language),
+          language: cleanText(link.language).toLowerCase(),
+        }))
+    : [];
+
+  if (links.length > 0) return links;
+  if (!downloadUrl) return [];
+
+  return [
+    {
+      href: downloadUrl,
+      label: tEmail(translator, "requesterCopy.cta", {}, "Download CV"),
+      language: "",
+    },
+  ];
+}
+
 function getRequestVariant(lead) {
   return lead.source?.type === "cv_download" ? "cv" : "contact";
 }
@@ -218,16 +257,29 @@ function renderCode(code, label = "Verification code") {
   `;
 }
 
-function renderCta(cta) {
-  if (!cta?.href || !cta?.label) return "";
+function renderCtas(ctas = []) {
+  const links = ctas.filter((cta) => cta?.href && cta?.label);
+  if (links.length === 0) return "";
 
   return `
     <div style="margin:24px 0 6px;">
-      <a href="${escapeHtml(
-        cta.href
-      )}" style="display:inline-block;border-radius:8px;background:${THEME.accent};color:${THEME.accentContrast};font-size:15px;font-weight:800;line-height:1;text-decoration:none;padding:15px 18px;">${escapeHtml(
-        cta.label
-      )}</a>
+      ${links
+        .map(
+          (cta, index) => `
+            <a href="${escapeHtml(
+              cta.href
+            )}" style="display:inline-block;margin:0 10px 10px 0;border:1px solid ${
+              index === 0 ? THEME.accent : THEME.borderStrong
+            };border-radius:8px;background:${
+              index === 0 ? THEME.accent : THEME.surfaceMuted
+            };color:${
+              index === 0 ? THEME.accentContrast : THEME.foreground
+            };font-size:15px;font-weight:800;line-height:1;text-decoration:none;padding:15px 18px;">${escapeHtml(
+              cta.label
+            )}</a>
+          `
+        )
+        .join("")}
     </div>
   `;
 }
@@ -291,6 +343,7 @@ export async function renderBrandedEmail({
   code = "",
   codeLabel = "Verification code",
   cta = null,
+  ctas = [],
   details = [],
   sections = [],
   footer = "",
@@ -355,7 +408,7 @@ export async function renderBrandedEmail({
                 )}</h1>
                 ${renderParagraphs(paragraphs)}
                 ${renderCode(code, codeLabel)}
-                ${renderCta(cta)}
+                ${renderCtas(ctas.length ? ctas : cta ? [cta] : [])}
                 ${renderDetails(details)}
                 ${renderSections(sections)}
               </td>
@@ -517,9 +570,30 @@ export async function getRequesterCopyEmailSubject(lead) {
   );
 }
 
-export async function getRequesterCopyEmailText(lead, downloadUrl) {
+export async function getRequesterCopyEmailText(
+  lead,
+  downloadUrl,
+  downloadLinks = []
+) {
   const translator = await getEmailTranslator(getLeadEmailLanguage(lead));
   const variant = getRequestVariant(lead);
+  const normalizedDownloadLinks = normalizeDownloadLinks(
+    translator,
+    downloadUrl,
+    downloadLinks
+  );
+  const downloadTextLines = normalizedDownloadLinks.length
+    ? [
+        "",
+        `${tEmail(
+          translator,
+          "requesterCopy.downloadLabel",
+          {},
+          "CV downloads"
+        )}:`,
+        ...normalizedDownloadLinks.map((link) => `${link.label}: ${link.href}`),
+      ]
+    : [];
 
   return [
     getGreeting(lead, translator),
@@ -549,15 +623,7 @@ export async function getRequesterCopyEmailText(lead, downloadUrl) {
     ),
     "",
     ...requesterSummaryLines(lead, translator),
-    downloadUrl ? "" : null,
-    downloadUrl
-      ? `${tEmail(
-          translator,
-          "requesterCopy.downloadLabel",
-          {},
-          "CV download"
-        )}: ${downloadUrl}`
-      : null,
+    ...downloadTextLines,
     "",
     tEmail(
       translator,
@@ -660,10 +726,20 @@ export async function renderOwnerLeadNotificationEmail({lead, origin}) {
   });
 }
 
-export async function renderRequesterCopyEmail({lead, origin, downloadUrl}) {
+export async function renderRequesterCopyEmail({
+  lead,
+  origin,
+  downloadUrl,
+  downloadLinks = [],
+}) {
   const language = getLeadEmailLanguage(lead);
   const translator = await getEmailTranslator(language);
   const variant = getRequestVariant(lead);
+  const normalizedDownloadLinks = normalizeDownloadLinks(
+    translator,
+    downloadUrl,
+    downloadLinks
+  );
 
   return renderBrandedEmail({
     language,
@@ -704,12 +780,7 @@ export async function renderRequesterCopyEmail({lead, origin, downloadUrl}) {
           : "I will review your message and reply shortly."
       ),
     ],
-    cta: downloadUrl
-      ? {
-          href: downloadUrl,
-          label: tEmail(translator, "requesterCopy.cta", {}, "Download CV"),
-        }
-      : null,
+    ctas: normalizedDownloadLinks,
     details: localizedLeadBaseDetails(lead, translator, {includeMessage: true}),
     footer: tEmail(
       translator,

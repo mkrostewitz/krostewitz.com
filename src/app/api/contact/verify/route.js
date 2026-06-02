@@ -12,8 +12,52 @@ import {
   renderOwnerLeadNotificationEmail,
   renderRequesterCopyEmail,
 } from "../../../lib/emailTemplates";
+import {getCvDownloads} from "../../../lib/cvFiles";
 import {LeadValidationError, verifyPendingLead} from "../../../lib/leads";
 import {getRequestOrigin} from "../../../lib/requestOrigin";
+
+const CV_DOWNLOAD_LANGUAGE_ORDER = ["en", "de"];
+
+function addLanguageToDownloadUrl(downloadUrl, language) {
+  const url = new URL(downloadUrl);
+  url.searchParams.set("language", language);
+  return url.toString();
+}
+
+function sortCvDownloadEntries(entries, preferredLanguage) {
+  return entries.sort(([firstLanguage], [secondLanguage]) => {
+    if (firstLanguage === preferredLanguage) return -1;
+    if (secondLanguage === preferredLanguage) return 1;
+
+    const firstIndex = CV_DOWNLOAD_LANGUAGE_ORDER.indexOf(firstLanguage);
+    const secondIndex = CV_DOWNLOAD_LANGUAGE_ORDER.indexOf(secondLanguage);
+
+    return (
+      (firstIndex === -1 ? Number.MAX_SAFE_INTEGER : firstIndex) -
+      (secondIndex === -1 ? Number.MAX_SAFE_INTEGER : secondIndex)
+    );
+  });
+}
+
+async function getRequesterDownloadLinks(downloadUrl, lead) {
+  if (!downloadUrl || lead.source?.type !== "cv_download") return [];
+
+  try {
+    const downloads = await getCvDownloads();
+    const preferredLanguage = lead.source?.context?.cvLanguage || lead.language || "en";
+
+    return sortCvDownloadEntries(
+      Object.entries(downloads).filter(([, asset]) => asset?.url),
+      preferredLanguage
+    ).map(([language]) => ({
+      href: addLanguageToDownloadUrl(downloadUrl, language),
+      language,
+    }));
+  } catch (error) {
+    console.warn("Unable to build CV download links for requester email", error);
+    return [];
+  }
+}
 
 function getRequestSummaryLines(lead) {
   return [
@@ -56,6 +100,7 @@ export async function POST(request) {
   let lead;
   let downloadUrl = "";
   let requesterDownloadUrl = "";
+  let requesterDownloadLinks = [];
 
   try {
     const result = await verifyPendingLead(body);
@@ -66,6 +111,10 @@ export async function POST(request) {
       url.searchParams.set("token", result.downloadToken);
       downloadUrl = `${url.pathname}${url.search}`;
       requesterDownloadUrl = url.toString();
+      requesterDownloadLinks = await getRequesterDownloadLinks(
+        requesterDownloadUrl,
+        lead
+      );
     }
   } catch (error) {
     if (error instanceof LeadValidationError) {
@@ -86,6 +135,7 @@ export async function POST(request) {
   const isCvRequest = lead.source.type === "cv_download";
   const origin = getRequestOrigin(request);
   const from = getDefaultSender();
+  const requesterDownloadHref = requesterDownloadUrl || downloadUrl;
   const ownerMailOptions = {
     from,
     to: APPLE_MAIL_TO || APPLE_MAIL_USER,
@@ -103,12 +153,14 @@ export async function POST(request) {
     replyTo: APPLE_MAIL_TO || APPLE_MAIL_USER,
     text: await getRequesterCopyEmailText(
       lead,
-      requesterDownloadUrl || downloadUrl
+      requesterDownloadHref,
+      requesterDownloadLinks
     ),
     html: await renderRequesterCopyEmail({
       lead,
       origin,
-      downloadUrl: requesterDownloadUrl || downloadUrl,
+      downloadUrl: requesterDownloadHref,
+      downloadLinks: requesterDownloadLinks,
     }),
   };
 

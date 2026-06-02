@@ -564,12 +564,16 @@
         "contact": "Your contact request has been confirmed and received."
       },
       "nextStep": {
-        "cv": "You can use the secure download link below. It is personal to your verified request.",
+        "cv": "You can use the secure download links below. They are personal to your verified request.",
         "contact": "I will review your message and reply shortly."
       },
       "cta": "Download CV",
       "submittedDetails": "Here is a copy of the details you submitted:",
-      "downloadLabel": "CV download",
+      "downloadLabel": "CV downloads",
+      "downloadLanguages": {
+        "en": "English CV",
+        "de": "German CV"
+      },
       "footer": {
         "cv": "If anything needs to be corrected, please reply to this email.",
         "contact": "This is a copy of the details you submitted."
