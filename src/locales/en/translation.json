@@ -124,8 +124,8 @@
   },
   "offer": {
     "eyebrow": "How I help",
-    "title": "I build and run growth engines for industrial tech.",
-    "subtitle": "CEO with a track record of building and scaling industrial-tech businesses and turning around performance when needed through execution and systems.",
+    "title": "Industrial growth leadership for market expansion, scalable operations, and digital execution.",
+    "subtitle": "I help industrial companies enter new markets, reposition products and business models, build commercial and operational structures, and scale through pragmatic execution and digital systems.",
     "points": [
       "Design sustainable GTM playbooks and partner routes that fit your market",
       "Turnaround your operations and build efficient teams",
@@ -180,12 +180,7 @@
     "title": "Away from the desk, I prefer weather, water, and open terrain.",
     "intro": "Skiing, cycling, and hiking keep me outside, but sailing is the one I come back to most. On the water, plans matter, conditions change, and good decisions come from reading both the instruments and the horizon.",
     "hobbyLabel": "Hobbies",
-    "hobbies": [
-      "Sailing",
-      "Skiing",
-      "Cycling",
-      "Hiking"
-    ],
+    "hobbies": ["Sailing", "Skiing", "Cycling", "Hiking"],
     "sailing": {
       "eyebrow": "Chiemsee sailing conditions",
       "title": "Chiemsee wind",
@@ -310,74 +305,70 @@
       "period": "Aug 2022 — Present",
       "title": "Founder & CEO, INTUTEC LLC",
       "location": "Palo Alto, USA",
-      "detail": "Founded and built an industrial marketplace for automation components. Responsible for vision, product definition, data model, UI architecture, go-to-market, and manufacturer onboarding.",
+      "detail": "Founded INTUTEC to support industrial companies with U.S. market entry, sales development, and digital distribution solutions. Schlegel USA became the first reference customer, validating the model through a successful market-entry and commercial buildout project.",
       "highlights": [
-        "Translated fragmented industrial component data into a structured marketplace model.",
-        "Defined the product architecture, supplier onboarding flow, and commercial positioning.",
-        "Built the operating stack across product, data, sales process, and manufacturer relationships."
+        "Developed digital processes for lead generation, local contact assignment, and customer qualification.",
+        "Conceptualized an online distribution model for small and mid-sized industrial companies.",
+        "Integrated platform logic as a white-label solution into the Schlegel website."
       ]
     },
     {
       "period": "Jul 2022 — Present",
       "title": "President, Schlegel USA Inc.",
       "location": "New York, USA",
-      "detail": "Leading the U.S. organization of an HMI components manufacturer. Responsibility for strategy, business planning, cash flow management, forecasting, and partner development.",
+      "detail": "Built and scaled the U.S. business from the ground up through an INTUTEC mandate, starting with a two-person core team and a $250,000 initial budget. Developed the go-to-market approach, established scalable commercial and operating structures, and grew the business to more than 2,500 orders per year.",
       "highlights": [
-        "Own the U.S. business plan, forecasting cadence, cash flow discipline, and commercial priorities.",
-        "Develop partner structures for OEM, distributor, and strategic account growth.",
-        "Connect market feedback with product, supply, and operational decisions."
+        "Built the U.S. market-entry platform and commercial foundation for scalable growth.",
+        "Automated key sales, order, and reporting processes to support a lean operating model.",
+        "Developed the business toward a scalable operating model ahead of the planned handover."
       ]
     },
     {
       "period": "Mar 2018 — Jun 2022",
       "title": "CEO & President, CAPTRON North America LP",
       "location": "New York, USA",
-      "detail": "Turned around and scaled the business. Increased revenue from $0.8M (2017) to $13.5M (2021) while achieving >15% EBITDA. Localized the supply chain, improving OTIF from 56% to 88%. Designed and implemented a custom CRM, ERP, and accounting system.",
+      "detail": "Built and scaled the North American subsidiary from early-stage setup to a profitable, self-funded business. Increased annual revenue from $0.8M to $13.5M, achieved more than 15% EBITDA, improved delivery performance from 56% to 88% OTIF, and secured strategic product listings with Amazon, Tesla, and Apple.",
       "highlights": [
-        "Rebuilt the commercial engine, account focus, and forecasting rhythm for sustained growth.",
-        "Localized supply chain and fulfillment operations to improve OTIF from 56% to 88%.",
-        "Designed internal CRM, ERP, reporting, and accounting workflows to run the business with clearer data."
+        "Built the commercial and operational foundation for scalable growth.",
+        "Localized supply chain and fulfillment to improve delivery reliability and customer satisfaction.",
+        "Developed digital operating systems to improve transparency, execution, and management control."
       ]
     },
     {
       "period": "Jun 2014 — Apr 2018",
       "title": "Head of Business Development, CAPTRON Electronic GmbH",
       "location": "Munich, Germany",
-      "detail": "Built the NAFTA distribution network and grew revenue from $4k (2014) to $800k (2017). Developed new industry segments and product portfolios, generating more than $10M in additional global revenue.",
+      "detail": "Developed new markets, applications, and customer segments as the foundation for CAPTRON’s international growth strategy. Built the North American market through a new distribution network and developed the strategy and business plan for the future U.S. subsidiary.",
       "highlights": [
-        "Established NAFTA distribution coverage and sales routines from a near-zero base.",
-        "Identified new industrial segments and converted them into product and portfolio initiatives.",
-        "Built cross-functional momentum between sales, product, and international market development."
+        "Built distribution and partner structures across North America and selected international markets.",
+        "Increased export momentum through new distributors, applications, and customer segments.",
+        "Developed the strategic foundation for the later CAPTRON North America subsidiary."
       ]
     },
     {
       "period": "Feb 2012 — May 2014",
       "title": "Regional Manager Asia, SATECO Asia Limited",
       "location": "Hong Kong & Suzhou, China",
-      "detail": "Led market entry into the Chinese automotive sector. Incorporated a FICE in Suzhou with a €600k investment budget and managed €4.5M in revenue across China, India, and Korea.",
+      "detail": "Developed and implemented the market-entry strategy for China, including the setup of a FICE in Suzhou. Managed regional business across China, India, and Korea and built relationships with OEMs and Tier-1 suppliers in the automotive sector.",
       "highlights": [
-        "Led local market entry work for automotive OEM and Tier supplier opportunities.",
-        "Set up the Suzhou FICE structure and managed the investment budget and operating ramp.",
-        "Coordinated revenue, partners, and customer relationships across China, India, and Korea."
+        "Established the local market-entry foundation for China.",
+        "Built regional customer relationships across OEM and Tier-1 supplier networks.",
+        "Supported local teams and manufacturing sites through technical coordination and operational problem-solving."
       ]
     },
     {
       "period": "2003 — 2012",
       "title": "GM & Commercial Roles (Mentor, MBG, Eisbär)",
       "location": "Munich & China",
-      "detail": "Held interim general management and commercial roles. Led purchasing, built supplier networks, and developed project pipelines across consumer and industrial electronics.",
-      "highlights": [
-        "Combined purchasing, supplier development, and commercial responsibility in owner-managed environments.",
-        "Built sourcing networks and project pipelines across Europe and China.",
-        "Gained early general management experience in hands-on operating roles."
-      ]
+      "detail": "Earlier commercial and management roles in electronics, premium brands, procurement, and consulting. Built early experience across general management, sourcing, international coordination, and customer-facing commercial work.",
+      "highlights": []
     }
   ],
   "timelineDialog": {
     "open": "Open details for {{title}}",
     "viewDetails": "Details",
     "close": "Close",
-    "highlights": "Highlights"
+    "highlights": "Focus areas"
   },
   "cv": {
     "title": "Download my CV",
@@ -440,11 +431,7 @@
     "topicLabel": "Blog topics",
     "filterLabel": "Filter posts by category",
     "filterAll": "All",
-    "topics": [
-      "Professional notes",
-      "Sailing",
-      "Cooking"
-    ],
+    "topics": ["Professional notes", "Sailing", "Cooking"],
     "empty": "Professional notes, sailing logs, and cooking experiments will appear here as they are published.",
     "emptyFiltered": "No published posts match this category yet.",
     "readMore": "Read more",
