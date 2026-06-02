@@ -404,7 +404,12 @@
       "verifySuccess": "Email confirmed. Your CV download is ready.",
       "successEyebrow": "Access confirmed",
       "successTitle": "Your CV download is ready",
+      "downloadPrompt": "Choose the CV language you want to download.",
       "downloadReady": "Download CV",
+      "downloadLanguages": {
+        "en": "English CV",
+        "de": "German CV"
+      },
       "validation": {
         "phone": "Please enter a valid phone number.",
         "phoneRequired": "Please enter your phone number.",

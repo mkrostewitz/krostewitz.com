@@ -404,7 +404,12 @@
       "verifySuccess": "E-Mail bestätigt. Ihr CV-Download ist bereit.",
       "successEyebrow": "Zugriff bestätigt",
       "successTitle": "Ihr CV-Download ist bereit",
+      "downloadPrompt": "Wählen Sie die Sprache, in der Sie den Lebenslauf herunterladen möchten.",
       "downloadReady": "Lebenslauf herunterladen",
+      "downloadLanguages": {
+        "en": "Englischer Lebenslauf",
+        "de": "Deutscher Lebenslauf"
+      },
       "validation": {
         "phone": "Bitte geben Sie eine gültige Telefonnummer ein.",
         "phoneRequired": "Bitte geben Sie Ihre Telefonnummer ein.",

@@ -85,14 +85,10 @@ const CvSection = () => {
         {t("cv.download")}
       </button>
       <LeadCaptureModal
+        cvDownloads={downloads}
         cvLanguage={language}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onVerified={(data) => {
-          if (data.downloadUrl) {
-            window.location.assign(data.downloadUrl);
-          }
-        }}
         sourceType="cv_download"
       />
     </section>

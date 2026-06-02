@@ -1,6 +1,6 @@
 import {NextResponse} from "next/server";
 
-import {getCvDownloads} from "../../../lib/cvFiles";
+import {CvFileError, getCvDownloads, normalizeCvLanguage} from "../../../lib/cvFiles";
 import {getLeadByDownloadToken, recordLeadDownload} from "../../../lib/leads";
 
 export const runtime = "nodejs";
@@ -24,15 +24,30 @@ function downloadHeaders(asset) {
 export async function GET(request) {
   const {searchParams} = new URL(request.url);
   const token = searchParams.get("token") || "";
+  const requestedLanguage = searchParams.get("language");
   const lead = await getLeadByDownloadToken(token);
 
   if (!lead) {
     return NextResponse.json({error: "CV download access expired."}, {status: 403});
   }
 
-  const language = lead.source?.context?.cvLanguage || "en";
+  let language;
+  try {
+    language = normalizeCvLanguage(
+      requestedLanguage || lead.source?.context?.cvLanguage || "en"
+    );
+  } catch (error) {
+    if (error instanceof CvFileError) {
+      return NextResponse.json({error: error.message}, {status: error.status});
+    }
+
+    throw error;
+  }
+
   const downloads = await getCvDownloads();
-  const asset = downloads[language] || downloads.en;
+  const preferredAsset = downloads[language];
+  const fallbackAsset = !requestedLanguage && language !== "en" ? downloads.en : null;
+  const asset = preferredAsset?.url ? preferredAsset : fallbackAsset;
 
   if (!asset?.url) {
     return NextResponse.json({error: "CV file is not available."}, {status: 404});
