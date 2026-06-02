@@ -16,6 +16,39 @@ const REQUEST_TYPE_OPTIONS = [
   "fan",
   "other",
 ];
+const CV_DOWNLOAD_LANGUAGE_ORDER = ["en", "de"];
+
+function normalizeLanguageCode(language) {
+  return String(language || "en")
+    .split("-")[0]
+    .toLowerCase();
+}
+
+function addLanguageToDownloadUrl(downloadUrl, language) {
+  if (!downloadUrl || !language) return downloadUrl || "";
+
+  const separator = downloadUrl.includes("?") ? "&" : "?";
+  return `${downloadUrl}${separator}language=${encodeURIComponent(language)}`;
+}
+
+function isLiveCvAsset(asset) {
+  return asset?.source === "digitalocean" && Boolean(asset?.fileName);
+}
+
+function sortCvDownloads(entries, preferredLanguage) {
+  return entries.sort(([firstLanguage], [secondLanguage]) => {
+    if (firstLanguage === preferredLanguage) return -1;
+    if (secondLanguage === preferredLanguage) return 1;
+
+    const firstIndex = CV_DOWNLOAD_LANGUAGE_ORDER.indexOf(firstLanguage);
+    const secondIndex = CV_DOWNLOAD_LANGUAGE_ORDER.indexOf(secondLanguage);
+
+    return (
+      (firstIndex === -1 ? Number.MAX_SAFE_INTEGER : firstIndex) -
+      (secondIndex === -1 ? Number.MAX_SAFE_INTEGER : secondIndex)
+    );
+  });
+}
 
 function phoneLooksValid(value, required) {
   const rawValue = String(value || "").trim();
@@ -39,6 +72,7 @@ function pageUrl() {
 }
 
 export default function LeadCaptureModal({
+  cvDownloads = {},
   cvLanguage = "en",
   isOpen,
   onClose,
@@ -122,6 +156,36 @@ export default function LeadCaptureModal({
       }),
     [t]
   );
+
+  const downloadOptions = useMemo(() => {
+    if (!downloadUrl) return [];
+
+    const preferredLanguage = normalizeLanguageCode(cvLanguage);
+    const entries = sortCvDownloads(
+      Object.entries(cvDownloads || {}).filter(([, asset]) => isLiveCvAsset(asset)),
+      preferredLanguage
+    );
+
+    if (entries.length === 0) {
+      return [
+        {
+          fileName: "",
+          label: t("cv.form.downloadReady"),
+          language: preferredLanguage,
+          url: downloadUrl,
+        },
+      ];
+    }
+
+    return entries.map(([language, asset]) => ({
+      fileName: asset.fileName || "",
+      label: t(`cv.form.downloadLanguages.${language}`, {
+        defaultValue: language.toUpperCase(),
+      }),
+      language,
+      url: addLanguageToDownloadUrl(downloadUrl, language),
+    }));
+  }, [cvDownloads, cvLanguage, downloadUrl, t]);
 
   if (!isOpen) return null;
 
@@ -456,15 +520,28 @@ export default function LeadCaptureModal({
               <p className={styles.kicker}>{t(`${copyPrefix}.successEyebrow`)}</p>
               <h3>{t(`${copyPrefix}.successTitle`)}</h3>
               {downloadUrl ? (
-                <button
-                  type="button"
-                  className={`primary ${styles.submitButton}`}
-                  onClick={() => {
-                    window.location.assign(downloadUrl);
-                  }}
-                >
-                  {t("cv.form.downloadReady")}
-                </button>
+                <>
+                  <p className={styles.formIntro}>
+                    {t("cv.form.downloadPrompt")}
+                  </p>
+                  <div className={styles.actionsRow}>
+                    {downloadOptions.map((option, index) => (
+                      <button
+                        key={option.language}
+                        type="button"
+                        className={`${
+                          index === 0 ? "primary" : "secondary"
+                        } ${styles.submitButton}`}
+                        title={option.fileName || option.label}
+                        onClick={() => {
+                          window.location.assign(option.url);
+                        }}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </>
               ) : (
                 <button
                   type="button"

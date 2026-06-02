@@ -10,6 +10,12 @@ import {
 } from "../../lib/siteLanguages";
 import {getDb} from "./mongo";
 import {normalizeCvLanguage} from "./cvFiles";
+import {
+  fetchIpInfoGeo,
+  getClientIp,
+  getIpInfoToken,
+  normalizeIp,
+} from "./requestGeo";
 
 const LEADS_COLLECTION = "leads";
 const DOWNLOAD_TOKEN_MAX_AGE_MS = 1000 * 60 * 60 * 24;
@@ -240,9 +246,40 @@ function getHeader(headers, names) {
   return "";
 }
 
-function getRequestTracking(request, input = {}) {
+function mergeTrackingGeo(tracking, geo, hasExplicitAddress = false) {
+  if (!geo) return tracking;
+
+  const merged = {
+    ...tracking,
+    country: tracking.country || geo.country || geo.countryCode || "",
+    countryCode:
+      tracking.countryCode ||
+      (/^[a-z]{2}$/i.test(tracking.country) ? tracking.country.toUpperCase() : "") ||
+      geo.countryCode ||
+      "",
+    state: tracking.state || geo.state || geo.stateCode || "",
+    stateCode: tracking.stateCode || geo.stateCode || "",
+    city: tracking.city || geo.city || "",
+    postalCode: tracking.postalCode || geo.postalCode || "",
+    latitude: tracking.latitude || geo.latitude || "",
+    longitude: tracking.longitude || geo.longitude || "",
+    timezone: tracking.timezone || geo.timezone || "",
+    geoSource: tracking.geoSource || geo.source || "",
+  };
+
+  if (!hasExplicitAddress) {
+    merged.address = [merged.city, merged.state, merged.country]
+      .filter(Boolean)
+      .join(", ");
+  }
+
+  return merged;
+}
+
+async function getRequestTracking(request, input = {}) {
   const headers = request.headers;
   const forwardedFor = getHeader(headers, [
+    "x-site-client-ip",
     "x-forwarded-for",
     "x-real-ip",
     "x-nf-client-connection-ip",
@@ -250,9 +287,9 @@ function getRequestTracking(request, input = {}) {
     "true-client-ip",
     "client-ip",
   ]);
-  const ip = firstHeaderValue(forwardedFor);
-  const country = firstHeaderValue(
+  const countryCode = firstHeaderValue(
     getHeader(headers, [
+      "x-site-geo-country-code",
       "x-vercel-ip-country",
       "cf-ipcountry",
       "x-country-code",
@@ -260,8 +297,22 @@ function getRequestTracking(request, input = {}) {
       "x-appengine-country",
     ])
   );
+  const country =
+    firstHeaderValue(getHeader(headers, ["x-site-geo-country-name"])) ||
+    countryCode;
+  const stateCode = firstHeaderValue(
+    getHeader(headers, [
+      "x-site-geo-subdivision-code",
+      "x-vercel-ip-country-region",
+      "x-vercel-ip-region",
+      "x-region-code",
+      "x-nf-geo-subdivision-code",
+      "x-appengine-region",
+    ])
+  );
   const state = firstHeaderValue(
     getHeader(headers, [
+      "x-site-geo-subdivision-name",
       "x-vercel-ip-country-region",
       "x-vercel-ip-region",
       "x-region",
@@ -270,13 +321,23 @@ function getRequestTracking(request, input = {}) {
     ])
   );
   const city = firstHeaderValue(
-    getHeader(headers, ["x-vercel-ip-city", "x-city", "x-nf-geo-city"])
+    getHeader(headers, [
+      "x-site-geo-city",
+      "x-vercel-ip-city",
+      "x-city",
+      "x-nf-geo-city",
+    ])
   );
   const postalCode = firstHeaderValue(
-    getHeader(headers, ["x-vercel-ip-postal-code", "x-postal-code"])
+    getHeader(headers, [
+      "x-site-geo-postal-code",
+      "x-vercel-ip-postal-code",
+      "x-postal-code",
+    ])
   );
   const latitude = firstHeaderValue(
     getHeader(headers, [
+      "x-site-geo-latitude",
       "x-vercel-ip-latitude",
       "x-nf-geo-latitude",
       "cf-iplatitude",
@@ -285,6 +346,7 @@ function getRequestTracking(request, input = {}) {
   );
   const longitude = firstHeaderValue(
     getHeader(headers, [
+      "x-site-geo-longitude",
       "x-vercel-ip-longitude",
       "x-nf-geo-longitude",
       "x-nf-geo-lng",
@@ -293,17 +355,26 @@ function getRequestTracking(request, input = {}) {
     ])
   );
   const timezone = firstHeaderValue(
-    getHeader(headers, ["x-vercel-ip-timezone", "x-timezone"])
+    getHeader(headers, [
+      "x-site-geo-timezone",
+      "x-vercel-ip-timezone",
+      "x-timezone",
+    ])
   );
-  const address =
-    firstHeaderValue(getHeader(headers, ["x-geo-address", "x-location"])) ||
-    [city, state, country].filter(Boolean).join(", ");
+  const explicitAddress = firstHeaderValue(
+    getHeader(headers, ["x-geo-address", "x-location"])
+  );
+  const requestIp = getClientIp(request);
+  const ip = normalizeIp(firstHeaderValue(forwardedFor)) || requestIp || "";
 
-  return {
+  let tracking = {
     ip,
     country,
+    countryCode:
+      countryCode || (/^[a-z]{2}$/i.test(country) ? country.toUpperCase() : ""),
     state,
-    address,
+    stateCode,
+    address: explicitAddress || [city, state, country].filter(Boolean).join(", "),
     city,
     postalCode,
     latitude,
@@ -315,7 +386,23 @@ function getRequestTracking(request, input = {}) {
     pageUrl: cleanText(input.pageUrl, 1000),
     apiUrl: request.url,
     forwardedFor: cleanText(forwardedFor, 600),
+    geoSource: country || state || city ? "headers" : "",
   };
+
+  if (!tracking.country || !tracking.state || !tracking.city) {
+    const token = getIpInfoToken();
+
+    if (token && requestIp) {
+      try {
+        const geo = await fetchIpInfoGeo(requestIp, token);
+        tracking = mergeTrackingGeo(tracking, geo, Boolean(explicitAddress));
+      } catch (error) {
+        console.warn("Unable to enrich lead tracking from IPinfo", error);
+      }
+    }
+  }
+
+  return tracking;
 }
 
 function normalizeLeadInput(input = {}, request) {
@@ -481,7 +568,7 @@ export async function createPendingLead(input, request) {
       code: verificationCode,
       requestedAt: now,
     },
-    tracking: getRequestTracking(request, input),
+    tracking: await getRequestTracking(request, input),
     createdAt: now,
     updatedAt: now,
     verifiedAt: null,
