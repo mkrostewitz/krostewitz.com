@@ -23,6 +23,7 @@ const LINKEDIN_IMAGE_CONTENT_TYPES = new Set([
   "image/jpeg",
   "image/png",
 ]);
+const LINKEDIN_SHARE_REQUEST_TIMEOUT_MS = 60000;
 const SHARE_EMOJIS = ["💡", "📈", "🤖", "🏭", "🌍", "✅"];
 const FALLBACK_TIME_ZONE = "Europe/Berlin";
 const FALLBACK_TIME_ZONES = [
@@ -345,6 +346,8 @@ export default function PostManager({user}) {
     connected: false,
     needsReconnect: false,
     profile: null,
+    schedulerConfigured: false,
+    schedulerEnabled: false,
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isDisconnectingLinkedin, setIsDisconnectingLinkedin] = useState(false);
@@ -555,6 +558,15 @@ export default function PostManager({user}) {
       return;
     }
 
+    if (options.timing === "scheduled" && !linkedin.schedulerConfigured) {
+      showSnackbar({
+        type: "error",
+        message:
+          "Enable the LinkedIn scheduler before scheduling posts.",
+      });
+      return;
+    }
+
     const scheduledAt =
       options.timing === "scheduled"
         ? toIsoDateTimeValue(options.scheduledAt, options.timeZone)
@@ -568,10 +580,17 @@ export default function PostManager({user}) {
     setSharingPostId(post.id);
     closeSnackbar();
 
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(
+      () => controller.abort(),
+      LINKEDIN_SHARE_REQUEST_TIMEOUT_MS
+    );
+
     try {
       const response = await fetch(`/api/admin/posts/${post.id}/linkedin`, {
         method: "POST",
         headers: {"Content-Type": "application/json"},
+        signal: controller.signal,
         body: JSON.stringify({
           commentary: options.commentary,
           includeImage: options.includeImage,
@@ -605,10 +624,10 @@ export default function PostManager({user}) {
         data.scheduled
           ? {
               type: "success",
-              message: `LinkedIn share queued in the admin scheduler for ${formatDateTime(
+              message: `LinkedIn share queued for ${formatDateTime(
                 data.linkedin?.scheduledAt,
                 data.linkedin?.scheduledTimeZone || options.timeZone
-              )}.`,
+              )}. Netlify checks due shares every minute.`,
             }
           : {
               type: "success",
@@ -617,8 +636,15 @@ export default function PostManager({user}) {
       );
       setPendingSharePost(null);
     } catch (error) {
-      showSnackbar({type: "error", message: error.message});
+      const isAbortError = error?.name === "AbortError";
+      showSnackbar({
+        type: "error",
+        message: isAbortError
+          ? "LinkedIn request took too long to confirm. Refresh the posts list and try again if it was not queued or posted."
+          : error.message,
+      });
     } finally {
+      window.clearTimeout(timeoutId);
       setSharingPostId("");
     }
   }
@@ -1012,9 +1038,16 @@ export default function PostManager({user}) {
                 </span>
               </label>
 
-              <label className={styles.shareTargetOption}>
+              <label
+                className={`${styles.shareTargetOption} ${
+                  !linkedin.schedulerConfigured
+                    ? styles.shareTargetOptionDisabled
+                    : ""
+                }`}
+              >
                 <input
                   checked={shareTiming === "scheduled"}
+                  disabled={!linkedin.schedulerConfigured}
                   name="linkedin-share-timing"
                   type="radio"
                   value="scheduled"
@@ -1032,10 +1065,17 @@ export default function PostManager({user}) {
                 />
                 <span>
                   <strong>Schedule</strong>
-                  <small>
-                    Queue in the admin scheduler. This does not appear in
-                    LinkedIn&apos;s native scheduled posts list.
-                  </small>
+                  {linkedin.schedulerConfigured ? (
+                    <small>
+                      Queue in the backend scheduler. Netlify publishes after
+                      the selected time.
+                    </small>
+                  ) : (
+                    <small>
+                      Turn on the LinkedIn scheduler in Netlify environment
+                      variables to enable scheduled shares.
+                    </small>
+                  )}
                 </span>
               </label>
 
@@ -1065,8 +1105,10 @@ export default function PostManager({user}) {
                     </select>
                   </label>
                   <p className={`${styles.muted} ${styles.shareScheduleNote}`}>
-                    Netlify checks queued shares every 15 minutes and publishes
-                    after the selected time.
+                    Netlify checks queued shares every minute and publishes due
+                    posts at or shortly after the selected time. These backend
+                    queued posts do not appear in LinkedIn&apos;s native
+                    scheduled posts list.
                   </p>
                 </div>
               )}

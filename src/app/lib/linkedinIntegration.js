@@ -80,6 +80,23 @@ function getLinkedInRequestTimeoutMs() {
   return Math.min(60000, Math.max(5000, timeout));
 }
 
+function normalizeBooleanFlag(value) {
+  return ["1", "true", "yes", "on"].includes(
+    String(value || "").trim().toLowerCase(),
+  );
+}
+
+export function isLinkedInSchedulerEnabled() {
+  return normalizeBooleanFlag(process.env.LINKEDIN_SCHEDULER_ENABLED);
+}
+
+export function isLinkedInSchedulerConfigured() {
+  return Boolean(
+    isLinkedInSchedulerEnabled() &&
+      String(process.env.LINKEDIN_SCHEDULER_SECRET || "").trim(),
+  );
+}
+
 function getEncryptionSecret() {
   return (
     process.env.LINKEDIN_TOKEN_ENCRYPTION_KEY ||
@@ -869,6 +886,14 @@ export async function schedulePostToLinkedIn({
   const normalizedLanguage = normalizeShareLanguage(language);
   const normalizedTimeZone = normalizeTimeZone(scheduledTimeZone);
   const scheduleDate = normalizeScheduledAt(scheduledAt);
+
+  if (!isLinkedInSchedulerConfigured()) {
+    throw new LinkedInIntegrationError(
+      "LinkedIn scheduler is disabled. Enable LINKEDIN_SCHEDULER_ENABLED and LINKEDIN_SCHEDULER_SECRET before scheduling posts.",
+      409,
+    );
+  }
+
   const post = await getAdminPostById(postId);
 
   if (!post) {

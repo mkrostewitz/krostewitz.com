@@ -2,6 +2,7 @@ import {NextResponse} from "next/server";
 
 import {getCurrentAdminUser, unauthorizedResponse} from "../../../../lib/adminAuth";
 import {
+  isLinkedInSchedulerConfigured,
   LinkedInIntegrationError,
   publishDueLinkedInShares,
 } from "../../../../lib/linkedinIntegration";
@@ -39,6 +40,14 @@ export async function POST(request) {
 
   if (!user && !hasSchedulerSecret(request)) {
     return unauthorizedResponse();
+  }
+
+  if (!isLinkedInSchedulerConfigured()) {
+    return NextResponse.json({
+      checked: 0,
+      disabled: true,
+      results: [],
+    });
   }
 
   try {

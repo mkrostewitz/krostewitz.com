@@ -8,6 +8,8 @@ import {
 import {
   disconnectLinkedInConnection,
   getLinkedInConnection,
+  isLinkedInSchedulerConfigured,
+  isLinkedInSchedulerEnabled,
   LinkedInIntegrationError,
 } from "../../../lib/linkedinIntegration";
 import {isLinkedInSignInAvailable} from "../../../lib/linkedinAuth";
@@ -35,6 +37,8 @@ export async function GET() {
     return NextResponse.json({
       integration: {
         available: isLinkedInSignInAvailable(),
+        schedulerConfigured: isLinkedInSchedulerConfigured(),
+        schedulerEnabled: isLinkedInSchedulerEnabled(),
         ...connection,
       },
     });
@@ -56,6 +60,8 @@ export async function DELETE(request) {
     return NextResponse.json({
       integration: {
         available: isLinkedInSignInAvailable(),
+        schedulerConfigured: isLinkedInSchedulerConfigured(),
+        schedulerEnabled: isLinkedInSchedulerEnabled(),
         ...connection,
       },
     });
