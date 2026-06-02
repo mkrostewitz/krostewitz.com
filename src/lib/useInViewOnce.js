@@ -1,16 +1,19 @@
 "use client";
 
-import {useEffect, useRef, useState} from "react";
+import {useCallback, useEffect, useRef, useState} from "react";
 
 export const useInViewOnce = (options) => {
-  const targetRef = useRef(null);
+  const [targetNode, setTargetNode] = useState(null);
   const [hasBeenInView, setHasBeenInView] = useState(false);
   const optionsRef = useRef(
     options || {threshold: 0.25, rootMargin: "0px 0px -10% 0px"}
   );
+  const targetRef = useCallback((node) => {
+    setTargetNode(node);
+  }, []);
 
   useEffect(() => {
-    if (hasBeenInView) return;
+    if (hasBeenInView || !targetNode) return;
 
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
@@ -20,10 +23,10 @@ export const useInViewOnce = (options) => {
       });
     }, optionsRef.current);
 
-    if (targetRef.current) observer.observe(targetRef.current);
+    observer.observe(targetNode);
 
     return () => observer.disconnect();
-  }, [hasBeenInView]);
+  }, [hasBeenInView, targetNode]);
 
   return [targetRef, hasBeenInView];
 };
