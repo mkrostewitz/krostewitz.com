@@ -25,6 +25,30 @@ function hasValidCoordinates(longitude, latitude) {
   );
 }
 
+function getStaticMapStylePath(styleUrl) {
+  const match = String(styleUrl || "").match(
+    /^mapbox:\/\/styles\/([^/]+)\/([^/]+)$/i,
+  );
+
+  if (!match) return "mapbox/light-v11";
+
+  return `${encodeURIComponent(match[1])}/${encodeURIComponent(match[2])}`;
+}
+
+function getStaticMapImageUrl({latitude, longitude, markerColor, styleUrl, token, zoom}) {
+  const color = String(markerColor || "#5867f3")
+    .replace("#", "")
+    .replace(/[^A-Fa-f0-9]/g, "")
+    .slice(0, 6);
+  const pinColor = color || "5867f3";
+  const lon = longitude.toFixed(5);
+  const lat = latitude.toFixed(5);
+  const stylePath = getStaticMapStylePath(styleUrl);
+  const staticZoom = Number.isFinite(zoom) ? zoom.toFixed(1) : "14.0";
+
+  return `https://api.mapbox.com/styles/v1/${stylePath}/static/pin-s+${pinColor}(${lon},${lat})/${lon},${lat},${staticZoom},0/1280x640@2x?access_token=${encodeURIComponent(token)}`;
+}
+
 export default function AddressMap({
   address,
   className = "",
@@ -38,6 +62,8 @@ export default function AddressMap({
   const {t} = useTranslation(undefined, {keyPrefix: "cookieConsent"});
   const {allowExternalServices, openConsentSettings} = useCookieConsent();
   const [containerNode, setContainerNode] = useState(null);
+  const [loadedMapKey, setLoadedMapKey] = useState("");
+  const [mapErrorKey, setMapErrorKey] = useState("");
   const handleContainerRef = useCallback((node) => {
     setContainerNode(node);
   }, []);
@@ -49,31 +75,58 @@ export default function AddressMap({
   const canRenderMap = Boolean(
     canUseExternalServices && token && hasValidCoordinates(longitude, latitude)
   );
+  const markerColor = "#5867f3";
+  const mapKey = canRenderMap
+    ? [longitude, latitude, styleUrl, zoom, token].join("|")
+    : "";
+  const isMapReady = Boolean(
+    mapKey && loadedMapKey === mapKey && mapErrorKey !== mapKey,
+  );
+  const staticMapImageUrl = canRenderMap
+    ? getStaticMapImageUrl({
+        latitude,
+        longitude,
+        markerColor,
+        styleUrl,
+        token,
+        zoom,
+      })
+    : "";
 
   useEffect(() => {
     if (!canRenderMap || !containerNode) return undefined;
 
     mapboxgl.accessToken = token;
 
-    const map = new mapboxgl.Map({
-      attributionControl: false,
-      center: [longitude, latitude],
-      container: containerNode,
-      interactive,
-      pitch: 0,
-      style: styleUrl,
-      zoom,
-    });
+    let map;
+    try {
+      map = new mapboxgl.Map({
+        attributionControl: false,
+        center: [longitude, latitude],
+        container: containerNode,
+        interactive,
+        pitch: 0,
+        style: styleUrl,
+        zoom,
+      });
+    } catch (error) {
+      queueMicrotask(() => {
+        setMapErrorKey(mapKey);
+      });
+      console.warn("Unable to render address map.", error);
+      return undefined;
+    }
+
     const resizeFrame = window.requestAnimationFrame(() => {
       map.resize();
     });
-    const markerColor =
+    const computedMarkerColor =
       window
         .getComputedStyle(document.documentElement)
         .getPropertyValue("--accent")
-        .trim() || "#5867f3";
+        .trim() || markerColor;
 
-    const marker = new mapboxgl.Marker({color: markerColor, scale: markerScale})
+    const marker = new mapboxgl.Marker({color: computedMarkerColor, scale: markerScale})
       .setLngLat([longitude, latitude])
       .addTo(map);
 
@@ -91,9 +144,12 @@ export default function AddressMap({
 
     map.on("load", () => {
       map.resize();
+      setLoadedMapKey(mapKey);
+      setMapErrorKey((currentKey) => (currentKey === mapKey ? "" : currentKey));
     });
-    map.on("error", () => {
-      console.warn("Unable to render address map.");
+    map.on("error", (event) => {
+      setMapErrorKey(mapKey);
+      console.warn("Unable to render address map.", event?.error || event);
     });
 
     return () => {
@@ -107,6 +163,8 @@ export default function AddressMap({
     interactive,
     latitude,
     longitude,
+    mapKey,
+    markerColor,
     markerScale,
     styleUrl,
     token,
@@ -137,7 +195,19 @@ export default function AddressMap({
   }
 
   return (
-    <div className={`${styles.mapRoot} ${className}`} aria-label={label}>
+    <div
+      className={`${styles.mapRoot} ${className}`}
+      aria-label={label}
+      data-map-ready={isMapReady ? "true" : "false"}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        alt=""
+        className={styles.staticMap}
+        decoding="async"
+        loading="lazy"
+        src={staticMapImageUrl}
+      />
       <div className={styles.mapCanvas} ref={handleContainerRef} />
     </div>
   );
