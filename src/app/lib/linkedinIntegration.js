@@ -62,6 +62,12 @@ async function ensureShareJobsIndexes(db) {
   await shareJobsIndexPromise;
 }
 
+function queueShareJobsIndexCreation(db) {
+  ensureShareJobsIndexes(db).catch((error) => {
+    console.warn("Unable to create LinkedIn share job indexes", error);
+  });
+}
+
 function getLinkedInApiVersion() {
   return String(
     process.env.LINKEDIN_API_VERSION || DEFAULT_LINKEDIN_API_VERSION,
@@ -991,7 +997,7 @@ export async function schedulePostToLinkedIn({
   };
   const db = await getDb();
 
-  await ensureShareJobsIndexes(db);
+  queueShareJobsIndexCreation(db);
   await getShareJobsCollection(db).insertOne(job);
 
   const updatedPost = await recordPostLinkedInShareSchedule(
@@ -1061,7 +1067,7 @@ export async function updateScheduledPostToLinkedIn({
   }
 
   const db = await getDb();
-  await ensureShareJobsIndexes(db);
+  queueShareJobsIndexCreation(db);
 
   const existingJob = await getShareJobsCollection(db).findOne({
     _id: normalizedJobId,
@@ -1166,7 +1172,7 @@ export async function cancelScheduledPostToLinkedIn({jobId, postId, user}) {
   }
 
   const db = await getDb();
-  await ensureShareJobsIndexes(db);
+  queueShareJobsIndexCreation(db);
 
   const existingJob = await getShareJobsCollection(db).findOne({
     _id: normalizedJobId,
@@ -1249,7 +1255,7 @@ async function claimLinkedInShareJob(job) {
 export async function publishDueLinkedInShares({limit = 5} = {}) {
   const db = await getDb();
 
-  await ensureShareJobsIndexes(db);
+  queueShareJobsIndexCreation(db);
 
   const jobs = await getShareJobsCollection(db)
     .find({

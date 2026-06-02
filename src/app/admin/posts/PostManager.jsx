@@ -394,6 +394,7 @@ function getLinkedInShareHistory(post) {
       failedAt: schedule.failedAt,
       failure: schedule.failure,
       includeImage: schedule.includeImage,
+      jobId: schedule.jobId,
       kind: "Scheduled share",
       language: schedule.language,
       linkedInPostUrl: schedule.linkedInPostUrl || linkedShare?.postUrl || "",
@@ -403,6 +404,7 @@ function getLinkedInShareHistory(post) {
       scheduledAt: schedule.scheduledAt,
       scheduledTimeZone: schedule.scheduledTimeZone,
       status: schedule.status || "scheduled",
+      target: schedule.target || "personal_profile",
     };
   });
   const immediateSuccessHistory = shares
@@ -1429,6 +1431,41 @@ export default function PostManager({user}) {
                           >
                             Open LinkedIn post
                           </Link>
+                        )}
+                        {status === "scheduled" && entry.jobId && (
+                          <div className={styles.shareHistoryActions}>
+                            <button
+                              className={styles.secondaryButton}
+                              disabled={
+                                Boolean(sharingPostId) ||
+                                cancelingScheduleId === entry.jobId
+                              }
+                              type="button"
+                              onClick={() =>
+                                openShareDialog(pendingSharePost, entry)
+                              }
+                            >
+                              Edit
+                            </button>
+                            <button
+                              className={styles.dangerButton}
+                              disabled={
+                                Boolean(sharingPostId) ||
+                                cancelingScheduleId === entry.jobId
+                              }
+                              type="button"
+                              onClick={() =>
+                                cancelLinkedInSchedule(
+                                  pendingSharePost,
+                                  entry
+                                )
+                              }
+                            >
+                              {cancelingScheduleId === entry.jobId
+                                ? "Canceling..."
+                                : "Cancel"}
+                            </button>
+                          </div>
                         )}
                       </article>
                     );

@@ -897,6 +897,13 @@
   overflow-wrap: anywhere;
 }
 
+.shareHistoryActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
 .shareHistoryLink {
   color: var(--accent-text);
   font-size: 0.84rem;
