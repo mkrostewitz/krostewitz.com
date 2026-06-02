@@ -1,7 +1,3 @@
-export const config = {
-  schedule: "* * * * *",
-};
-
 const SCHEDULER_FETCH_TIMEOUT_MS = 25000;
 
 function isEnabled(value) {
@@ -18,6 +14,15 @@ function getBatchLimit() {
   return Math.min(5, Math.max(1, Math.floor(limit)));
 }
 
+function normalizeSiteUrl(value) {
+  const siteUrl = String(value || "").trim().replace(/\/+$/, "");
+
+  if (!siteUrl) return "";
+  if (/^https?:\/\//i.test(siteUrl)) return siteUrl;
+
+  return `https://${siteUrl}`;
+}
+
 export default async function handler(request) {
   const scheduledPayload = await request.json().catch(() => ({}));
 
@@ -26,11 +31,9 @@ export default async function handler(request) {
     return new Response(null, {status: 204});
   }
 
-  const siteUrl = String(
+  const siteUrl = normalizeSiteUrl(
     process.env.AUTH_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL || process.env.URL || "",
-  )
-    .trim()
-    .replace(/\/+$/, "");
+  );
   const secret = String(process.env.LINKEDIN_SCHEDULER_SECRET || "").trim();
 
   if (!siteUrl || !secret) {

@@ -1558,6 +1558,17 @@ export default function PostManager({user}) {
                     queued posts do not appear in LinkedIn&apos;s native
                     scheduled posts list.
                   </p>
+                  {schedulerStatusText && (
+                    <p
+                      className={`${styles.shareScheduleNote} ${
+                        linkedin.schedulerLastError || !linkedin.schedulerLastRunAt
+                          ? styles.linkedinSchedulerWarning
+                          : styles.linkedinSchedulerStatus
+                      }`}
+                    >
+                      {schedulerStatusText}
+                    </p>
+                  )}
                 </div>
               )}
             </fieldset>
