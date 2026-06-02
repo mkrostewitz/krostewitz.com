@@ -27,7 +27,7 @@ export default async function handler(request) {
   }
 
   const siteUrl = String(
-    process.env.NEXT_PUBLIC_SITE_URL || process.env.AUTH_BASE_URL || process.env.URL || "",
+    process.env.AUTH_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL || process.env.URL || "",
   )
     .trim()
     .replace(/\/+$/, "");

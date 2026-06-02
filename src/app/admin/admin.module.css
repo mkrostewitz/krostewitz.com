@@ -193,7 +193,9 @@
   color: #ffffff;
   font-weight: 800;
   text-decoration: none;
-  transition: background 0.16s ease, border-color 0.16s ease;
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease;
 }
 
 .linkedinButton::before {
@@ -344,7 +346,9 @@
   text-align: center;
   text-decoration: none;
   cursor: pointer;
-  transition: background 0.16s ease, border-color 0.16s ease,
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease,
     color 0.16s ease;
 }
 
@@ -427,7 +431,9 @@
   background: var(--surface);
   color: var(--foreground);
   cursor: pointer;
-  transition: background 0.16s ease, border-color 0.16s ease,
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease,
     color 0.16s ease;
 }
 
@@ -668,6 +674,14 @@
   color: var(--text-muted);
   font-size: 0.88rem;
   line-height: 1.45;
+}
+
+.linkedinSchedulerStatus {
+  color: var(--text-secondary);
+}
+
+.linkedinSchedulerWarning {
+  color: #fca5a5;
 }
 
 .shareTargetList {
@@ -1691,7 +1705,9 @@
   border: 1px solid var(--border-strong);
   border-radius: 999px;
   background: var(--surface-soft);
-  transition: background 0.16s ease, border-color 0.16s ease;
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease;
 }
 
 .featureSwitch::after {
@@ -1914,7 +1930,9 @@
   font-weight: 700;
   cursor: pointer;
   overflow: hidden;
-  transition: background 0.16s ease, border-color 0.16s ease,
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease,
     color 0.16s ease;
 }
 
@@ -2004,7 +2022,9 @@
   color: var(--foreground);
   font-weight: 800;
   cursor: pointer;
-  transition: background 0.16s ease, border-color 0.16s ease,
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease,
     color 0.16s ease;
 }
 
@@ -2277,6 +2297,18 @@
   white-space: nowrap;
 }
 
+.statusBadgeSuccess {
+  border-color: rgba(34, 197, 94, 0.44);
+  background: rgba(34, 197, 94, 0.1);
+  color: #16a34a;
+}
+
+.statusBadgeWarning {
+  border-color: rgba(245, 158, 11, 0.44);
+  background: rgba(245, 158, 11, 0.1);
+  color: #b45309;
+}
+
 .setupGrid {
   display: grid;
   grid-template-columns: minmax(180px, 240px) minmax(0, 1fr);
@@ -2316,6 +2348,36 @@
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.linkedinPanel .buttonRow > a,
+.linkedinPanel .buttonRow > button {
+  min-height: 44px;
+  width: 156px;
+}
+
+.linkedinReconnectButton {
+  border-color: #2563eb;
+  color: #2563eb;
+  font-size: 0.86rem;
+}
+
+.linkedinReconnectButton:hover {
+  border-color: #1d4ed8;
+  background: #1d4ed8;
+  color: #ffffff;
+}
+
+.linkedinDisconnectButton {
+  border-color: #dc2626;
+  color: #dc2626;
+  font-size: 0.86rem;
+}
+
+.linkedinDisconnectButton:hover {
+  border-color: #b91c1c;
+  background: #b91c1c;
+  color: #ffffff;
 }
 
 .leadModalActions {

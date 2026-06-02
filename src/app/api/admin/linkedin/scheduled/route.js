@@ -37,8 +37,9 @@ function hasSchedulerSecret(request) {
 
 export async function POST(request) {
   const user = await getCurrentAdminUser();
+  const authorizedBySecret = hasSchedulerSecret(request);
 
-  if (!user && !hasSchedulerSecret(request)) {
+  if (!user && !authorizedBySecret) {
     return unauthorizedResponse();
   }
 
@@ -52,7 +53,10 @@ export async function POST(request) {
 
   try {
     const body = await request.json().catch(() => ({}));
-    const result = await publishDueLinkedInShares({limit: body.limit || 5});
+    const result = await publishDueLinkedInShares({
+      limit: body.limit || 5,
+      source: user ? "manual" : "netlify",
+    });
 
     return NextResponse.json(result);
   } catch (error) {

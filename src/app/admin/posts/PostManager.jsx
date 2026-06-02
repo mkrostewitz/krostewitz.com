@@ -403,6 +403,49 @@ function getShareHistoryStatusClass(status) {
   return "";
 }
 
+function getSchedulerSourceLabel(value) {
+  const source = String(value || "").trim().toLowerCase();
+
+  if (source === "netlify") return "Netlify";
+  if (source === "manual") return "Manual check";
+
+  return source || "Unknown source";
+}
+
+function getSchedulerStatusText(linkedin) {
+  if (!linkedin?.schedulerConfigured) return "";
+
+  if (!linkedin.schedulerLastRunAt) {
+    return "No scheduler checks recorded yet. Netlify may not have invoked the scheduled function.";
+  }
+
+  const results = Array.isArray(linkedin.schedulerLastResults)
+    ? linkedin.schedulerLastResults
+    : [];
+  const checked = Math.max(0, Number(linkedin.schedulerLastChecked) || 0);
+  const published = results.filter((result) => result.status === "published").length;
+  const failed = results.filter((result) => result.status === "failed").length;
+  const parts = [
+    `Last scheduler check ${formatDateTime(linkedin.schedulerLastRunAt)}`,
+    getSchedulerSourceLabel(linkedin.schedulerLastRunSource),
+    `${checked} checked`,
+  ];
+
+  if (published > 0) {
+    parts.push(`${published} published`);
+  }
+
+  if (failed > 0) {
+    parts.push(`${failed} failed`);
+  }
+
+  if (linkedin.schedulerLastError) {
+    parts.push(linkedin.schedulerLastError);
+  }
+
+  return parts.join(" · ");
+}
+
 function getLinkedInShareHistory(post) {
   const schedules = Array.isArray(post?.linkedinShareSchedules)
     ? post.linkedinShareSchedules
@@ -490,6 +533,11 @@ export default function PostManager({user}) {
     profile: null,
     schedulerConfigured: false,
     schedulerEnabled: false,
+    schedulerLastChecked: null,
+    schedulerLastError: "",
+    schedulerLastResults: [],
+    schedulerLastRunAt: null,
+    schedulerLastRunSource: "",
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isDisconnectingLinkedin, setIsDisconnectingLinkedin] = useState(false);
@@ -531,6 +579,10 @@ export default function PostManager({user}) {
         0
       ),
     [posts]
+  );
+  const schedulerStatusText = useMemo(
+    () => getSchedulerStatusText(linkedin),
+    [linkedin]
   );
 
   const counts = useMemo(
@@ -960,7 +1012,15 @@ export default function PostManager({user}) {
                   Share published blog posts to the connected LinkedIn member.
                 </p>
               </div>
-              <span className={styles.statusBadge}>
+              <span
+                className={`${styles.statusBadge} ${
+                  linkedin.connected
+                    ? linkedin.needsReconnect
+                      ? styles.statusBadgeWarning
+                      : styles.statusBadgeSuccess
+                    : ""
+                }`}
+              >
                 {linkedin.connected
                   ? linkedin.needsReconnect
                     ? "Reconnect"
@@ -999,12 +1059,23 @@ export default function PostManager({user}) {
                     Run the scheduler to publish or reveal the failure reason.
                   </span>
                 )}
+                {linkedin.schedulerConfigured && schedulerStatusText && (
+                  <span
+                    className={
+                      linkedin.schedulerLastError
+                        ? styles.linkedinSchedulerWarning
+                        : styles.linkedinSchedulerStatus
+                    }
+                  >
+                    {schedulerStatusText}
+                  </span>
+                )}
               </div>
 
               <div className={styles.buttonRow}>
                 {linkedin.available && (
                   <a
-                    className={styles.secondaryButton}
+                    className={`${styles.secondaryButton} ${styles.linkedinReconnectButton}`}
                     href="/api/admin/linkedin/connect"
                     rel="noopener noreferrer"
                     target="_blank"
@@ -1014,7 +1085,7 @@ export default function PostManager({user}) {
                 )}
                 {linkedin.connected && (
                   <button
-                    className={styles.ghostButton}
+                    className={`${styles.ghostButton} ${styles.linkedinDisconnectButton}`}
                     disabled={isDisconnectingLinkedin}
                     type="button"
                     onClick={disconnectLinkedIn}

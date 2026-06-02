@@ -392,6 +392,15 @@ function serializeConnection(document, options = {}) {
     tokenInvalidatedAt,
     tokenInvalidationReason: document?.tokenInvalidationReason || "",
     lastPublishedAt: toIsoDate(document?.lastPublishedAt),
+    schedulerLastChecked: Number.isFinite(Number(document?.schedulerLastChecked))
+      ? Number(document.schedulerLastChecked)
+      : null,
+    schedulerLastError: document?.schedulerLastError || "",
+    schedulerLastResults: Array.isArray(document?.schedulerLastResults)
+      ? document.schedulerLastResults
+      : [],
+    schedulerLastRunAt: toIsoDate(document?.schedulerLastRunAt),
+    schedulerLastRunSource: document?.schedulerLastRunSource || "",
     updatedAt: toIsoDate(document?.updatedAt),
     updatedBy: document?.updatedBy || null,
     apiVersion: getLinkedInApiVersion(),
@@ -1252,7 +1261,51 @@ async function claimLinkedInShareJob(job) {
   return result?.value || result;
 }
 
-export async function publishDueLinkedInShares({limit = 5} = {}) {
+function normalizeSchedulerSource(value) {
+  return cleanText(value, 40) || "manual";
+}
+
+function serializeSchedulerResult(result = {}) {
+  return {
+    jobId: cleanText(result.jobId, 120),
+    status: cleanText(result.status, 40),
+    error: cleanText(result.error, 400),
+  };
+}
+
+async function recordLinkedInSchedulerRun(
+  db,
+  {checked = 0, error = "", results = [], source = "manual"} = {},
+) {
+  const now = new Date();
+  const checkedCount = Math.max(0, Math.floor(Number(checked) || 0));
+  const schedulerPatch = {
+    schedulerLastChecked: checkedCount,
+    schedulerLastError: cleanText(error, 500),
+    schedulerLastResults: Array.isArray(results)
+      ? results.map(serializeSchedulerResult).slice(0, 10)
+      : [],
+    schedulerLastRunAt: now,
+    schedulerLastRunSource: normalizeSchedulerSource(source),
+    updatedAt: now,
+  };
+
+  await getIntegrationCollection(db).updateOne(
+    {_id: LINKEDIN_INTEGRATION_ID},
+    {
+      $set: schedulerPatch,
+      $setOnInsert: {
+        createdAt: now,
+        provider: "linkedin",
+      },
+    },
+    {upsert: true},
+  );
+
+  return schedulerPatch;
+}
+
+export async function publishDueLinkedInShares({limit = 5, source = "manual"} = {}) {
   const db = await getDb();
 
   queueShareJobsIndexCreation(db);
@@ -1340,8 +1393,22 @@ export async function publishDueLinkedInShares({limit = 5} = {}) {
     }
   }
 
+  let schedulerRun = null;
+
+  try {
+    schedulerRun = await recordLinkedInSchedulerRun(db, {
+      checked: jobs.length,
+      results,
+      source,
+    });
+  } catch (error) {
+    console.warn("Unable to record LinkedIn scheduler run", error);
+  }
+
   return {
     checked: jobs.length,
     results,
+    schedulerLastRunAt: toIsoDate(schedulerRun?.schedulerLastRunAt),
+    schedulerLastRunSource: schedulerRun?.schedulerLastRunSource || "",
   };
 }
