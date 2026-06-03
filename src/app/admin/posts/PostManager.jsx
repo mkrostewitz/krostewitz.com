@@ -315,10 +315,20 @@ function getSupportedLinkedInImageContentType(media) {
   return LINKEDIN_IMAGE_CONTENT_TYPES.has(contentType) ? contentType : "";
 }
 
-function canIncludeLinkedInImage(post) {
+function getLinkedInImageMedia(post) {
   const media = post?.media;
 
-  if (media?.type !== "image" || !media.url) return false;
+  if (media?.type === "image" && media.url) return media;
+
+  return Array.isArray(post?.mediaGallery)
+    ? post.mediaGallery.find((item) => item?.type === "image" && item.url) || null
+    : null;
+}
+
+function canIncludeLinkedInImage(post) {
+  const media = getLinkedInImageMedia(post);
+
+  if (!media) return false;
 
   return Boolean(
     getSupportedLinkedInImageContentType(media) ||
@@ -327,10 +337,9 @@ function canIncludeLinkedInImage(post) {
 }
 
 function getShareImageStatus(post) {
-  const media = post?.media;
+  const media = getLinkedInImageMedia(post);
 
   if (!media) return "No image is attached to this post.";
-  if (media.type !== "image") return "Only attached images can be posted to LinkedIn.";
   if (!canIncludeLinkedInImage(post)) {
     return "LinkedIn accepts JPG, PNG, and GIF images for image posts.";
   }

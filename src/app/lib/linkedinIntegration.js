@@ -316,10 +316,20 @@ function getSupportedImageContentType(media, responseContentType = "") {
   return LINKEDIN_IMAGE_CONTENT_TYPES.has(contentType) ? contentType : "";
 }
 
-function hasShareableLinkedInImage(post) {
+function getLinkedInImageMedia(post) {
   const media = post?.media;
 
-  if (media?.type !== "image" || !media.url) return false;
+  if (media?.type === "image" && media.url) return media;
+
+  return Array.isArray(post?.mediaGallery)
+    ? post.mediaGallery.find((item) => item?.type === "image" && item.url) || null
+    : null;
+}
+
+function hasShareableLinkedInImage(post) {
+  const media = getLinkedInImageMedia(post);
+
+  if (!media) return false;
 
   return Boolean(
     getSupportedImageContentType(media) || !normalizeImageContentType(media.mimeType)
@@ -701,9 +711,10 @@ async function uploadLinkedInImageBinary({
 }
 
 async function uploadPostImageToLinkedIn({connection, language, post}) {
-  if (!hasShareableLinkedInImage(post)) return null;
+  const media = getLinkedInImageMedia(post);
 
-  const media = post.media;
+  if (!media || !hasShareableLinkedInImage(post)) return null;
+
   const {buffer, contentType} = await downloadPostImage(media);
   const {imageUrn, uploadUrl} = await initializeLinkedInImageUpload(connection);
 

@@ -47,6 +47,16 @@ function normalizeCategories(value) {
   return categories;
 }
 
+function getPreviewMedia(post) {
+  if (post?.media?.url) return post.media;
+
+  const galleryImage = Array.isArray(post?.mediaGallery)
+    ? post.mediaGallery.find((item) => item?.type === "image" && item.url)
+    : null;
+
+  return galleryImage || null;
+}
+
 export default function BlogSection() {
   const {t, i18n} = useTranslation();
   const topics = t("blog.topics", {returnObjects: true});
@@ -181,44 +191,51 @@ export default function BlogSection() {
 
       {visiblePosts.length > 0 ? (
         <div className={styles.grid}>
-          {visiblePosts.map((post) => (
-            <Link
-              className={styles.card}
-              href={`/blog/${post.slug}?lng=${language}`}
-              key={post.id}
-            >
-              {post.media && (
-                <div className={styles.media}>
-                  {post.media.type === "image" ? (
-                    <img src={post.media.url} alt="" loading="lazy" />
-                  ) : (
-                    <video
-                      muted
-                      playsInline
-                      preload="metadata"
-                      src={post.media.url}
-                    />
-                  )}
-                </div>
-              )}
+          {visiblePosts.map((post) => {
+            const previewMedia = getPreviewMedia(post);
 
-              <div className={styles.cardBody}>
-                <span className={styles.date}>
-                  {formatDate(post.publishedAt || post.updatedAt, i18n.language)}
-                </span>
-                {normalizeCategories(post.categories).length > 0 && (
-                  <div className={styles.cardCategories}>
-                    {normalizeCategories(post.categories).map((category) => (
-                      <span key={category.slug}>{category.label}</span>
-                    ))}
+            return (
+              <Link
+                className={styles.card}
+                href={`/blog/${post.slug}?lng=${language}`}
+                key={post.id}
+              >
+                {previewMedia && (
+                  <div className={styles.media}>
+                    {previewMedia.type === "image" ? (
+                      <img src={previewMedia.url} alt="" loading="lazy" />
+                    ) : (
+                      <video
+                        muted
+                        playsInline
+                        preload="metadata"
+                        src={previewMedia.url}
+                      />
+                    )}
                   </div>
                 )}
-                <h3>{post.title}</h3>
-                {post.summary && <p>{post.summary}</p>}
-                <span className={styles.readMore}>{t("blog.readMore")}</span>
-              </div>
-            </Link>
-          ))}
+
+                <div className={styles.cardBody}>
+                  <span className={styles.date}>
+                    {formatDate(
+                      post.publishedAt || post.updatedAt,
+                      i18n.language
+                    )}
+                  </span>
+                  {normalizeCategories(post.categories).length > 0 && (
+                    <div className={styles.cardCategories}>
+                      {normalizeCategories(post.categories).map((category) => (
+                        <span key={category.slug}>{category.label}</span>
+                      ))}
+                    </div>
+                  )}
+                  <h3>{post.title}</h3>
+                  {post.summary && <p>{post.summary}</p>}
+                  <span className={styles.readMore}>{t("blog.readMore")}</span>
+                </div>
+              </Link>
+            );
+          })}
         </div>
       ) : (
         <p className={styles.empty}>

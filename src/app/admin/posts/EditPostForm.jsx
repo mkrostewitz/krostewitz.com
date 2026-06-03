@@ -74,6 +74,7 @@ const EMPTY_FORM = {
   publishedAt: "",
   categories: [],
   media: null,
+  mediaGallery: [],
   translations: {},
 };
 
@@ -120,6 +121,7 @@ function createEmptyForm() {
     ...EMPTY_FORM,
     categories: [],
     media: null,
+    mediaGallery: [],
     translations: createEmptyTranslations(),
   };
 }
@@ -180,6 +182,42 @@ function normalizeFormCategories(value) {
   }
 
   return categories;
+}
+
+function getMediaIdentity(media) {
+  return media?.key || media?.url || "";
+}
+
+function normalizeFormMediaGallery(value) {
+  const gallery = [];
+  const seen = new Set();
+
+  for (const item of Array.isArray(value) ? value : []) {
+    if (!item || item.type !== "image" || !item.url) continue;
+
+    const identity = getMediaIdentity(item);
+
+    if (!identity || seen.has(identity)) continue;
+
+    gallery.push(item);
+    seen.add(identity);
+  }
+
+  return gallery;
+}
+
+function appendMediaGallery(currentGallery, items) {
+  return normalizeFormMediaGallery([
+    ...normalizeFormMediaGallery(currentGallery),
+    ...(Array.isArray(items) ? items : []),
+  ]);
+}
+
+function isSameMedia(left, right) {
+  const leftIdentity = getMediaIdentity(left);
+  const rightIdentity = getMediaIdentity(right);
+
+  return Boolean(leftIdentity && rightIdentity && leftIdentity === rightIdentity);
 }
 
 function normalizeTranslation(value = {}) {
@@ -306,6 +344,7 @@ function createFormFromPost(post) {
     publishedAt: toDateTimeLocalValue(post.publishedAt),
     categories: normalizeFormCategories(post.categories),
     media: post.media || null,
+    mediaGallery: normalizeFormMediaGallery(post.mediaGallery),
     translations: normalizePostTranslations(post),
   };
 }
@@ -724,6 +763,48 @@ export default function EditPostForm({
     return editor.isEmpty ? "" : editor.getHTML();
   }
 
+  function appendUploadedAssets(assets) {
+    const uploadedAssets = (Array.isArray(assets) ? assets : []).filter(Boolean);
+
+    if (uploadedAssets.length === 0) return;
+
+    setForm((current) => {
+      const hasPrimaryMedia = Boolean(current.media);
+      const nextMedia = current.media || uploadedAssets[0] || null;
+      const galleryAssets = uploadedAssets.filter(
+        (asset, index) => asset.type === "image" && (hasPrimaryMedia || index > 0)
+      );
+
+      return {
+        ...current,
+        media: nextMedia,
+        mediaGallery: appendMediaGallery(current.mediaGallery, galleryAssets),
+      };
+    });
+  }
+
+  function removeGalleryMedia(media) {
+    const identity = getMediaIdentity(media);
+
+    setForm((current) => ({
+      ...current,
+      mediaGallery: normalizeFormMediaGallery(current.mediaGallery).filter(
+        (item) => getMediaIdentity(item) !== identity
+      ),
+    }));
+  }
+
+  function setMediaAsCover(media) {
+    setForm((current) => ({
+      ...current,
+      media,
+      mediaGallery: appendMediaGallery(
+        current.mediaGallery,
+        current.media?.type === "image" ? [current.media] : []
+      ),
+    }));
+  }
+
   function applyGeneratedPost(nextPost, targetFields = DEFAULT_AI_TARGET_FIELDS) {
     const targetLanguage =
       getSupportedSiteLanguage(nextPost.language) || activeLanguage;
@@ -761,30 +842,59 @@ export default function EditPostForm({
     editor.chain().focus().extendMarkRange("link").setLink({href: url}).run();
   }
 
-  async function uploadFile(event) {
+  async function uploadFiles(event) {
     const input = event.currentTarget;
-    const file = input.files?.[0];
-    if (!file) return;
+    const files = Array.from(input.files || []);
+    if (files.length === 0) return;
 
     setIsUploading(true);
     closeSnackbar();
 
     try {
-      const body = new FormData();
-      body.append("file", file);
+      const uploadedAssets = [];
+      let uploadError = null;
 
-      const response = await fetch("/api/admin/uploads", {
-        method: "POST",
-        body,
-      });
-      const data = await response.json().catch(() => ({}));
+      for (const file of files) {
+        try {
+          const body = new FormData();
+          body.append("file", file);
 
-      if (!response.ok) {
-        throw new Error(data.error || "Unable to upload file.");
+          const response = await fetch("/api/admin/uploads", {
+            method: "POST",
+            body,
+          });
+          const data = await response.json().catch(() => ({}));
+
+          if (!response.ok) {
+            throw new Error(data.error || "Unable to upload file.");
+          }
+
+          uploadedAssets.push(data.asset);
+        } catch (error) {
+          uploadError = error;
+          break;
+        }
       }
 
-      updateField("media", data.asset);
-      showSnackbar({type: "success", message: "File uploaded."});
+      appendUploadedAssets(uploadedAssets);
+
+      if (uploadError) {
+        throw new Error(
+          uploadedAssets.length > 0
+            ? `${uploadedAssets.length} file${
+                uploadedAssets.length === 1 ? "" : "s"
+              } uploaded. ${uploadError.message}`
+            : uploadError.message
+        );
+      }
+
+      showSnackbar({
+        type: "success",
+        message:
+          uploadedAssets.length === 1
+            ? "File uploaded."
+            : `${uploadedAssets.length} files uploaded.`,
+      });
     } catch (error) {
       showSnackbar({type: "error", message: error.message});
     } finally {
@@ -890,6 +1000,7 @@ export default function EditPostForm({
         contentHtml: primaryTranslation.contentHtml,
         translations,
         media: form.media,
+        mediaGallery: form.mediaGallery,
       };
       const response = await fetch(
         form.id ? `/api/admin/posts/${form.id}` : "/api/admin/posts",
@@ -929,6 +1040,7 @@ export default function EditPostForm({
   }
 
   const formCategories = normalizeFormCategories(form.categories);
+  const formGalleryMedia = normalizeFormMediaGallery(form.mediaGallery);
   const activeTranslation = getFormTranslation(form, activeLanguage);
   const activeLanguageLabel = getSiteLanguageLabel(activeLanguage);
   const translationTargets = SITE_LANGUAGES.filter(
@@ -1174,16 +1286,17 @@ export default function EditPostForm({
           >
             <div className={styles.postMediaHeader}>
               <div className={styles.titleBlock}>
-                <h2 id="post-picture-title">Post picture</h2>
-                <p className={styles.muted}>Attach JPG, PNG, GIF, or video.</p>
+                <h2 id="post-picture-title">Post pictures</h2>
+                <p className={styles.muted}>JPG, PNG, GIF, or video.</p>
               </div>
               <label className={styles.uploadButton}>
                 {isUploading ? "Uploading..." : "Upload"}
                 <input
                   accept="image/jpeg,image/png,image/gif,video/*"
                   disabled={isUploading}
+                  multiple
                   type="file"
-                  onChange={uploadFile}
+                  onChange={uploadFiles}
                 />
               </label>
             </div>
@@ -1205,12 +1318,55 @@ export default function EditPostForm({
                     type="button"
                     onClick={() => updateField("media", null)}
                   >
-                    Remove media
+                    Remove cover
                   </button>
                 </div>
               </div>
             ) : (
-              <p className={styles.muted}>No media attached.</p>
+              <p className={styles.muted}>No cover attached.</p>
+            )}
+
+            {formGalleryMedia.length > 0 && (
+              <div
+                className={styles.postGalleryPreview}
+                aria-label="Gallery pictures"
+              >
+                {formGalleryMedia.map((item) => {
+                  const isCover = isSameMedia(form.media, item);
+
+                  return (
+                    <div
+                      className={styles.postGalleryItem}
+                      key={getMediaIdentity(item)}
+                    >
+                      <img src={item.url} alt="" />
+                      <div className={styles.mediaDetails}>
+                        <strong title={item.fileName || "Gallery picture"}>
+                          {item.fileName || "Gallery picture"}
+                        </strong>
+                        <span>{item.mimeType || item.type}</span>
+                        <div className={styles.mediaActions}>
+                          <button
+                            className={styles.secondaryButton}
+                            disabled={isCover}
+                            type="button"
+                            onClick={() => setMediaAsCover(item)}
+                          >
+                            {isCover ? "Cover" : "Use as cover"}
+                          </button>
+                          <button
+                            className={styles.dangerButton}
+                            type="button"
+                            onClick={() => removeGalleryMedia(item)}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </section>
         </div>

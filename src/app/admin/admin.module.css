@@ -1482,7 +1482,48 @@
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--surface-muted);
-  object-fit: cover;
+  object-fit: contain;
+}
+
+.postGalleryPreview {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.postGalleryItem {
+  display: grid;
+  grid-template-columns: minmax(90px, 118px) minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px;
+  background: var(--surface);
+}
+
+.postGalleryItem img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--surface-muted);
+  object-fit: contain;
+}
+
+.mediaActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mediaActions .secondaryButton,
+.mediaActions .dangerButton {
+  min-height: 34px;
+  padding: 7px 10px;
+  font-size: 0.84rem;
 }
 
 .aiPanel {
@@ -2472,6 +2513,10 @@
   .postListActionCell {
     justify-self: stretch;
     justify-content: flex-start;
+  }
+
+  .postGalleryItem {
+    grid-template-columns: 1fr;
   }
 
   .postListShareMeta {

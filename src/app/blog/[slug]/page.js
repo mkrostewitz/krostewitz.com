@@ -1,5 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
-
 import {cookies} from "next/headers";
 import {notFound} from "next/navigation";
 
@@ -21,6 +19,7 @@ import {
   isBlogEnabled,
 } from "../../lib/siteProfile";
 import BlogBackLink from "./BlogBackLink";
+import BlogImageCarousel from "./BlogImageCarousel";
 import styles from "./blog-post.module.css";
 import ShareButtons from "./ShareButtons";
 
@@ -63,6 +62,36 @@ async function getSiteTitle() {
   }
 }
 
+function getMediaIdentity(media) {
+  return media?.key || media?.url || "";
+}
+
+function getPostImageGallery(post) {
+  const gallery = [];
+  const seen = new Set();
+  const candidates = [
+    post?.media?.type === "image" ? post.media : null,
+    ...(Array.isArray(post?.mediaGallery) ? post.mediaGallery : []),
+  ];
+
+  for (const media of candidates) {
+    if (!media || media.type !== "image" || !media.url) continue;
+
+    const identity = getMediaIdentity(media);
+
+    if (!identity || seen.has(identity)) continue;
+
+    gallery.push(media);
+    seen.add(identity);
+  }
+
+  return gallery;
+}
+
+function getPostMetadataImage(post) {
+  return getPostImageGallery(post)[0]?.url;
+}
+
 export async function generateMetadata({params, searchParams}) {
   const blogEnabled = await isBlogEnabled();
   const siteTitle = await getSiteTitle();
@@ -87,8 +116,7 @@ export async function generateMetadata({params, searchParams}) {
   const description = post.summary;
   const siteUrl = await getCurrentRequestOrigin();
   const url = new URL(`/blog/${post.slug}`, siteUrl).toString();
-  const image =
-    post.media?.type === "image" && post.media.url ? post.media.url : undefined;
+  const image = getPostMetadataImage(post);
   const keywords = Array.isArray(post.categories)
     ? post.categories.map((category) => category.label).filter(Boolean)
     : [];
@@ -135,6 +163,9 @@ export default async function BlogPostPage({params, searchParams}) {
   const siteUrl = await getCurrentRequestOrigin();
   const postUrl = new URL(`/blog/${post.slug}`, siteUrl);
   postUrl.searchParams.set("lng", language);
+  const imageGallery = getPostImageGallery(post);
+  const videoMedia =
+    post.media?.type === "video" && post.media.url ? post.media : null;
 
   return (
     <div className={styles.page} id="top">
@@ -164,15 +195,13 @@ export default async function BlogPostPage({params, searchParams}) {
             />
           </header>
 
-          {post.media && (
+          {videoMedia && (
             <div className={styles.media}>
-              {post.media.type === "image" ? (
-                <img src={post.media.url} alt="" />
-              ) : (
-                <video controls src={post.media.url} />
-              )}
+              <video controls src={videoMedia.url} />
             </div>
           )}
+
+          <BlogImageCarousel images={imageGallery} />
 
           <div
             className={styles.content}

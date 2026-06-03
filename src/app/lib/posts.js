@@ -436,6 +436,64 @@ function normalizeMedia(value) {
   };
 }
 
+function getMediaIdentity(media) {
+  return media?.key || media?.url || "";
+}
+
+function normalizeMediaGallery(value) {
+  const gallery = [];
+  const seen = new Set();
+
+  for (const item of Array.isArray(value) ? value : []) {
+    const media = normalizeMedia(item);
+
+    if (!media) continue;
+
+    if (media.type !== "image") {
+      throw new PostValidationError("Gallery media must be images.");
+    }
+
+    const identity = getMediaIdentity(media);
+
+    if (!identity || seen.has(identity)) continue;
+
+    gallery.push(media);
+    seen.add(identity);
+
+    if (gallery.length >= 24) break;
+  }
+
+  return gallery;
+}
+
+function serializeMediaGallery(value) {
+  const gallery = [];
+  const seen = new Set();
+
+  for (const item of Array.isArray(value) ? value : []) {
+    let media = null;
+
+    try {
+      media = normalizeMedia(item);
+    } catch {
+      media = null;
+    }
+
+    if (!media || media.type !== "image") continue;
+
+    const identity = getMediaIdentity(media);
+
+    if (!identity || seen.has(identity)) continue;
+
+    gallery.push(media);
+    seen.add(identity);
+
+    if (gallery.length >= 24) break;
+  }
+
+  return gallery;
+}
+
 function serializeLinkedInShares(value) {
   return (Array.isArray(value) ? value : [])
     .filter((share) => share && typeof share === "object")
@@ -580,6 +638,7 @@ function normalizePostInput(input = {}) {
     contentHtml: primaryTranslation.contentHtml,
     translations,
     media: normalizeMedia(input.media),
+    mediaGallery: normalizeMediaGallery(input.mediaGallery),
     publishedAt: normalizePublishedAt(input),
   };
 }
@@ -606,6 +665,7 @@ export function serializePost(document, options = {}) {
     categories: normalizeCategories(document.categories),
     status: document.status || "draft",
     media: document.media || null,
+    mediaGallery: serializeMediaGallery(document.mediaGallery),
     createdAt: toIsoDate(document.createdAt),
     updatedAt: toIsoDate(document.updatedAt),
     publishedAt: toIsoDate(document.publishedAt),
@@ -680,6 +740,7 @@ export async function createPost(input, user) {
     contentHtml: normalized.contentHtml,
     translations: normalized.translations,
     media: normalized.media,
+    mediaGallery: normalized.mediaGallery,
     authorEmail: user?.email || null,
     updatedBy: user?.email || null,
     createdAt: now,
@@ -718,6 +779,7 @@ export async function updatePost(postId, input, user) {
     contentHtml: normalized.contentHtml,
     translations: normalized.translations,
     media: normalized.media,
+    mediaGallery: normalized.mediaGallery,
     updatedAt: now,
     updatedBy: user?.email || null,
   };
