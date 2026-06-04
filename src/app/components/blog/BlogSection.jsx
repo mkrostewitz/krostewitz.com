@@ -8,6 +8,7 @@ import {useTranslation} from "react-i18next";
 
 import {getSupportedSiteLanguage} from "../../../lib/siteLanguages";
 import pageStyles from "../../page.module.css";
+import {useLoadingState} from "../loading/LoadingProvider";
 import styles from "./blog-section.module.css";
 
 const ALL_CATEGORIES = "all";
@@ -68,6 +69,12 @@ export default function BlogSection() {
   const [blogEnabled, setBlogEnabled] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  useLoadingState({
+    isLoading,
+    label: t("blog.loading", {defaultValue: "Loading posts..."}),
+    type: "action",
+  });
+
   const availableCategories = useMemo(() => {
     const bySlug = new Map();
 
@@ -104,7 +111,9 @@ export default function BlogSection() {
     async function loadPosts() {
       try {
         const searchParams = new URLSearchParams({language});
-        const response = await fetch(`/api/posts?${searchParams.toString()}`);
+        const response = await fetch(`/api/posts?${searchParams.toString()}`, {
+          cache: "no-store",
+        });
         const data = await response.json().catch(() => ({}));
 
         if (!response.ok) {
@@ -145,7 +154,7 @@ export default function BlogSection() {
     }
   }, [activeCategory, availableCategories]);
 
-  if (isLoading || blogEnabled === false) return null;
+  if (blogEnabled === false) return null;
 
   return (
     <section id="blog" className={`${pageStyles.section} ${styles.section}`}>
@@ -154,7 +163,7 @@ export default function BlogSection() {
         <h2>{t("blog.title")}</h2>
         <p>{t("blog.subtitle")}</p>
 
-        {availableCategories.length > 0 ? (
+        {!isLoading && availableCategories.length > 0 ? (
           <div className={styles.filterList} aria-label={t("blog.filterLabel")}>
             <button
               className={`${styles.filterButton} ${
@@ -178,7 +187,7 @@ export default function BlogSection() {
               </button>
             ))}
           </div>
-        ) : Array.isArray(topics) && topics.length > 0 ? (
+        ) : !isLoading && Array.isArray(topics) && topics.length > 0 ? (
           <div className={styles.topicList} aria-label={t("blog.topicLabel")}>
             {topics.map((topic) => (
               <span className={styles.topic} key={topic}>
@@ -189,7 +198,7 @@ export default function BlogSection() {
         ) : null}
       </div>
 
-      {visiblePosts.length > 0 ? (
+      {!isLoading && visiblePosts.length > 0 ? (
         <div className={styles.grid}>
           {visiblePosts.map((post) => {
             const previewMedia = getPreviewMedia(post);
@@ -237,11 +246,11 @@ export default function BlogSection() {
             );
           })}
         </div>
-      ) : (
+      ) : !isLoading ? (
         <p className={styles.empty}>
           {posts.length > 0 ? t("blog.emptyFiltered") : t("blog.empty")}
         </p>
-      )}
+      ) : null}
     </section>
   );
 }

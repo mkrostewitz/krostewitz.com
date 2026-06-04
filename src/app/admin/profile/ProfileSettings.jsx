@@ -7,6 +7,7 @@ import {useTranslation} from "react-i18next";
 
 import {loadRuntimeTranslations} from "../../../lib/i18n";
 import AddressMap from "../../components/address-map/AddressMap";
+import {useLoadingState} from "../../components/loading/LoadingProvider";
 import {useSnackbar} from "../../components/snackbar/SnackbarProvider";
 import AdminHeader from "../AdminHeader";
 import styles from "../admin.module.css";
@@ -34,6 +35,11 @@ const THEME_COLOR_FIELDS = [
     fallback: DEFAULT_THEME.tertiaryColor,
   },
 ];
+const UPLOAD_ASSET_LABEL_KEYS = {
+  appIconUrl: "fields.appIconUrl",
+  iconUrl: "fields.iconUrl",
+  logoUrl: "fields.logoUrl",
+};
 
 const EMPTY_PROFILE = {
   address: null,
@@ -204,6 +210,10 @@ export default function ProfileSettings({user}) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [uploadingAsset, setUploadingAsset] = useState(null);
+  const uploadingAssetLabelKey = UPLOAD_ASSET_LABEL_KEYS[uploadingAsset];
+  const uploadingAssetLabel = uploadingAssetLabelKey
+    ? t(uploadingAssetLabelKey)
+    : "";
 
   const canSearch = useMemo(
     () =>
@@ -228,6 +238,24 @@ export default function ProfileSettings({user}) {
 
     return {firstName, lastName, profileName};
   }, [nameForm.firstName, nameForm.lastName, t]);
+  const uploadAssetLabel = t("actions.uploadAsset");
+
+  useLoadingState({
+    isLoading,
+    label: t("status.loading"),
+    type: "page",
+  });
+  useLoadingState({
+    isLoading: Boolean(uploadingAsset),
+    label: uploadingAssetLabel
+      ? `${t("actions.uploading")} ${uploadingAssetLabel}`
+      : t("actions.uploading"),
+    type: "action",
+  });
+
+  function renderUploadLabel(isUploading) {
+    return isUploading ? t("actions.uploading") : uploadAssetLabel;
+  }
 
   useEffect(() => {
     void loadRuntimeTranslations();
@@ -680,9 +708,7 @@ export default function ProfileSettings({user}) {
                     />
                   )}
                   <label className={styles.uploadButton}>
-                    {uploadingAsset === "logoUrl"
-                      ? t("actions.uploading")
-                      : t("actions.uploadAsset")}
+                    {renderUploadLabel(uploadingAsset === "logoUrl")}
                     <input
                       accept="image/*"
                       disabled={isSaving || Boolean(uploadingAsset)}
@@ -720,9 +746,7 @@ export default function ProfileSettings({user}) {
                     />
                   )}
                   <label className={styles.uploadButton}>
-                    {uploadingAsset === "iconUrl"
-                      ? t("actions.uploading")
-                      : t("actions.uploadAsset")}
+                    {renderUploadLabel(uploadingAsset === "iconUrl")}
                     <input
                       accept="image/*"
                       disabled={isSaving || Boolean(uploadingAsset)}
@@ -760,9 +784,7 @@ export default function ProfileSettings({user}) {
                     />
                   )}
                   <label className={styles.uploadButton}>
-                    {uploadingAsset === "appIconUrl"
-                      ? t("actions.uploading")
-                      : t("actions.uploadAsset")}
+                    {renderUploadLabel(uploadingAsset === "appIconUrl")}
                     <input
                       accept="image/*"
                       disabled={isSaving || Boolean(uploadingAsset)}

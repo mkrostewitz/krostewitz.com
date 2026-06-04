@@ -2,6 +2,7 @@
 
 import {useEffect, useState} from "react";
 
+import {useLoadingState} from "../../components/loading/LoadingProvider";
 import {useSnackbar} from "../../components/snackbar/SnackbarProvider";
 import AdminHeader from "../AdminHeader";
 import styles from "../admin.module.css";
@@ -42,6 +43,20 @@ export default function CvManager({user}) {
   const [downloads, setDownloads] = useState({});
   const [uploadingLanguage, setUploadingLanguage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const uploadingLanguageLabel =
+    LANGUAGES.find((language) => language.code === uploadingLanguage)?.label ||
+    "CV";
+
+  useLoadingState({
+    isLoading,
+    label: "Loading CV files...",
+    type: "page",
+  });
+  useLoadingState({
+    isLoading: Boolean(uploadingLanguage),
+    label: `Uploading ${uploadingLanguageLabel} CV`,
+    type: "action",
+  });
 
   useEffect(() => {
     let cancelled = false;

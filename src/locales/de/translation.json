@@ -442,6 +442,7 @@
       "Segeln",
       "Kochen"
     ],
+    "loading": "Beiträge werden geladen...",
     "empty": "Berufliche Notizen, Segelgeschichten und Küchenexperimente erscheinen hier, sobald sie veröffentlicht sind.",
     "emptyFiltered": "Für diese Kategorie gibt es noch keine veröffentlichten Beiträge.",
     "readMore": "Weiterlesen",

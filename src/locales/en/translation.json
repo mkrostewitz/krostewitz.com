@@ -433,6 +433,7 @@
     "filterLabel": "Filter posts by category",
     "filterAll": "All",
     "topics": ["Professional notes", "Sailing", "Cooking"],
+    "loading": "Loading posts...",
     "empty": "Professional notes, sailing logs, and cooking experiments will appear here as they are published.",
     "emptyFiltered": "No published posts match this category yet.",
     "readMore": "Read more",

@@ -2,6 +2,7 @@
 
 import {useEffect, useMemo, useState} from "react";
 
+import {useLoadingState} from "../../components/loading/LoadingProvider";
 import {useSnackbar} from "../../components/snackbar/SnackbarProvider";
 import AdminHeader from "../AdminHeader";
 import styles from "../admin.module.css";
@@ -40,6 +41,17 @@ export default function GithubPortfolioSettings({user}) {
     () => sortRepos(repos, selectedRepos),
     [repos, selectedRepos]
   );
+
+  useLoadingState({
+    isLoading,
+    label: "Loading GitHub portfolio...",
+    type: "page",
+  });
+  useLoadingState({
+    isLoading: isSaving,
+    label: "Saving GitHub portfolio...",
+    type: "action",
+  });
 
   async function loadGithubPortfolio(owner = username) {
     setIsLoading(true);
@@ -129,7 +141,7 @@ export default function GithubPortfolioSettings({user}) {
     <div className={styles.shell}>
       <AdminHeader active="githubPortfolio" user={user} />
 
-      <main className={styles.main}>
+      <main className={styles.main} aria-busy={isLoading}>
         <div className={styles.toolbar}>
           <div className={styles.titleBlock}>
             <h1>GitHub Portfolio</h1>

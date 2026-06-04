@@ -2,6 +2,7 @@
 
 import {useEffect, useState} from "react";
 
+import {useLoadingState} from "../../components/loading/LoadingProvider";
 import {useSnackbar} from "../../components/snackbar/SnackbarProvider";
 import AdminHeader from "../AdminHeader";
 import styles from "../admin.module.css";
@@ -46,6 +47,17 @@ export default function AiSettingsManager({user}) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+
+  useLoadingState({
+    isLoading,
+    label: "Loading AI settings...",
+    type: "page",
+  });
+  useLoadingState({
+    isLoading: isSaving,
+    label: "Saving AI settings...",
+    type: "action",
+  });
 
   useEffect(() => {
     let cancelled = false;

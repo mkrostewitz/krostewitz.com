@@ -4,6 +4,7 @@ import {Sparkles, X} from "lucide-react";
 import Link from "next/link";
 import {useEffect, useMemo, useRef, useState} from "react";
 
+import {useLoadingState} from "../../components/loading/LoadingProvider";
 import {useSnackbar} from "../../components/snackbar/SnackbarProvider";
 import {FALLBACK_LANGUAGE} from "@/lib/languageDetection";
 import {
@@ -594,6 +595,37 @@ export default function PostManager({user}) {
     [linkedin]
   );
 
+  useLoadingState({
+    isLoading,
+    label: "Loading posts...",
+    type: "page",
+  });
+  useLoadingState({
+    isLoading: isDisconnectingLinkedin,
+    label: "Disconnecting LinkedIn...",
+    type: "action",
+  });
+  useLoadingState({
+    isLoading: Boolean(cancelingScheduleId),
+    label: "Canceling scheduled LinkedIn share...",
+    type: "action",
+  });
+  useLoadingState({
+    isLoading: isRunningScheduler,
+    label: "Running LinkedIn scheduler...",
+    type: "action",
+  });
+  useLoadingState({
+    isLoading: Boolean(sharingPostId),
+    label: "Sharing post to LinkedIn...",
+    type: "action",
+  });
+  useLoadingState({
+    isLoading: isGeneratingThoughts,
+    label: "Generating LinkedIn thoughts...",
+    type: "action",
+  });
+
   const counts = useMemo(
     () =>
       posts.reduce(
@@ -1002,7 +1034,7 @@ export default function PostManager({user}) {
     <div className={styles.shell}>
       <AdminHeader active="posts" user={user} />
 
-      <main className={styles.main}>
+      <main className={styles.main} aria-busy={isLoading}>
         <div className={styles.toolbar}>
           <div className={styles.titleBlock}>
             <h1>Posts</h1>

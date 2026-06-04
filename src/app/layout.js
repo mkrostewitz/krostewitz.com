@@ -7,6 +7,7 @@ import {
   toNextMetadata,
 } from "./lib/siteProfile";
 import {CookieConsentProvider} from "./components/consent/CookieConsent";
+import {LoadingProvider} from "./components/loading/LoadingProvider";
 import {PublicSettingsProvider} from "./components/public-settings/PublicSettingsProvider";
 import {SnackbarProvider} from "./components/snackbar/SnackbarProvider";
 import "./globals.css";
@@ -81,11 +82,13 @@ export default async function RootLayout({children}) {
         suppressHydrationWarning
         className={`${geistSans.variable} ${geistMono.variable}`}
       >
-        <CookieConsentProvider gaMeasurementId={gaMeasurementId}>
-          <PublicSettingsProvider>
-            <SnackbarProvider>{children}</SnackbarProvider>
-          </PublicSettingsProvider>
-        </CookieConsentProvider>
+        <LoadingProvider>
+          <CookieConsentProvider gaMeasurementId={gaMeasurementId}>
+            <PublicSettingsProvider>
+              <SnackbarProvider>{children}</SnackbarProvider>
+            </PublicSettingsProvider>
+          </CookieConsentProvider>
+        </LoadingProvider>
       </body>
     </html>
   );

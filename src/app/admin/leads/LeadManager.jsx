@@ -4,6 +4,7 @@ import {X} from "lucide-react";
 import mapboxgl from "mapbox-gl";
 import {useEffect, useMemo, useRef, useState} from "react";
 
+import {useLoadingState} from "../../components/loading/LoadingProvider";
 import {useSnackbar} from "../../components/snackbar/SnackbarProvider";
 import AdminHeader from "../AdminHeader";
 import styles from "../admin.module.css";
@@ -366,6 +367,17 @@ export default function LeadManager({user}) {
   const [isLoading, setIsLoading] = useState(true);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [savingLeadId, setSavingLeadId] = useState("");
+
+  useLoadingState({
+    isLoading,
+    label: "Loading leads...",
+    type: "page",
+  });
+  useLoadingState({
+    isLoading: Boolean(savingLeadId),
+    label: "Saving lead...",
+    type: "action",
+  });
 
   const activeLead = useMemo(
     () => leads.find((lead) => lead.id === activeLeadId) || null,

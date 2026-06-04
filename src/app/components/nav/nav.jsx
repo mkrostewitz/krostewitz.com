@@ -3,6 +3,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import Link from "next/link";
+import {useRouter} from "next/navigation";
 import {useEffect, useMemo, useState} from "react";
 import {useTranslation} from "react-i18next";
 import {resources} from "../../../lib/i18n";
@@ -82,6 +83,7 @@ function storeLanguage(language) {
 }
 
 const NavBar = () => {
+  const router = useRouter();
   const {t, i18n} = useTranslation();
   const {allowExternalServices} = useCookieConsent();
   const {blogEnabled, siteMetadata} = usePublicSettings();
@@ -176,10 +178,33 @@ const NavBar = () => {
     [blogEnabled],
   );
 
+  const syncBlogRouteLanguage = (language) => {
+    if (typeof window === "undefined") return;
+
+    const {hash, pathname, search} = window.location;
+
+    if (!pathname.startsWith("/blog/")) return;
+
+    const searchParams = new URLSearchParams(search);
+    searchParams.set("lng", language);
+
+    const nextUrl = `${pathname}?${searchParams.toString()}${hash || ""}`;
+    const currentUrl = `${pathname}${search}${hash || ""}`;
+
+    if (nextUrl !== currentUrl) {
+      router.replace(nextUrl, {scroll: false});
+    }
+  };
+
   const selectLanguage = (language) => {
-    storeLanguage(language);
-    setLang(language);
-    void i18n.changeLanguage(language);
+    const supportedLanguage = getSupportedLanguage(language);
+
+    if (!supportedLanguage) return;
+
+    storeLanguage(supportedLanguage);
+    setLang(supportedLanguage);
+    void i18n.changeLanguage(supportedLanguage);
+    syncBlogRouteLanguage(supportedLanguage);
   };
 
   return (

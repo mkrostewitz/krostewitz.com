@@ -51,6 +51,7 @@ import Link from "next/link";
 import {useRouter} from "next/navigation";
 import {useEffect, useRef, useState} from "react";
 
+import {useLoadingState} from "@/app/components/loading/LoadingProvider";
 import {useSnackbar} from "@/app/components/snackbar/SnackbarProvider";
 import {FALLBACK_LANGUAGE} from "@/lib/languageDetection";
 import {
@@ -530,6 +531,21 @@ export default function EditPostForm({
     targetLanguage: getDefaultTranslationTarget(FALLBACK_LANGUAGE),
     prompt: "",
     targetFields: DEFAULT_AI_TARGET_FIELDS,
+  });
+  useLoadingState({
+    isLoading: isSaving,
+    label: "Saving post...",
+    type: "action",
+  });
+  useLoadingState({
+    isLoading: isUploading,
+    label: "Uploading files...",
+    type: "action",
+  });
+  useLoadingState({
+    isLoading: isAiWorking,
+    label: "Running post assistant...",
+    type: "action",
   });
   const editor = useEditor({
     extensions: [

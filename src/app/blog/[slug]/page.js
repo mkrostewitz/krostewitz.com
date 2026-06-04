@@ -1,4 +1,5 @@
 import {cookies} from "next/headers";
+import Link from "next/link";
 import {notFound} from "next/navigation";
 
 import {
@@ -8,6 +9,7 @@ import {
 import {
   getSupportedSiteLanguage,
   LANGUAGE_COOKIE_NAME,
+  SITE_LANGUAGES,
 } from "../../../lib/siteLanguages";
 import NavBar from "../../components/nav/nav";
 import PublicFooter from "../../components/footer/PublicFooter";
@@ -90,6 +92,10 @@ function getPostImageGallery(post) {
 
 function getPostMetadataImage(post) {
   return getPostImageGallery(post)[0]?.url;
+}
+
+function getPostLanguageHref(slug, language) {
+  return `/blog/${slug}?lng=${language}`;
 }
 
 export async function generateMetadata({params, searchParams}) {
@@ -188,6 +194,24 @@ export default async function BlogPostPage({params, searchParams}) {
             )}
             <h1>{post.title}</h1>
             {post.summary && <p>{post.summary}</p>}
+            <nav className={styles.postLanguageSwitch} aria-label="Post language">
+              {SITE_LANGUAGES.map((item) => {
+                const isActive = item.code === language;
+
+                return (
+                  <Link
+                    aria-current={isActive ? "page" : undefined}
+                    className={`${styles.postLanguageLink} ${
+                      isActive ? styles.postLanguageLinkActive : ""
+                    }`}
+                    href={getPostLanguageHref(post.slug, item.code)}
+                    key={item.code}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </nav>
             <ShareButtons
               summary={post.summary}
               title={post.title}
