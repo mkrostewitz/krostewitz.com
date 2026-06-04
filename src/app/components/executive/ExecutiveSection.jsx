@@ -52,8 +52,8 @@ const ExecutiveSummary = ({skills = []}) => {
   );
 
   const [sectionRef, isInView] = useInViewOnce({
-    threshold: 0.45,
-    rootMargin: "0px 0px -25% 0px",
+    threshold: 0.2,
+    rootMargin: "0px",
   });
   const leadershipYears = useCountUp(stats.leadershipYears, 2200, isInView);
   const revenue = useCountUp(stats.revenue, 2200, isInView);
