@@ -34,6 +34,7 @@ export default function GithubPortfolioSettings({user}) {
   const [savedSettings, setSavedSettings] = useState(null);
   const [repos, setRepos] = useState([]);
   const [selectedRepos, setSelectedRepos] = useState(new Set());
+  const [showStats, setShowStats] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -73,6 +74,7 @@ export default function GithubPortfolioSettings({user}) {
       setUsername(settings.username || owner || "");
       setRepos(data.repos || []);
       setSelectedRepos(new Set(settings.selectedRepos || []));
+      setShowStats(settings.showStats !== false);
 
       if (data.repoError) {
         showSnackbar({type: "error", message: data.repoError});
@@ -116,6 +118,7 @@ export default function GithubPortfolioSettings({user}) {
         body: JSON.stringify({
           username,
           selectedRepos: Array.from(selectedRepos),
+          showStats,
         }),
       });
       const data = await response.json().catch(() => ({}));
@@ -126,9 +129,10 @@ export default function GithubPortfolioSettings({user}) {
 
       setSavedSettings(data.settings);
       setSelectedRepos(new Set(data.settings?.selectedRepos || []));
+      setShowStats(data.settings?.showStats !== false);
       showSnackbar({
         type: "success",
-        message: "GitHub portfolio selection saved.",
+        message: "GitHub portfolio settings saved.",
       });
     } catch (error) {
       showSnackbar({type: "error", message: error.message});
@@ -185,12 +189,29 @@ export default function GithubPortfolioSettings({user}) {
               </button>
             </div>
 
+            <label className={styles.featureToggle}>
+              <input
+                checked={showStats}
+                disabled={isSaving}
+                type="checkbox"
+                onChange={(event) => setShowStats(event.target.checked)}
+              />
+              <span className={styles.featureSwitch} aria-hidden="true" />
+              <span className={styles.featureText}>
+                <strong>Show repository stats</strong>
+                <small>Stars and forks appear on the public project cards.</small>
+              </span>
+              <span className={styles.featureStatus}>
+                {showStats ? "Shown" : "Hidden"}
+              </span>
+            </label>
+
             <div className={styles.editorActions}>
               <p className={styles.muted}>
                 Last saved: {formatDate(savedSettings?.updatedAt)}
               </p>
               <button className={styles.button} disabled={isSaving} type="submit">
-                {isSaving ? "Saving..." : "Save selection"}
+                {isSaving ? "Saving..." : "Save settings"}
               </button>
             </div>
           </section>

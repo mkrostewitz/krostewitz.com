@@ -14,6 +14,7 @@ const PortfolioSection = () => {
     loading: true,
     projects: [],
     profileUrl: null,
+    showStats: true,
     source: null,
     error: null,
   });
@@ -45,6 +46,7 @@ const PortfolioSection = () => {
           loading: false,
           projects: data.projects || [],
           profileUrl: data.profileUrl || null,
+          showStats: data.showStats !== false,
           source: data.source || null,
           error: null,
         });
@@ -70,6 +72,7 @@ const PortfolioSection = () => {
     if (Number.isNaN(date.getTime())) return null;
     return formatter.format(date);
   };
+  const showRepoStats = state.showStats !== false;
 
   return (
     <section
@@ -127,6 +130,7 @@ const PortfolioSection = () => {
         <div className={styles.projectsGrid}>
           {state.projects.map((project) => {
             const updatedAt = formatUpdatedAt(project.updatedAt);
+            const hasMeta = showRepoStats || updatedAt;
             const tags = [
               project.language,
               ...(Array.isArray(project.topics)
@@ -171,17 +175,23 @@ const PortfolioSection = () => {
                   </div>
                 )}
 
-                <div className={styles.projectMeta}>
-                  <span>
-                    {t("portfolio.stars", {count: project.stars || 0})}
-                  </span>
-                  <span>
-                    {t("portfolio.forks", {count: project.forks || 0})}
-                  </span>
-                  {updatedAt && (
-                    <span>{t("portfolio.updated", {date: updatedAt})}</span>
-                  )}
-                </div>
+                {hasMeta && (
+                  <div className={styles.projectMeta}>
+                    {showRepoStats && (
+                      <>
+                        <span>
+                          {t("portfolio.stars", {count: project.stars || 0})}
+                        </span>
+                        <span>
+                          {t("portfolio.forks", {count: project.forks || 0})}
+                        </span>
+                      </>
+                    )}
+                    {updatedAt && (
+                      <span>{t("portfolio.updated", {date: updatedAt})}</span>
+                    )}
+                  </div>
+                )}
 
                 <div className={styles.projectLinks}>
                   {project.homepage && (

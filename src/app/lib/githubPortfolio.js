@@ -113,6 +113,7 @@ function serializeSettings(document) {
   return {
     username,
     selectedRepos: uniqueRepoRefs(document?.selectedRepos || [], username),
+    showStats: document?.showStats !== false,
     updatedAt: document?.updatedAt?.toISOString?.() || null,
     updatedBy: document?.updatedBy || null,
   };
@@ -132,6 +133,7 @@ export async function getPortfolioSettings() {
   return {
     username,
     selectedRepos: parseEnvSelectedRepos(username),
+    showStats: true,
     updatedAt: null,
     updatedBy: null,
   };
@@ -148,6 +150,7 @@ export async function savePortfolioSettings(input = {}, user) {
   const document = {
     username,
     selectedRepos,
+    showStats: input.showStats !== false,
     updatedAt: now,
     updatedBy: user?.email || null,
   };
@@ -244,6 +247,7 @@ async function readPortfolioProjects() {
       projects: [],
       source: "selected",
       username: settings.username,
+      showStats: settings.showStats,
       profileUrl: `https://github.com/${settings.username}`,
     };
   }
@@ -265,6 +269,7 @@ async function readPortfolioProjects() {
     projects,
     source: "selected",
     username: settings.username,
+    showStats: settings.showStats,
     profileUrl: `https://github.com/${settings.username}`,
   };
 }
