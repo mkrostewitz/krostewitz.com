@@ -4,9 +4,8 @@ import {isIP} from "node:net";
 
 import {normalizeCountryCode} from "../../lib/languageDetection";
 
-const IPINFO_LITE_ENDPOINT = "https://api.ipinfo.io/lite";
-const IPINFO_LOOKUP_ENDPOINT = "https://api.ipinfo.io/lookup";
-const IPINFO_TIMEOUT_MS = 2000;
+const IPGEOLOCATION_ENDPOINT = "https://api.ipgeolocation.io/v3/ipgeo";
+const GEO_LOOKUP_TIMEOUT_MS = 2000;
 const IP_HEADER_NAMES = [
   "x-site-client-ip",
   "cf-connecting-ip",
@@ -45,27 +44,13 @@ function firstString(...values) {
   return "";
 }
 
-function parseIpInfoCoordinates(ipInfo = {}) {
-  const data = ipInfo || {};
-  const geo = data.geo || {};
-  const latitude = firstString(geo.latitude, data.latitude);
-  const longitude = firstString(geo.longitude, data.longitude);
-
-  if (latitude || longitude) {
-    return {latitude, longitude};
-  }
-
-  const loc = cleanString(geo.loc || data.loc);
-  const [locLatitude, locLongitude] = loc.split(",").map((part) => part?.trim());
-
-  return {
-    latitude: locLatitude || "",
-    longitude: locLongitude || "",
-  };
-}
-
-export function getIpInfoToken() {
-  return process.env.IP_INFO_TOKEN || process.env.IPINFO_TOKEN || "";
+export function getIpGeolocationApiKey() {
+  return (
+    process.env.IPGEOLOCATION_API_KEY ||
+    process.env.IP_GEOLOCATION_API_KEY ||
+    process.env.IPGEOLOCATION_IO_API_KEY ||
+    ""
+  );
 }
 
 export function normalizeIp(value) {
@@ -146,15 +131,16 @@ export function getCountryCodeFromHeaders(request) {
   return null;
 }
 
-async function fetchIpInfoEndpoint(endpoint, ip, token) {
-  if (!ip || !token) return null;
+export async function fetchIpGeolocation(ip, apiKey = getIpGeolocationApiKey()) {
+  if (!ip || !apiKey) return null;
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), IPINFO_TIMEOUT_MS);
+  const timeout = setTimeout(() => controller.abort(), GEO_LOOKUP_TIMEOUT_MS);
 
   try {
-    const url = new URL(`${endpoint}/${ip}`);
-    url.searchParams.set("token", token);
+    const url = new URL(IPGEOLOCATION_ENDPOINT);
+    url.searchParams.set("apiKey", apiKey);
+    url.searchParams.set("ip", ip);
 
     const response = await fetch(url, {
       cache: "no-store",
@@ -170,42 +156,51 @@ async function fetchIpInfoEndpoint(endpoint, ip, token) {
   }
 }
 
-export async function fetchIpInfoLite(ip, token = getIpInfoToken()) {
-  return fetchIpInfoEndpoint(IPINFO_LITE_ENDPOINT, ip, token);
-}
-
-export async function fetchIpInfoLookup(ip, token = getIpInfoToken()) {
-  return fetchIpInfoEndpoint(IPINFO_LOOKUP_ENDPOINT, ip, token);
-}
-
-export function normalizeIpInfoGeo(ipInfo = {}) {
-  const data = ipInfo || {};
-  const geo = data.geo || {};
+export function normalizeIpGeolocationGeo(ipGeolocation = {}) {
+  const data = ipGeolocation || {};
+  const location = data.location || {};
+  const timezoneData = data.time_zone || data.timezone || {};
   const countryCode = normalizeCountryCode(
-    geo.country_code ||
+    location.country_code2 ||
+      location.country_code ||
+      data.country_code2 ||
       data.country_code ||
-      (/^[a-z]{2}$/i.test(cleanString(geo.country)) ? geo.country : "") ||
+      (/^[a-z]{2}$/i.test(cleanString(location.country)) ? location.country : "") ||
       (/^[a-z]{2}$/i.test(cleanString(data.country)) ? data.country : "")
   );
   const country = firstString(
-    geo.country,
+    location.country_name,
+    location.country_name_official,
     data.country_name,
+    /^[a-z]{2}$/i.test(cleanString(location.country)) ? "" : location.country,
     /^[a-z]{2}$/i.test(cleanString(data.country)) ? "" : data.country,
-    data.country,
     countryCode
   );
-  const state = firstString(geo.region, data.region);
-  const stateCode = firstString(geo.region_code, data.region_code);
-  const city = firstString(geo.city, data.city);
+  const state = firstString(
+    location.state_prov,
+    location.state,
+    location.region,
+    data.state_prov,
+    data.state,
+    data.region
+  );
+  const stateCode = firstString(location.state_code, data.state_code);
+  const city = firstString(location.city, data.city);
   const postalCode = firstString(
-    geo.postal_code,
-    geo.postalCode,
+    location.zipcode,
+    location.postal_code,
+    location.postalCode,
+    data.zipcode,
     data.postal_code,
     data.postalCode,
     data.postal
   );
-  const timezone = firstString(geo.timezone, data.timezone);
-  const coordinates = parseIpInfoCoordinates(data);
+  const timezone = firstString(
+    timezoneData.name,
+    timezoneData.id,
+    location.timezone,
+    data.timezone
+  );
 
   return {
     country,
@@ -214,25 +209,21 @@ export function normalizeIpInfoGeo(ipInfo = {}) {
     stateCode,
     city,
     postalCode,
-    latitude: coordinates.latitude,
-    longitude: coordinates.longitude,
+    latitude: firstString(location.latitude, data.latitude),
+    longitude: firstString(location.longitude, data.longitude),
     timezone,
   };
 }
 
-export async function fetchIpInfoGeo(ip, token = getIpInfoToken()) {
-  const lookupInfo = await fetchIpInfoLookup(ip, token).catch(() => null);
-  const lookupGeo = normalizeIpInfoGeo(lookupInfo);
+export async function fetchIpGeolocationGeo(
+  ip,
+  apiKey = getIpGeolocationApiKey()
+) {
+  const ipGeolocation = await fetchIpGeolocation(ip, apiKey).catch(() => null);
+  const geo = normalizeIpGeolocationGeo(ipGeolocation);
 
-  if (lookupGeo.country || lookupGeo.countryCode || lookupGeo.state) {
-    return {...lookupGeo, source: "ipinfo-lookup"};
-  }
-
-  const liteInfo = await fetchIpInfoLite(ip, token).catch(() => null);
-  const liteGeo = normalizeIpInfoGeo(liteInfo);
-
-  if (liteGeo.country || liteGeo.countryCode) {
-    return {...liteGeo, source: "ipinfo-lite"};
+  if (geo.country || geo.countryCode || geo.state || geo.city) {
+    return {...geo, source: "ipgeolocation"};
   }
 
   return null;

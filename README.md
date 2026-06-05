@@ -67,7 +67,7 @@ LinkedIn admin sign-in:
 
 ## Language detection
 
-The public site calls `/api/language` on first load unless the visitor has manually selected a language. The route first reads platform country headers derived from the visitor IP, such as `x-vercel-ip-country`, `cf-ipcountry`, and `cloudfront-viewer-country`. If those are unavailable, it uses `IP_INFO_TOKEN` with IPinfo Lite to read the visitor country code from a forwarded public IP. German is shown for `AT`, `CH`, `DE`, `LI`, and `LU`; English is used for every other country or when detection is unavailable.
+The public site calls `/api/language` on first load unless the visitor has manually selected a language. The route first reads platform country headers derived from the visitor IP, such as `x-vercel-ip-country`, `cf-ipcountry`, and `cloudfront-viewer-country`. If those are unavailable, it uses `IPGEOLOCATION_API_KEY` with IPGeolocation.io to read the visitor country code from a forwarded public IP. German is shown for `AT`, `CH`, `DE`, `LI`, and `LU`; English is used for every other country or when detection is unavailable. Lead tracking uses the same provider as a fallback when platform headers do not include country, region, city, latitude, or longitude.
 
 ## Privacy consent
 

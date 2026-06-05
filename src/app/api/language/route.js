@@ -3,13 +3,12 @@ import {NextResponse} from "next/server";
 import {
   FALLBACK_LANGUAGE,
   languageForCountryCode,
-  normalizeCountryCode,
 } from "../../../lib/languageDetection";
 import {
-  fetchIpInfoLite,
+  fetchIpGeolocationGeo,
   getClientIp,
   getCountryCodeFromHeaders,
-  getIpInfoToken,
+  getIpGeolocationApiKey,
 } from "../../lib/requestGeo";
 
 export const runtime = "nodejs";
@@ -42,16 +41,16 @@ export async function GET(request) {
     });
   }
 
-  const token = getIpInfoToken();
+  const apiKey = getIpGeolocationApiKey();
   const ip = getClientIp(request);
 
-  if (!token || !ip) {
+  if (!apiKey || !ip) {
     return fallbackResponse();
   }
 
   try {
-    const ipInfo = await fetchIpInfoLite(ip, token);
-    const countryCode = normalizeCountryCode(ipInfo?.country_code);
+    const geo = await fetchIpGeolocationGeo(ip, apiKey);
+    const countryCode = geo?.countryCode;
 
     if (!countryCode) {
       return fallbackResponse();
@@ -60,10 +59,10 @@ export async function GET(request) {
     return languageResponse({
       countryCode,
       language: languageForCountryCode(countryCode),
-      source: "ipinfo",
+      source: "ipgeolocation",
     });
   } catch (error) {
-    console.warn("Unable to detect language from IPinfo", error);
+    console.warn("Unable to detect language from IPGeolocation", error);
     return fallbackResponse();
   }
 }

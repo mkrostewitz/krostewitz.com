@@ -11,9 +11,9 @@ import {
 import {getDb} from "./mongo";
 import {normalizeCvLanguage} from "./cvFiles";
 import {
-  fetchIpInfoGeo,
   getClientIp,
-  getIpInfoToken,
+  fetchIpGeolocationGeo,
+  getIpGeolocationApiKey,
   normalizeIp,
 } from "./requestGeo";
 
@@ -249,6 +249,10 @@ function getHeader(headers, names) {
 function mergeTrackingGeo(tracking, geo, hasExplicitAddress = false) {
   if (!geo) return tracking;
 
+  const geoSource =
+    tracking.geoSource && geo.source && tracking.geoSource !== geo.source
+      ? `${tracking.geoSource}+${geo.source}`
+      : tracking.geoSource || geo.source || "";
   const merged = {
     ...tracking,
     country: tracking.country || geo.country || geo.countryCode || "",
@@ -264,7 +268,7 @@ function mergeTrackingGeo(tracking, geo, hasExplicitAddress = false) {
     latitude: tracking.latitude || geo.latitude || "",
     longitude: tracking.longitude || geo.longitude || "",
     timezone: tracking.timezone || geo.timezone || "",
-    geoSource: tracking.geoSource || geo.source || "",
+    geoSource,
   };
 
   if (!hasExplicitAddress) {
@@ -389,15 +393,21 @@ async function getRequestTracking(request, input = {}) {
     geoSource: country || state || city ? "headers" : "",
   };
 
-  if (!tracking.country || !tracking.state || !tracking.city) {
-    const token = getIpInfoToken();
+  if (
+    !tracking.country ||
+    !tracking.state ||
+    !tracking.city ||
+    !tracking.latitude ||
+    !tracking.longitude
+  ) {
+    const apiKey = getIpGeolocationApiKey();
 
-    if (token && requestIp) {
+    if (apiKey && requestIp) {
       try {
-        const geo = await fetchIpInfoGeo(requestIp, token);
+        const geo = await fetchIpGeolocationGeo(requestIp, apiKey);
         tracking = mergeTrackingGeo(tracking, geo, Boolean(explicitAddress));
       } catch (error) {
-        console.warn("Unable to enrich lead tracking from IPinfo", error);
+        console.warn("Unable to enrich lead tracking from IPGeolocation", error);
       }
     }
   }
