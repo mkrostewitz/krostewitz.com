@@ -535,6 +535,8 @@
 }
 
 .postList {
+  --post-list-grid: minmax(320px, 1fr) 116px 136px minmax(160px, 280px) 220px;
+
   display: grid;
   gap: 0;
   border: 1px solid var(--border);
@@ -545,16 +547,15 @@
 .postListHeader,
 .postListRow {
   display: grid;
-  grid-template-columns:
-    minmax(220px, 2fr) minmax(110px, 0.6fr) minmax(130px, 0.7fr)
-    minmax(180px, 1fr) auto;
-  gap: 14px;
+  grid-template-columns: var(--post-list-grid);
+  column-gap: 18px;
+  row-gap: 10px;
   align-items: center;
 }
 
 .postListHeader {
   border-bottom: 1px solid var(--border);
-  padding: 10px 12px;
+  padding: 10px 18px;
   background: var(--surface-subtle);
   color: var(--text-muted);
   font-size: 0.76rem;
@@ -563,10 +564,15 @@
   text-transform: uppercase;
 }
 
+.postListHeader span:last-child {
+  justify-self: end;
+}
+
 .postListRow {
   border-bottom: 1px solid var(--border);
-  padding: 12px;
+  padding: 14px 18px;
   background: var(--surface);
+  align-items: start;
 }
 
 .postListRow:last-child {
@@ -598,6 +604,7 @@
 }
 
 .postListTitleLink strong {
+  line-height: 1.25;
   overflow-wrap: anywhere;
 }
 
@@ -634,8 +641,10 @@
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
+  align-content: start;
   justify-content: flex-end;
   justify-self: end;
+  min-width: 0;
 }
 
 .postListShareMeta {
@@ -2446,6 +2455,25 @@
   justify-content: flex-end;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+@media (max-width: 1080px) {
+  .postList {
+    --post-list-grid: minmax(260px, 1fr) 106px 124px minmax(140px, 1fr) 196px;
+  }
+
+  .postListHeader,
+  .postListRow {
+    column-gap: 12px;
+  }
+
+  .postListHeader {
+    padding-inline: 12px;
+  }
+
+  .postListRow {
+    padding: 12px;
+  }
 }
 
 @media (max-width: 720px) {
