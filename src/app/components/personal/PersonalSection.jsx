@@ -53,12 +53,6 @@ const CYC_WEBCAM_URL = "https://www.cyc-prien.de/wetter/webcam/";
 const WETTER_WEBCAM_URL =
   "https://www.wetter.com/hd-live-webcams/deutschland/prien-am-chiemsee-chiemsee-schifffahrt/5785fdbf41e7d/";
 
-const MAP_BOUNDS = {
-  minLat: 47.75,
-  maxLat: 47.96,
-  minLon: 12.27,
-  maxLon: 12.58,
-};
 const MAPBOX_BOUNDS = [
   [12.33, 47.78],
   [12.58, 47.93],
@@ -98,29 +92,12 @@ const WIND_LOCATIONS = [
   {id: "south-east-bay", name: "Suedostbucht", lat: 47.82, lon: 12.54},
 ];
 
-const LAKE_SHAPE = [
-  [0.12, 0.55],
-  [0.2, 0.42],
-  [0.33, 0.35],
-  [0.45, 0.33],
-  [0.58, 0.24],
-  [0.74, 0.29],
-  [0.88, 0.42],
-  [0.84, 0.56],
-  [0.7, 0.67],
-  [0.54, 0.72],
-  [0.38, 0.69],
-  [0.24, 0.62],
-];
-
 const MAP_STYLE = {
   background: "#0b0f19",
   backgroundDeep: "#07111f",
   cyan: "#7dd2ff",
   green: "#86ffb6",
   highWind: "#ff8a75",
-  island: "#182332",
-  mutedLine: "rgba(185, 205, 218, 0.1)",
   station: "#ffb15f",
   water: "#0e2a39",
 };
@@ -134,153 +111,26 @@ function readNumber(value) {
   return Number.isFinite(numericValue) ? numericValue : null;
 }
 
-function projectLocation(point, width, height) {
-  const paddingX = width * 0.06;
-  const paddingY = height * 0.1;
-  const usableWidth = width - paddingX * 2;
-  const usableHeight = height - paddingY * 2;
-
-  return {
-    x:
-      paddingX +
-      ((point.lon - MAP_BOUNDS.minLon) /
-        (MAP_BOUNDS.maxLon - MAP_BOUNDS.minLon)) *
-        usableWidth,
-    y:
-      paddingY +
-      ((MAP_BOUNDS.maxLat - point.lat) /
-        (MAP_BOUNDS.maxLat - MAP_BOUNDS.minLat)) *
-        usableHeight,
-  };
-}
-
 function metersPerDegreeLongitude(latitude) {
   return 111_320 * Math.cos((latitude * Math.PI) / 180);
 }
 
-function pixelsPerMeter(width, height) {
-  const midLatitude = (MAP_BOUNDS.minLat + MAP_BOUNDS.maxLat) / 2;
-  const mapWidthMeters =
-    (MAP_BOUNDS.maxLon - MAP_BOUNDS.minLon) * metersPerDegreeLongitude(midLatitude);
-  const mapHeightMeters = (MAP_BOUNDS.maxLat - MAP_BOUNDS.minLat) * 111_320;
+function pixelsPerMeter(map) {
+  const center = map.getCenter();
+  const longitudeDelta = 0.001;
+  const latitudeDelta = 0.001;
+  const centerPoint = map.project([center.lng, center.lat]);
+  const eastPoint = map.project([center.lng + longitudeDelta, center.lat]);
+  const northPoint = map.project([center.lng, center.lat + latitudeDelta]);
+  const longitudeMeters = longitudeDelta * metersPerDegreeLongitude(center.lat);
+  const latitudeMeters = latitudeDelta * 111_320;
+  const longitudePixelsPerMeter =
+    longitudeMeters > 0 ? Math.abs(eastPoint.x - centerPoint.x) / longitudeMeters : 0;
+  const latitudePixelsPerMeter =
+    latitudeMeters > 0 ? Math.abs(northPoint.y - centerPoint.y) / latitudeMeters : 0;
+  const average = (longitudePixelsPerMeter + latitudePixelsPerMeter) / 2;
 
-  return (width / mapWidthMeters + height / mapHeightMeters) / 2;
-}
-
-function drawLake(ctx, width, height) {
-  ctx.save();
-  ctx.beginPath();
-  LAKE_SHAPE.forEach(([x, y], index) => {
-    const px = x * width;
-    const py = y * height;
-    if (index === 0) {
-      ctx.moveTo(px, py);
-      return;
-    }
-    const [nextX, nextY] = LAKE_SHAPE[(index + 1) % LAKE_SHAPE.length];
-    ctx.quadraticCurveTo(px, py, ((x + nextX) / 2) * width, ((y + nextY) / 2) * height);
-  });
-  ctx.closePath();
-  ctx.shadowColor = "rgba(125, 210, 255, 0.2)";
-  ctx.shadowBlur = 18;
-  ctx.fillStyle = MAP_STYLE.water;
-  ctx.fill();
-  ctx.shadowBlur = 0;
-  ctx.lineWidth = 1.7;
-  ctx.strokeStyle = "rgba(125, 210, 255, 0.72)";
-  ctx.stroke();
-
-  ctx.globalCompositeOperation = "screen";
-  ctx.strokeStyle = "rgba(134, 255, 182, 0.12)";
-  ctx.lineWidth = 7;
-  ctx.stroke();
-  ctx.globalCompositeOperation = "source-over";
-
-  ctx.fillStyle = MAP_STYLE.island;
-  ctx.strokeStyle = "rgba(247, 248, 250, 0.24)";
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.ellipse(width * 0.49, height * 0.48, width * 0.07, height * 0.045, -0.35, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.ellipse(width * 0.6, height * 0.43, width * 0.025, height * 0.018, 0.2, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.stroke();
-  ctx.restore();
-}
-
-function drawMapLabel(ctx, label, x, y) {
-  ctx.save();
-  ctx.font = "700 11px Inter, sans-serif";
-  ctx.lineWidth = 3;
-  ctx.strokeStyle = MAP_STYLE.background;
-  ctx.fillStyle = "rgba(247, 248, 250, 0.82)";
-  ctx.strokeText(label, x, y);
-  ctx.fillText(label, x, y);
-  ctx.restore();
-}
-
-function drawMapLabels(ctx, width, height) {
-  drawMapLabel(ctx, "Prien", width * 0.19, height * 0.5);
-  drawMapLabel(ctx, "Herreninsel", width * 0.44, height * 0.5);
-  drawMapLabel(ctx, "Fraueninsel", width * 0.59, height * 0.39);
-
-  ctx.save();
-  ctx.font = "800 19px Inter, sans-serif";
-  ctx.lineWidth = 5;
-  ctx.strokeStyle = "rgba(7, 17, 31, 0.92)";
-  ctx.fillStyle = "rgba(247, 248, 250, 0.74)";
-  ctx.shadowColor = "rgba(125, 210, 255, 0.3)";
-  ctx.shadowBlur = 4;
-  ctx.strokeText("CHIEMSEE", width * 0.43, height * 0.6);
-  ctx.fillText("CHIEMSEE", width * 0.43, height * 0.6);
-  ctx.restore();
-}
-
-function drawMapBase(ctx, width, height) {
-  ctx.clearRect(0, 0, width, height);
-  const landGradient = ctx.createLinearGradient(0, 0, width, height);
-  landGradient.addColorStop(0, MAP_STYLE.backgroundDeep);
-  landGradient.addColorStop(0.48, "#111827");
-  landGradient.addColorStop(1, MAP_STYLE.background);
-  ctx.fillStyle = landGradient;
-  ctx.fillRect(0, 0, width, height);
-
-  ctx.save();
-  ctx.strokeStyle = "rgba(125, 210, 255, 0.055)";
-  ctx.lineWidth = 1;
-  for (let index = 0; index < 8; index += 1) {
-    const y = height * (0.1 + index * 0.12);
-    ctx.beginPath();
-    ctx.moveTo(width * 0.03, y);
-    for (let x = width * 0.03; x <= width * 0.97; x += width * 0.12) {
-      ctx.lineTo(
-        x,
-        y + Math.sin(index * 1.8 + x * 0.018) * height * 0.014,
-      );
-    }
-    ctx.stroke();
-  }
-
-  ctx.strokeStyle = MAP_STYLE.mutedLine;
-  ctx.lineWidth = 1;
-  for (let x = width * 0.15; x < width; x += width * 0.18) {
-    ctx.beginPath();
-    ctx.moveTo(x, height * 0.08);
-    ctx.lineTo(x, height * 0.92);
-    ctx.stroke();
-  }
-  for (let y = height * 0.16; y < height; y += height * 0.18) {
-    ctx.beginPath();
-    ctx.moveTo(width * 0.06, y);
-    ctx.lineTo(width * 0.94, y);
-    ctx.stroke();
-  }
-  ctx.restore();
-
-  drawLake(ctx, width, height);
-  drawMapLabels(ctx, width, height);
+  return Number.isFinite(average) && average > 0 ? average : 1;
 }
 
 function applyWindMapStyle(map) {
@@ -738,10 +588,11 @@ const PersonalSection = () => {
     startX: 0,
     startY: 0,
   });
-  const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
   const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+  const [mapContainerNode, setMapContainerNode] = useState(null);
   const [selectedWindPointId, setSelectedWindPointId] = useState(WIND_STATION_ID);
+  const [windMapError, setWindMapError] = useState(false);
   const [windMapReady, setWindMapReady] = useState(false);
   const [webcamTick, setWebcamTick] = useState(Date.now());
   const [webcamAvailable, setWebcamAvailable] = useState(true);
@@ -954,35 +805,41 @@ const PersonalSection = () => {
       })),
     [allWindReports, station?.id],
   );
+  const handleMapContainerRef = useCallback((node) => {
+    setMapContainerNode(node);
+  }, []);
   const projectWindReport = useCallback(
-    (report, width, height) => {
+    (report) => {
       const map = mapRef.current;
 
-      if (windMapReady && map) {
-        const point = map.project([report.lon, report.lat]);
-        return {
-          x: point.x,
-          y: point.y,
-        };
-      }
+      if (!windMapReady || !map) return null;
 
-      return projectLocation(report, width, height);
+      const point = map.project([report.lon, report.lat]);
+      return {
+        x: point.x,
+        y: point.y,
+      };
     },
     [windMapReady],
   );
   const findNearestWindReport = (event, maxDistance = 28) => {
     const canvas = canvasRef.current;
-    if (!canvas || !mapWindReports.length) {
+    if (!canvas || !windMapReady || !mapRef.current || !mapWindReports.length) {
       return null;
     }
 
     const rect = canvas.getBoundingClientRect();
     const pointerX = event.clientX - rect.left;
     const pointerY = event.clientY - rect.top;
-    const projectedReports = mapWindReports.map((report) => ({
-      ...report,
-      ...projectWindReport(report, rect.width, rect.height),
-    }));
+    const projectedReports = mapWindReports
+      .map((report) => {
+        const projectedReport = projectWindReport(report);
+        return projectedReport ? {...report, ...projectedReport} : null;
+      })
+      .filter(Boolean);
+
+    if (!projectedReports.length) return null;
+
     const nearestReport = projectedReports.reduce(
       (nearest, report) => {
         const distance = (report.x - pointerX) ** 2 + (report.y - pointerY) ** 2;
@@ -1298,7 +1155,7 @@ const PersonalSection = () => {
       !isConsentReady ||
       !allowExternalServices ||
       !mapboxToken ||
-      !mapContainerRef.current ||
+      !mapContainerNode ||
       mapRef.current
     ) {
       return undefined;
@@ -1306,30 +1163,45 @@ const PersonalSection = () => {
 
     mapboxgl.accessToken = mapboxToken;
 
-    const map = new mapboxgl.Map({
-      attributionControl: true,
-      bounds: MAPBOX_BOUNDS,
-      container: mapContainerRef.current,
-      fitBoundsOptions: {
-        duration: 0,
-        padding: MAPBOX_PADDING,
-      },
-      interactive: false,
-      maxBounds: MAPBOX_MAX_BOUNDS,
-      pitch: 0,
-      style: "mapbox://styles/mapbox/dark-v11",
-    });
+    let map;
+    let loaded = false;
+
+    try {
+      map = new mapboxgl.Map({
+        attributionControl: true,
+        bounds: MAPBOX_BOUNDS,
+        container: mapContainerNode,
+        fitBoundsOptions: {
+          duration: 0,
+          padding: MAPBOX_PADDING,
+        },
+        interactive: false,
+        maxBounds: MAPBOX_MAX_BOUNDS,
+        pitch: 0,
+        style: "mapbox://styles/mapbox/dark-v11",
+      });
+    } catch {
+      setWindMapError(true);
+      setWindMapReady(false);
+      return undefined;
+    }
 
     mapRef.current = map;
+    setWindMapError(false);
 
     map.on("load", () => {
+      loaded = true;
       applyWindMapStyle(map);
       map.fitBounds(MAPBOX_BOUNDS, {duration: 0, padding: MAPBOX_PADDING});
+      setWindMapError(false);
       setWindMapReady(true);
     });
 
     map.on("error", () => {
-      setWindMapReady(false);
+      if (!loaded) {
+        setWindMapError(true);
+        setWindMapReady(false);
+      }
     });
 
     return () => {
@@ -1337,7 +1209,7 @@ const PersonalSection = () => {
       mapRef.current = null;
       setWindMapReady(false);
     };
-  }, [allowExternalServices, isConsentReady, mapboxToken]);
+  }, [allowExternalServices, isConsentReady, mapContainerNode, mapboxToken]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -1382,17 +1254,20 @@ const PersonalSection = () => {
     function draw(timestamp) {
       const deltaSeconds = lastFrame ? clamp((timestamp - lastFrame) / 1000, 0.008, 0.05) : 0.016;
       lastFrame = timestamp;
-      const flowPixelsPerMeter = pixelsPerMeter(width, height);
-      const projectedField = windPoints.map((point) => ({
-        ...point,
-        ...projectWindReport(point, width, height),
-      }));
+      context.clearRect(0, 0, width, height);
 
-      if (windMapReady) {
-        context.clearRect(0, 0, width, height);
-      } else {
-        drawMapBase(context, width, height);
+      if (!windMapReady || !mapRef.current) {
+        animationFrame = window.requestAnimationFrame(draw);
+        return;
       }
+
+      const flowPixelsPerMeter = pixelsPerMeter(mapRef.current);
+      const projectedField = windPoints
+        .map((point) => {
+          const projectedPoint = projectWindReport(point);
+          return projectedPoint ? {...point, ...projectedPoint} : null;
+        })
+        .filter(Boolean);
 
       if (!reducedMotion && projectedField.length) {
         context.save();
@@ -1635,7 +1510,7 @@ const PersonalSection = () => {
               <div className={styles.windMapFrame}>
                 {mapboxToken && allowExternalServices && (
                   <div
-                    ref={mapContainerRef}
+                    ref={handleMapContainerRef}
                     className={styles.windMapBackground}
                     aria-hidden
                   />
@@ -1655,6 +1530,16 @@ const PersonalSection = () => {
                     <button onClick={openConsentSettings} type="button">
                       {tConsent("actions.manage")}
                     </button>
+                  </div>
+                )}
+                {allowExternalServices && !mapboxToken && (
+                  <div className={styles.consentNotice}>
+                    <p>{t("sailing.missingMapboxToken")}</p>
+                  </div>
+                )}
+                {allowExternalServices && mapboxToken && windMapError && (
+                  <div className={styles.consentNotice}>
+                    <p>{t("sailing.mapboxUnavailable")}</p>
                   </div>
                 )}
                 {windMapHover && (

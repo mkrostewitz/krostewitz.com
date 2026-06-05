@@ -235,6 +235,8 @@
       "updated": "Aktualisiert {{time}}",
       "loading": "Winddaten werden geladen",
       "error": "Winddaten sind gerade nicht verfügbar.",
+      "missingMapboxToken": "Mapbox-Token fehlt. NEXT_PUBLIC_MAPBOX_TOKEN setzen, um die Karte anzuzeigen.",
+      "mapboxUnavailable": "Mapbox-Karte ist gerade nicht verfügbar.",
       "sources": "Quellen",
       "source": "Open-Meteo",
       "waterSource": "GKD Bayern",
