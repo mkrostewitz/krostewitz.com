@@ -1,11 +1,14 @@
 import {Geist, Geist_Mono} from "next/font/google";
 
 import {
+  getDefaultAiChatIntegration,
   getDefaultSiteMetadata,
   getSiteMetadata,
+  getSiteProfile,
   toSiteThemeCss,
   toNextMetadata,
 } from "./lib/siteProfile";
+import AiChatScriptLoader from "./components/ai-chat/AiChatScriptLoader";
 import {CookieConsentProvider} from "./components/consent/CookieConsent";
 import {LoadingProvider} from "./components/loading/LoadingProvider";
 import {PublicSettingsProvider} from "./components/public-settings/PublicSettingsProvider";
@@ -57,17 +60,25 @@ export async function generateMetadata() {
   }
 }
 
-async function getSiteThemeStyle() {
+async function getRootSettings() {
   try {
-    return toSiteThemeCss(await getSiteMetadata());
+    const profile = await getSiteProfile();
+
+    return {
+      aiChat: profile.aiChat || getDefaultAiChatIntegration(),
+      siteThemeStyle: toSiteThemeCss(profile.metadata),
+    };
   } catch (error) {
-    console.warn("Unable to load site theme", error);
-    return toSiteThemeCss(getDefaultSiteMetadata());
+    console.warn("Unable to load root site settings", error);
+    return {
+      aiChat: getDefaultAiChatIntegration(),
+      siteThemeStyle: toSiteThemeCss(getDefaultSiteMetadata()),
+    };
   }
 }
 
 export default async function RootLayout({children}) {
-  const siteThemeStyle = await getSiteThemeStyle();
+  const {aiChat, siteThemeStyle} = await getRootSettings();
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -87,6 +98,10 @@ export default async function RootLayout({children}) {
             <PublicSettingsProvider>
               <SnackbarProvider>{children}</SnackbarProvider>
             </PublicSettingsProvider>
+            <AiChatScriptLoader
+              enabled={aiChat.enabled}
+              scriptTag={aiChat.scriptTag}
+            />
           </CookieConsentProvider>
         </LoadingProvider>
       </body>

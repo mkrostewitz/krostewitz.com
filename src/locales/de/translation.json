@@ -63,6 +63,13 @@
         "connectedDescription": "Die Buchungsbuttons von {{profileName}} öffnen diese Koalendar-Seite.",
         "disconnectedDescription": "Die Buchungsbuttons von {{profileName}} bleiben ausgeblendet, bis die Integration aktiviert und gespeichert ist."
       },
+      "aiChat": {
+        "title": "AI-Chat",
+        "enabled": "Ein",
+        "disabled": "Aus",
+        "enabledDescription": "Das gespeicherte Chat-Script wird nach Zustimmung zu externen Diensten auf öffentlichen Seiten geladen.",
+        "disabledDescription": "Das Chat-Script bleibt deaktiviert, bis es eingeschaltet und gespeichert ist."
+      },
       "fields": {
         "firstName": "Vorname",
         "firstNamePlaceholder": "{{firstName}}",
@@ -82,7 +89,9 @@
         "lastSaved": "Zuletzt gespeichert: {{date}}",
         "address": "Adresse",
         "addressPlaceholder": "Adresse eingeben",
-        "koalendarUrl": "Koalendar-Buchungs-URL"
+        "koalendarUrl": "Koalendar-Buchungs-URL",
+        "aiChatScript": "AI-Chat-Script-Tag",
+        "aiChatScriptPlaceholder": "<script async src=\"https://example.com/chat.js\"></script>"
       },
       "actions": {
         "saving": "Speichert...",
@@ -92,7 +101,8 @@
         "clearAddress": "Adresse löschen",
         "saveProfile": "Profil speichern",
         "openKoalendar": "Koalendar öffnen",
-        "saveKoalendar": "Koalendar speichern"
+        "saveKoalendar": "Koalendar speichern",
+        "saveAiChat": "AI-Chat speichern"
       },
       "status": {
         "notSaved": "Nicht gespeichert",
@@ -105,7 +115,8 @@
         "blogVisible": "Der Blog ist auf der öffentlichen Website sichtbar.",
         "profileSaved": "Profileinstellungen gespeichert.",
         "assetUploaded": "{{asset}} hochgeladen und veröffentlicht.",
-        "koalendarSaved": "Koalendar-Integration gespeichert."
+        "koalendarSaved": "Koalendar-Integration gespeichert.",
+        "aiChatSaved": "AI-Chat-Integration gespeichert."
       },
       "errors": {
         "loadProfile": "Profileinstellungen konnten nicht geladen werden.",
@@ -114,7 +125,8 @@
         "uploadAsset": "{{asset}} konnte nicht hochgeladen werden.",
         "chooseAddress": "Bitte vor dem Speichern eine Adresse aus den Mapbox-Ergebnissen auswählen.",
         "saveProfile": "Profileinstellungen konnten nicht gespeichert werden.",
-        "saveKoalendar": "Koalendar-Integration konnte nicht gespeichert werden."
+        "saveKoalendar": "Koalendar-Integration konnte nicht gespeichert werden.",
+        "saveAiChat": "AI-Chat-Integration konnte nicht gespeichert werden."
       },
       "preview": {
         "mapLabel": "Karte der ausgewählten Adresse",

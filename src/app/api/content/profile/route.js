@@ -1,6 +1,7 @@
 import {NextResponse} from "next/server";
 
 import {
+  getDefaultAiChatIntegration,
   getDefaultKoalendarIntegration,
   getDefaultProfileName,
   getDefaultSiteMetadata,
@@ -23,6 +24,7 @@ export async function GET() {
       {
         profile: {
           address: null,
+          aiChat: getDefaultAiChatIntegration(),
           blogEnabled: true,
           koalendar: getDefaultKoalendarIntegration(),
           metadata: getDefaultSiteMetadata(),

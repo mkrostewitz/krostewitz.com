@@ -63,6 +63,13 @@
         "connectedDescription": "{{profileName}} booking buttons open this Koalendar page.",
         "disconnectedDescription": "{{profileName}} booking buttons are hidden until the integration is enabled and saved."
       },
+      "aiChat": {
+        "title": "AI chat",
+        "enabled": "On",
+        "disabled": "Off",
+        "enabledDescription": "The saved chat script loads on public pages after external services consent.",
+        "disabledDescription": "The chat script stays disabled until it is switched on and saved."
+      },
       "fields": {
         "firstName": "First name",
         "firstNamePlaceholder": "{{firstName}}",
@@ -82,7 +89,9 @@
         "lastSaved": "Last saved: {{date}}",
         "address": "Address",
         "addressPlaceholder": "Start typing an address",
-        "koalendarUrl": "Koalendar booking URL"
+        "koalendarUrl": "Koalendar booking URL",
+        "aiChatScript": "AI chat script tag",
+        "aiChatScriptPlaceholder": "<script async src=\"https://example.com/chat.js\"></script>"
       },
       "actions": {
         "saving": "Saving...",
@@ -92,7 +101,8 @@
         "clearAddress": "Clear address",
         "saveProfile": "Save profile",
         "openKoalendar": "Open Koalendar",
-        "saveKoalendar": "Save Koalendar"
+        "saveKoalendar": "Save Koalendar",
+        "saveAiChat": "Save AI chat"
       },
       "status": {
         "notSaved": "Not saved",
@@ -105,7 +115,8 @@
         "blogVisible": "Blog is visible on the public website.",
         "profileSaved": "Profile settings saved.",
         "assetUploaded": "{{asset}} uploaded and published.",
-        "koalendarSaved": "Koalendar integration saved."
+        "koalendarSaved": "Koalendar integration saved.",
+        "aiChatSaved": "AI chat integration saved."
       },
       "errors": {
         "loadProfile": "Unable to load profile settings.",
@@ -114,7 +125,8 @@
         "uploadAsset": "Unable to upload {{asset}}.",
         "chooseAddress": "Choose an address from the Mapbox results before saving.",
         "saveProfile": "Unable to save profile settings.",
-        "saveKoalendar": "Unable to save Koalendar integration."
+        "saveKoalendar": "Unable to save Koalendar integration.",
+        "saveAiChat": "Unable to save AI chat integration."
       },
       "preview": {
         "mapLabel": "Selected address map",

@@ -43,6 +43,10 @@ const UPLOAD_ASSET_LABEL_KEYS = {
 
 const EMPTY_PROFILE = {
   address: null,
+  aiChat: {
+    enabled: false,
+    scriptTag: "",
+  },
   blogEnabled: true,
   koalendar: {
     enabled: false,
@@ -177,6 +181,13 @@ function normalizeKoalendarForm(koalendar = {}) {
   };
 }
 
+function normalizeAiChatForm(aiChat = {}) {
+  return {
+    enabled: aiChat.enabled === true,
+    scriptTag: String(aiChat.scriptTag || ""),
+  };
+}
+
 function normalizeNameForm(name = {}) {
   return {
     firstName: String(name.firstName || "").trim(),
@@ -199,6 +210,9 @@ export default function ProfileSettings({user}) {
   const [blogEnabled, setBlogEnabled] = useState(true);
   const [koalendarForm, setKoalendarForm] = useState(() =>
     normalizeKoalendarForm(EMPTY_PROFILE.koalendar)
+  );
+  const [aiChatForm, setAiChatForm] = useState(() =>
+    normalizeAiChatForm(EMPTY_PROFILE.aiChat)
   );
   const [nameForm, setNameForm] = useState(() =>
     normalizeNameForm(EMPTY_PROFILE.name)
@@ -229,6 +243,8 @@ export default function ProfileSettings({user}) {
     koalendarBookingUrl
   );
   const koalendarConnected = koalendarForm.enabled && koalendarCanOpen;
+  const aiChatHasScript = aiChatForm.scriptTag.trim().length > 0;
+  const aiChatEnabled = aiChatForm.enabled && aiChatHasScript;
   const profileTranslationValues = useMemo(() => {
     const firstName = nameForm.firstName || t("fields.firstName");
     const lastName = nameForm.lastName || t("fields.lastName");
@@ -281,6 +297,7 @@ export default function ProfileSettings({user}) {
           setAddressInput(nextProfile.address?.label || "");
           setBlogEnabled(nextProfile.blogEnabled !== false);
           setKoalendarForm(normalizeKoalendarForm(nextProfile.koalendar));
+          setAiChatForm(normalizeAiChatForm(nextProfile.aiChat));
           setNameForm(normalizeNameForm(nextProfile.name));
           setMetadataForm(normalizeMetadataForm(nextProfile.metadata));
           closeSnackbar();
@@ -420,6 +437,10 @@ export default function ProfileSettings({user}) {
     setKoalendarForm((current) => ({...current, [field]: value}));
   }
 
+  function handleAiChatInput(field, value) {
+    setAiChatForm((current) => ({...current, [field]: value}));
+  }
+
   async function saveKoalendarIntegration() {
     setIsSaving(true);
     closeSnackbar();
@@ -448,6 +469,40 @@ export default function ProfileSettings({user}) {
       showSnackbar({
         type: "error",
         message: error.message || t("errors.saveKoalendar"),
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function saveAiChatIntegration() {
+    setIsSaving(true);
+    closeSnackbar();
+
+    try {
+      const response = await fetch("/api/admin/profile", {
+        method: "PUT",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({aiChat: aiChatForm}),
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || t("errors.saveAiChat"));
+      }
+
+      const nextProfile = data.profile || EMPTY_PROFILE;
+
+      setProfile(nextProfile);
+      setAiChatForm(normalizeAiChatForm(nextProfile.aiChat));
+      showSnackbar({
+        type: "success",
+        message: t("status.aiChatSaved"),
+      });
+    } catch (error) {
+      showSnackbar({
+        type: "error",
+        message: error.message || t("errors.saveAiChat"),
       });
     } finally {
       setIsSaving(false);
@@ -588,6 +643,7 @@ export default function ProfileSettings({user}) {
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({
           address,
+          aiChat: aiChatForm,
           blogEnabled,
           koalendar: koalendarForm,
           metadata: metadataForm,
@@ -607,6 +663,7 @@ export default function ProfileSettings({user}) {
       setAddressInput(nextProfile.address?.label || "");
       setBlogEnabled(nextProfile.blogEnabled !== false);
       setKoalendarForm(normalizeKoalendarForm(nextProfile.koalendar));
+      setAiChatForm(normalizeAiChatForm(nextProfile.aiChat));
       setNameForm(normalizeNameForm(nextProfile.name));
       setMetadataForm(normalizeMetadataForm(nextProfile.metadata));
       showSnackbar({type: "success", message: t("status.profileSaved")});
@@ -982,6 +1039,65 @@ export default function ProfileSettings({user}) {
                   {isSaving
                     ? t("actions.saving")
                     : t("actions.saveKoalendar")}
+                </button>
+              </div>
+            </div>
+
+            <div className={styles.integrationPanel}>
+              <label className={styles.featureToggle}>
+                <input
+                  checked={aiChatForm.enabled}
+                  disabled={isSaving}
+                  type="checkbox"
+                  onChange={(event) =>
+                    handleAiChatInput("enabled", event.target.checked)
+                  }
+                />
+                <span className={styles.featureSwitch} aria-hidden="true" />
+                <span className={styles.featureText}>
+                  <strong>{t("aiChat.title")}</strong>
+                  <small>
+                    {aiChatEnabled
+                      ? t("aiChat.enabledDescription")
+                      : t("aiChat.disabledDescription")}
+                  </small>
+                </span>
+                <span className={styles.featureStatus}>
+                  {aiChatEnabled ? t("aiChat.enabled") : t("aiChat.disabled")}
+                </span>
+              </label>
+
+              <div
+                className={`${styles.integrationFields} ${styles.chatScriptFields}`}
+              >
+                <label className={`${styles.field} ${styles.chatScriptField}`}>
+                  {t("fields.aiChatScript")}
+                  <textarea
+                    maxLength={20000}
+                    placeholder={t("fields.aiChatScriptPlaceholder")}
+                    rows={8}
+                    spellCheck="false"
+                    value={aiChatForm.scriptTag}
+                    onChange={(event) =>
+                      handleAiChatInput("scriptTag", event.target.value)
+                    }
+                  />
+                </label>
+              </div>
+
+              <div className={styles.editorActions}>
+                <p className={styles.muted}>
+                  {t("fields.lastSaved", {
+                    date: formatDate(profile.updatedAt, locale, notSavedLabel),
+                  })}
+                </p>
+                <button
+                  className={styles.button}
+                  disabled={isSaving}
+                  type="button"
+                  onClick={() => void saveAiChatIntegration()}
+                >
+                  {isSaving ? t("actions.saving") : t("actions.saveAiChat")}
                 </button>
               </div>
             </div>

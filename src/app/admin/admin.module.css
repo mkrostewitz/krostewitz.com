@@ -1819,6 +1819,17 @@
   align-items: end;
 }
 
+.chatScriptFields {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.chatScriptField textarea {
+  min-height: 180px;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.86rem;
+  line-height: 1.55;
+}
+
 .autocompleteField {
   display: grid;
   gap: 8px;

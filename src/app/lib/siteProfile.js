@@ -18,7 +18,9 @@ const MAX_METADATA_DESCRIPTION_LENGTH = 320;
 const MAX_METADATA_URL_LENGTH = 500;
 const MAX_METADATA_TYPE_LENGTH = 120;
 const MAX_PROFILE_NAME_LENGTH = 80;
+const MAX_AI_CHAT_SCRIPT_LENGTH = 20000;
 const HEX_COLOR_PATTERN = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i;
+const SCRIPT_TAG_PATTERN = /<script\b[^>]*>[\s\S]*?<\/script>/gi;
 
 const DEFAULT_SITE_THEME = {
   primaryColor: "#5773ff",
@@ -70,6 +72,46 @@ function normalizeBoolean(value, defaultValue = false) {
   if (value === "true") return true;
   if (value === "false") return false;
   return defaultValue;
+}
+
+function cleanScriptSnippet(value, options = {}) {
+  const snippet = String(value || "").replace(/\r\n?/g, "\n").trim();
+
+  if (snippet.length > MAX_AI_CHAT_SCRIPT_LENGTH && options.strict) {
+    throw new SiteProfileError(
+      `AI chat script must be ${MAX_AI_CHAT_SCRIPT_LENGTH} characters or fewer.`
+    );
+  }
+
+  return snippet.slice(0, MAX_AI_CHAT_SCRIPT_LENGTH);
+}
+
+function hasOnlyScriptTags(value) {
+  SCRIPT_TAG_PATTERN.lastIndex = 0;
+  const matches = value.match(SCRIPT_TAG_PATTERN) || [];
+
+  if (!matches.length) return false;
+
+  const remainder = value.replace(SCRIPT_TAG_PATTERN, "").trim();
+  return !remainder;
+}
+
+function normalizeAiChatScriptTag(value, options = {}) {
+  const scriptTag = cleanScriptSnippet(value, options);
+
+  if (!scriptTag) return "";
+
+  if (!hasOnlyScriptTags(scriptTag)) {
+    if (options.strict) {
+      throw new SiteProfileError(
+        "AI chat script must contain only complete <script> tags."
+      );
+    }
+
+    return "";
+  }
+
+  return scriptTag;
 }
 
 function getIconSource(metadata = {}) {
@@ -504,6 +546,45 @@ export function normalizeKoalendarIntegration(input = {}, options = {}) {
   };
 }
 
+export function getDefaultAiChatIntegration() {
+  return {
+    enabled: false,
+    scriptTag: "",
+  };
+}
+
+export function normalizeAiChatIntegration(input = {}, options = {}) {
+  const source =
+    typeof input === "string"
+      ? {scriptTag: input}
+      : input && typeof input === "object" && !Array.isArray(input)
+        ? input
+        : {};
+  const defaultIntegration = getDefaultAiChatIntegration();
+  const hasScriptTag =
+    Object.prototype.hasOwnProperty.call(source, "scriptTag") ||
+    Object.prototype.hasOwnProperty.call(source, "script") ||
+    Object.prototype.hasOwnProperty.call(source, "snippet");
+  const scriptTag = normalizeAiChatScriptTag(
+    hasScriptTag
+      ? source.scriptTag || source.script || source.snippet || ""
+      : defaultIntegration.scriptTag,
+    options
+  );
+  const enabled = normalizeBoolean(source.enabled, defaultIntegration.enabled);
+
+  if (options.strict && enabled && !scriptTag) {
+    throw new SiteProfileError(
+      "AI chat script is required when the integration is enabled."
+    );
+  }
+
+  return {
+    enabled: enabled && Boolean(scriptTag),
+    scriptTag,
+  };
+}
+
 export function toNextMetadata(metadata) {
   const normalized = normalizeSiteMetadata(metadata);
 
@@ -572,6 +653,7 @@ function serializeProfile(document = {}) {
 
   return {
     address: normalizeSiteAddress(document.address),
+    aiChat: normalizeAiChatIntegration(document.aiChat),
     blogEnabled: document.blogEnabled !== false,
     koalendar: normalizeKoalendarIntegration(document.koalendar),
     metadata,
@@ -592,6 +674,7 @@ async function readSiteProfile() {
       {_id: PROFILE_ID},
       {
         $setOnInsert: {
+          aiChat: getDefaultAiChatIntegration(),
           koalendar: getDefaultKoalendarIntegration(),
           name: defaultName,
           createdAt: new Date(),
@@ -606,6 +689,13 @@ async function readSiteProfile() {
 
     await collection.updateOne({_id: PROFILE_ID}, {$set: {koalendar}});
     document = {...document, koalendar};
+  }
+
+  if (document && document.aiChat === undefined) {
+    const aiChat = getDefaultAiChatIntegration();
+
+    await collection.updateOne({_id: PROFILE_ID}, {$set: {aiChat}});
+    document = {...document, aiChat};
   }
 
   if (document && document.name === undefined) {
@@ -645,6 +735,7 @@ export async function saveSiteProfile(input = {}, user) {
   );
   const hasMetadata = Object.prototype.hasOwnProperty.call(input, "metadata");
   const hasKoalendar = Object.prototype.hasOwnProperty.call(input, "koalendar");
+  const hasAiChat = Object.prototype.hasOwnProperty.call(input, "aiChat");
   const hasName = Object.prototype.hasOwnProperty.call(input, "name");
   const address = normalizeSiteAddress(input.address);
   const metadata = hasMetadata
@@ -652,6 +743,9 @@ export async function saveSiteProfile(input = {}, user) {
     : null;
   const koalendar = hasKoalendar
     ? normalizeKoalendarIntegration(input.koalendar, {strict: true})
+    : null;
+  const aiChat = hasAiChat
+    ? normalizeAiChatIntegration(input.aiChat, {strict: true})
     : null;
   const name = hasName
     ? normalizeProfileName(input.name, metadata?.title || "")
@@ -687,12 +781,19 @@ export async function saveSiteProfile(input = {}, user) {
     document.koalendar = koalendar;
   }
 
+  if (hasAiChat) {
+    document.aiChat = aiChat;
+  }
+
   const insertDefaults = {createdAt: now};
   if (!hasBlogEnabled) {
     insertDefaults.blogEnabled = true;
   }
   if (!hasKoalendar) {
     insertDefaults.koalendar = getDefaultKoalendarIntegration();
+  }
+  if (!hasAiChat) {
+    insertDefaults.aiChat = getDefaultAiChatIntegration();
   }
 
   const db = await getDb();

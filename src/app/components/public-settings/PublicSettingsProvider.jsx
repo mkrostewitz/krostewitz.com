@@ -4,6 +4,7 @@ import {createContext, useContext, useEffect, useMemo, useState} from "react";
 
 const DEFAULT_PROFILE = {
   address: null,
+  aiChat: {enabled: false, scriptTag: ""},
   blogEnabled: null,
   koalendar: {enabled: false, bookingUrl: ""},
   metadata: {logoUrl: "/logo.svg", title: ""},
