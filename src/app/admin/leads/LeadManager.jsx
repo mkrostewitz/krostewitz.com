@@ -1,6 +1,6 @@
 "use client";
 
-import {X} from "lucide-react";
+import {LocateFixed, X} from "lucide-react";
 import mapboxgl from "mapbox-gl";
 import {useEffect, useMemo, useRef, useState} from "react";
 
@@ -366,6 +366,7 @@ export default function LeadManager({user}) {
   const [statusDraft, setStatusDraft] = useState("pending");
   const [isLoading, setIsLoading] = useState(true);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [isGeolocating, setIsGeolocating] = useState(false);
   const [savingLeadId, setSavingLeadId] = useState("");
 
   useLoadingState({
@@ -376,6 +377,11 @@ export default function LeadManager({user}) {
   useLoadingState({
     isLoading: Boolean(savingLeadId),
     label: "Saving lead...",
+    type: "action",
+  });
+  useLoadingState({
+    isLoading: isGeolocating,
+    label: "Geolocating leads...",
     type: "action",
   });
 
@@ -535,6 +541,57 @@ export default function LeadManager({user}) {
     }
   }
 
+  async function geolocateStoredLeadIps() {
+    setIsGeolocating(true);
+    closeSnackbar();
+
+    try {
+      const response = await fetch("/api/admin/leads/geolocate", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({limit: 100}),
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || "Unable to geolocate stored lead IPs.");
+      }
+
+      const updatedLeads = Array.isArray(data.leads) ? data.leads : [];
+      const updatedById = new Map(updatedLeads.map((lead) => [lead.id, lead]));
+
+      if (updatedById.size > 0) {
+        setLeads((current) =>
+          current.map((lead) => updatedById.get(lead.id) || lead)
+        );
+      }
+
+      const summary = data.summary || {};
+      const updated = Number(summary.updated) || 0;
+      const lookedUp = Number(summary.lookedUp) || 0;
+      const failed = Number(summary.failed) || 0;
+      const checked = Number(summary.checked) || 0;
+      const message =
+        updated > 0
+          ? `Geolocated ${updated} lead${updated === 1 ? "" : "s"} from ${lookedUp} stored IP lookup${lookedUp === 1 ? "" : "s"}.`
+          : checked > 0
+            ? `No lead locations changed after ${lookedUp} stored IP lookup${lookedUp === 1 ? "" : "s"}.`
+            : "No stored lead IPs need geolocation.";
+
+      showSnackbar({
+        type: failed > 0 && updated === 0 ? "error" : updated > 0 ? "success" : "info",
+        message:
+          failed > 0
+            ? `${message} ${failed} lookup${failed === 1 ? "" : "s"} failed.`
+            : message,
+      });
+    } catch (error) {
+      showSnackbar({type: "error", message: error.message});
+    } finally {
+      setIsGeolocating(false);
+    }
+  }
+
   function saveLeadDraft(lead) {
     const patch = {};
     const actionText = actionDraft.trim();
@@ -596,6 +653,18 @@ export default function LeadManager({user}) {
                 <p className={styles.muted}>
                   Select a marker or a lead below to inspect details.
                 </p>
+              </div>
+              <div className={styles.buttonRow}>
+                <button
+                  type="button"
+                  className={`${styles.secondaryButton} ${styles.iconTextButton}`}
+                  disabled={isGeolocating || isLoading}
+                  title="Geolocate old leads from stored IP addresses"
+                  onClick={() => void geolocateStoredLeadIps()}
+                >
+                  <LocateFixed aria-hidden="true" size={17} strokeWidth={2.2} />
+                  {isGeolocating ? "Geolocating..." : "Geolocate stored IPs"}
+                </button>
               </div>
             </div>
 

@@ -14,6 +14,7 @@ import {
   getClientIp,
   fetchIpGeolocationGeo,
   getIpGeolocationApiKey,
+  isPrivateIp,
   normalizeIp,
 } from "./requestGeo";
 
@@ -246,6 +247,38 @@ function getHeader(headers, names) {
   return "";
 }
 
+function getValidCoordinate(value, min, max) {
+  const text = String(value ?? "")
+    .replace(/\u0000/g, "")
+    .trim()
+    .slice(0, 80);
+  const number = Number(text);
+
+  return Number.isFinite(number) && number >= min && number <= max ? text : "";
+}
+
+function hasValidTrackingCoordinates(tracking = {}) {
+  return Boolean(
+    getValidCoordinate(tracking.longitude, -180, 180) &&
+      getValidCoordinate(tracking.latitude, -90, 90)
+  );
+}
+
+function trackingNeedsGeolocation(tracking = {}) {
+  return (
+    !cleanText(tracking.country, 200) ||
+    !cleanText(tracking.countryCode, 20) ||
+    !cleanText(tracking.state, 200) ||
+    !cleanText(tracking.city, 200) ||
+    !hasValidTrackingCoordinates(tracking)
+  );
+}
+
+function getStoredPublicIp(tracking = {}) {
+  const ip = normalizeIp(tracking.ip);
+  return ip && !isPrivateIp(ip) ? ip : "";
+}
+
 function mergeTrackingGeo(tracking, geo, hasExplicitAddress = false) {
   if (!geo) return tracking;
 
@@ -265,8 +298,12 @@ function mergeTrackingGeo(tracking, geo, hasExplicitAddress = false) {
     stateCode: tracking.stateCode || geo.stateCode || "",
     city: tracking.city || geo.city || "",
     postalCode: tracking.postalCode || geo.postalCode || "",
-    latitude: tracking.latitude || geo.latitude || "",
-    longitude: tracking.longitude || geo.longitude || "",
+    latitude:
+      getValidCoordinate(tracking.latitude, -90, 90) ||
+      getValidCoordinate(geo.latitude, -90, 90),
+    longitude:
+      getValidCoordinate(tracking.longitude, -180, 180) ||
+      getValidCoordinate(geo.longitude, -180, 180),
     timezone: tracking.timezone || geo.timezone || "",
     geoSource,
   };
@@ -397,8 +434,7 @@ async function getRequestTracking(request, input = {}) {
     !tracking.country ||
     !tracking.state ||
     !tracking.city ||
-    !tracking.latitude ||
-    !tracking.longitude
+    !hasValidTrackingCoordinates(tracking)
   ) {
     const apiKey = getIpGeolocationApiKey();
 
@@ -720,6 +756,144 @@ export async function getAdminLeads(filters = {}) {
     .toArray();
 
   return leads.map(serializeLead);
+}
+
+function getMaintenanceLimit(value) {
+  return Math.min(Math.max(Number(value) || 100, 1), 100);
+}
+
+function hasTrackingGeoChanges(current = {}, next = {}) {
+  return [
+    "country",
+    "countryCode",
+    "state",
+    "stateCode",
+    "city",
+    "postalCode",
+    "latitude",
+    "longitude",
+    "timezone",
+    "address",
+    "geoSource",
+  ].some((key) => cleanText(current[key], 2000) !== cleanText(next[key], 2000));
+}
+
+async function fetchGeoBatch(ips, apiKey, batchSize = 8) {
+  const geoByIp = new Map();
+
+  for (let index = 0; index < ips.length; index += batchSize) {
+    const batch = ips.slice(index, index + batchSize);
+    const results = await Promise.all(
+      batch.map(async (ip) => [ip, await fetchIpGeolocationGeo(ip, apiKey)])
+    );
+
+    for (const [ip, geo] of results) {
+      geoByIp.set(ip, geo);
+    }
+  }
+
+  return geoByIp;
+}
+
+export async function geolocateStoredLeadIps(input = {}, user) {
+  const apiKey = getIpGeolocationApiKey();
+  if (!apiKey) {
+    throw new LeadValidationError("IPGeolocation API key is not configured.", 400);
+  }
+
+  const db = await getDb();
+  await ensureLeadIndexes(db);
+
+  const limit = getMaintenanceLimit(input.limit);
+  const leads = getLeadsCollection(db);
+  const candidates = await leads
+    .find({
+      "tracking.ip": {$type: "string", $ne: ""},
+      $or: [
+        {"tracking.country": {$in: [null, ""]}},
+        {"tracking.countryCode": {$in: [null, ""]}},
+        {"tracking.state": {$in: [null, ""]}},
+        {"tracking.city": {$in: [null, ""]}},
+        {"tracking.latitude": {$in: [null, ""]}},
+        {"tracking.longitude": {$in: [null, ""]}},
+      ],
+    })
+    .sort({createdAt: -1})
+    .limit(limit * 3)
+    .toArray();
+  const eligible = [];
+  const updatedLeads = [];
+  const now = new Date();
+  const summary = {
+    checked: 0,
+    failed: 0,
+    limit,
+    lookedUp: 0,
+    skipped: 0,
+    updated: 0,
+  };
+
+  for (const document of candidates) {
+    if (summary.checked >= limit) break;
+
+    const tracking = document.tracking || {};
+    const ip = getStoredPublicIp(tracking);
+
+    if (!ip || !trackingNeedsGeolocation(tracking)) {
+      summary.skipped += 1;
+      continue;
+    }
+
+    eligible.push({document, ip, tracking});
+    summary.checked += 1;
+  }
+
+  const uniqueIps = [...new Set(eligible.map((item) => item.ip))];
+  const geoByIp = await fetchGeoBatch(uniqueIps, apiKey);
+  summary.lookedUp = uniqueIps.length;
+
+  for (const {document, ip, tracking} of eligible) {
+    const geo = geoByIp.get(ip);
+    if (!geo) {
+      summary.failed += 1;
+      continue;
+    }
+
+    const nextTracking = mergeTrackingGeo(tracking, geo, false);
+    if (!hasTrackingGeoChanges(tracking, nextTracking)) {
+      summary.skipped += 1;
+      continue;
+    }
+
+    nextTracking.geoResolvedAt = now.toISOString();
+    nextTracking.geoResolvedFromIp = ip;
+
+    const updatedDocument = {
+      ...document,
+      tracking: nextTracking,
+      updatedAt: now,
+      updatedBy: user?.email || null,
+    };
+
+    await leads.updateOne(
+      {_id: document._id},
+      {
+        $set: {
+          tracking: nextTracking,
+          updatedAt: now,
+          updatedBy: user?.email || null,
+        },
+      }
+    );
+
+    updatedLeads.push(serializeLead(updatedDocument));
+    summary.updated += 1;
+  }
+
+  return {
+    leads: updatedLeads,
+    summary,
+  };
 }
 
 export async function updateAdminLead(leadId, input = {}, user) {
