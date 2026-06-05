@@ -705,7 +705,7 @@
       "external": {
         "title": "Maps, weather, media, and external services",
         "paragraphs": [
-          "Some public sections can load third-party services or content. Automatic loading of Mapbox maps, Open-Meteo weather data, external webcam images, and country-based language detection is blocked until you consent to optional external services. When those services are loaded, the respective provider may receive technical data such as your IP address and browser information.",
+          "Some public sections can load third-party services or content. Automatic loading of Mapbox maps, cached Open-Meteo weather data, external webcam images, and country-based language detection is blocked until you consent to optional external services. Weather data is requested through this site's server cache; other loaded providers may receive technical data such as your IP address and browser information.",
           "The site does not send your name, contact details, messages, CV requests, or admin data to these optional external content providers.",
           "Outbound links to GitHub, LinkedIn, Koalendar, webcam source pages, or similar third-party sites are opened only when you choose them.",
           "Uploaded post media, site assets, and CV files may be stored with a configured object storage provider and delivered through public asset URLs."

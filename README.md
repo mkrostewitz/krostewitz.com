@@ -73,6 +73,10 @@ The public site calls `/api/language` on first load unless the visitor has manua
 
 The public consent preference is stored in browser local storage. `NEXT_PUBLIC_CONSENT_STORAGE_KEY` can override the storage key; it defaults to `site-consent-preferences`.
 
+## Weather data
+
+The sailing weather panel does not call Open-Meteo directly from the browser. Production requests use the Netlify Function at `/.netlify/functions/weather`; local Next development falls back to `/api/weather`. Both endpoints share the same server-side fetcher, normalize the Open-Meteo response, and cache successful responses for 60 seconds with stale revalidation headers. At steady traffic this is about 1,440 Open-Meteo calls per day. Set `OPEN_METEO_API_KEY` to use Open-Meteo's customer endpoint; without it, the free endpoint is used.
+
 ## Site profile settings
 
 Public profile settings are managed in `/admin/profile` and stored in MongoDB under the `site_content` document `_id: "profile_settings"`. This includes first and last name, site metadata, blog visibility, the contact address, and the Koalendar booking integration. The Impressum and privacy pages use the saved profile name and address for provider/controller details. Missing Koalendar settings initialize as disabled with an empty booking URL, and public booking CTAs read only from the saved profile setting.

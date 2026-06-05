@@ -715,7 +715,7 @@
       "external": {
         "title": "Karten, Wetter, Medien und externe Dienste",
         "paragraphs": [
-          "Einige öffentliche Bereiche können Dienste oder Inhalte Dritter laden. Das automatische Laden von Mapbox-Karten, Open-Meteo-Wetterdaten, externen Webcam-Bildern und länderbasierter Spracherkennung bleibt blockiert, bis Sie in optionale externe Dienste einwilligen. Wenn diese Dienste geladen werden, kann der jeweilige Anbieter technische Daten wie IP-Adresse und Browserinformationen erhalten.",
+          "Einige öffentliche Bereiche können Dienste oder Inhalte Dritter laden. Das automatische Laden von Mapbox-Karten, zwischengespeicherten Open-Meteo-Wetterdaten, externen Webcam-Bildern und länderbasierter Spracherkennung bleibt blockiert, bis Sie in optionale externe Dienste einwilligen. Wetterdaten werden über den Server-Cache dieser Website angefragt; andere geladene Anbieter können technische Daten wie IP-Adresse und Browserinformationen erhalten.",
           "Die Website sendet keine Namen, Kontaktdaten, Nachrichten, CV-Anfragen oder Admin-Daten an diese optionalen Anbieter eingebetteter Inhalte.",
           "Ausgehende Links zu GitHub, LinkedIn, Koalendar, Webcam-Quellseiten oder ähnlichen Drittanbietern werden erst geöffnet, wenn Sie sie auswählen.",
           "Hochgeladene Beitragsmedien, Website-Assets und CV-Dateien können bei einem konfigurierten Objektspeicheranbieter gespeichert und über öffentliche Asset-URLs ausgeliefert werden."

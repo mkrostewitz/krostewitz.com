@@ -33,7 +33,7 @@ const COMPASS_TICKS = Array.from({length: 24}, (_, index) => {
     major: angle % 90 === 0,
   };
 });
-const WIND_REFRESH_MS = 5 * 60 * 1000;
+const WEATHER_REFRESH_MS = 60 * 1000;
 const WATER_TEMPERATURE_REFRESH_MS = 15 * 60 * 1000;
 const WEBCAM_REFRESH_MS = 3 * 60 * 1000;
 const KNOT_TO_METERS_PER_SECOND = 0.514444;
@@ -41,13 +41,17 @@ const WIND_FLOW_TIME_SCALE = 10 * 60;
 const HOVER_FORECAST_HOURS = 4;
 const CLOUD_FORECAST_HOURS = 24;
 const CLOUD_PATTERN_POINTS = 12;
-const FORECAST_REQUEST_HOURS = CLOUD_FORECAST_HOURS + 2;
 const SAILING_SKELETON_METRICS = Array.from({length: 3}, (_, index) => index);
 const SAILING_SKELETON_INSTRUMENTS = Array.from(
   {length: 2},
   (_, index) => index,
 );
 const WIND_STATION_ID = "cyc-prien";
+const WEATHER_ENDPOINT =
+  process.env.NEXT_PUBLIC_WEATHER_ENDPOINT ||
+  (process.env.NODE_ENV === "production"
+    ? "/.netlify/functions/weather"
+    : "/api/weather");
 const WEBCAM_IMAGE_URL = "https://www.cyc-prien.de/_data/webcam.jpg";
 const CYC_WEBCAM_URL = "https://www.cyc-prien.de/wetter/webcam/";
 const WETTER_WEBCAM_URL =
@@ -68,30 +72,6 @@ const MAPBOX_PADDING = {
   top: 62,
 };
 
-const WIND_LOCATIONS = [
-  {id: WIND_STATION_ID, name: "CYC Prien", lat: 47.84812, lon: 12.36938},
-  {id: "west-shore", name: "Westufer", lat: 47.875, lon: 12.315},
-  {id: "prien-bay", name: "Priener Bucht", lat: 47.86, lon: 12.365},
-  {id: "herreninsel-north", name: "Herreninsel Nord", lat: 47.88, lon: 12.405},
-  {id: "gstadt", name: "Gstadt", lat: 47.885, lon: 12.42},
-  {id: "north-east", name: "Nordostsee", lat: 47.9, lon: 12.49},
-  {id: "south-west", name: "Suedwestsee", lat: 47.815, lon: 12.335},
-  {id: "lake-center", name: "Seemitte", lat: 47.845, lon: 12.42},
-  {id: "fraueninsel", name: "Fraueninsel", lat: 47.872, lon: 12.427},
-  {id: "south-east", name: "Suedostsee", lat: 47.805, lon: 12.51},
-  {id: "east-shore", name: "Ostufer", lat: 47.855, lon: 12.535},
-  {id: "north", name: "Nordsee", lat: 47.925, lon: 12.39},
-  {id: "south", name: "Suedsee", lat: 47.79, lon: 12.405},
-  {id: "north-west-lake", name: "Nordwestsee", lat: 47.895, lon: 12.35},
-  {id: "north-center", name: "Noerdliche Seemitte", lat: 47.895, lon: 12.43},
-  {id: "north-east-shore", name: "Nordostufer", lat: 47.885, lon: 12.515},
-  {id: "west-center", name: "Westliche Seemitte", lat: 47.855, lon: 12.34},
-  {id: "east-center", name: "Oestliche Seemitte", lat: 47.84, lon: 12.49},
-  {id: "south-center", name: "Suedliche Seemitte", lat: 47.825, lon: 12.43},
-  {id: "south-bay-west", name: "Suedwestbucht", lat: 47.81, lon: 12.36},
-  {id: "south-east-bay", name: "Suedostbucht", lat: 47.82, lon: 12.54},
-];
-
 const MAP_STYLE = {
   background: "#0b0f19",
   backgroundDeep: "#07111f",
@@ -104,11 +84,6 @@ const MAP_STYLE = {
 
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
-}
-
-function readNumber(value) {
-  const numericValue = Number(value);
-  return Number.isFinite(numericValue) ? numericValue : null;
 }
 
 function metersPerDegreeLongitude(latitude) {
@@ -390,25 +365,6 @@ function formatGkdReadingTime(value) {
   return timePart || value;
 }
 
-function readHourlyForecast(entry, currentTime) {
-  const hourly = entry.hourly;
-  const times = Array.isArray(hourly?.time) ? hourly.time : [];
-
-  return times
-    .map((time, index) => ({
-      cloudCover: readNumber(hourly?.cloud_cover?.[index]),
-      direction: readNumber(hourly?.wind_direction_10m?.[index]),
-      gusts: readNumber(hourly?.wind_gusts_10m?.[index]),
-      pressure: readNumber(hourly?.pressure_msl?.[index]),
-      speed: readNumber(hourly?.wind_speed_10m?.[index]),
-      temperature: readNumber(hourly?.temperature_2m?.[index]),
-      time,
-      weatherCode: readNumber(hourly?.weather_code?.[index]),
-    }))
-    .filter((forecast) => !currentTime || forecast.time > currentTime)
-    .slice(0, CLOUD_FORECAST_HOURS);
-}
-
 function compactForecastSeries(forecasts, maxPoints) {
   if (forecasts.length <= maxPoints) return forecasts;
 
@@ -490,28 +446,6 @@ function degreesToCompass(degrees, language) {
   const labels = language === "de" ? german : english;
   const index = Math.round((((degrees % 360) + 360) % 360) / 22.5) % 16;
   return labels[index];
-}
-
-function buildOpenMeteoUrl() {
-  const params = new URLSearchParams({
-    current:
-      "weather_code,temperature_2m,pressure_msl,cloud_cover,wind_speed_10m,wind_direction_10m,wind_gusts_10m",
-    forecast_hours: String(FORECAST_REQUEST_HOURS),
-    hourly:
-      "weather_code,temperature_2m,pressure_msl,cloud_cover,wind_speed_10m,wind_direction_10m,wind_gusts_10m",
-    wind_speed_unit: "kn",
-    timezone: "Europe/Berlin",
-  });
-  params.set(
-    "latitude",
-    WIND_LOCATIONS.map((location) => location.lat.toFixed(4)).join(","),
-  );
-  params.set(
-    "longitude",
-    WIND_LOCATIONS.map((location) => location.lon.toFixed(4)).join(","),
-  );
-
-  return `https://api.open-meteo.com/v1/forecast?${params.toString()}`;
 }
 
 function SailingStationSkeleton() {
@@ -1005,48 +939,23 @@ const PersonalSection = () => {
       }));
 
       try {
-        const response = await fetch(buildOpenMeteoUrl(), {
-          cache: "no-store",
+        const response = await fetch(WEATHER_ENDPOINT, {
           signal: controller.signal,
         });
+        const payload = await response.json().catch(() => ({}));
 
         if (!response.ok) {
-          throw new Error(`Open-Meteo responded with ${response.status}`);
+          throw new Error(payload.error || `Weather responded with ${response.status}`);
         }
 
-        const payload = await response.json();
         if (!active) return;
 
-        const rows = Array.isArray(payload) ? payload : [payload];
-        const reports = rows.map((entry, index) => {
-          const location = WIND_LOCATIONS[index] || {
-            id: `location-${index}`,
-            lat: entry.latitude,
-            lon: entry.longitude,
-          };
-          const currentTime = entry.current?.time ?? null;
-
-          return {
-            ...location,
-            cloudCover: readNumber(entry.current?.cloud_cover),
-            direction: readNumber(entry.current?.wind_direction_10m),
-            forecast: readHourlyForecast(entry, currentTime),
-            gusts: readNumber(entry.current?.wind_gusts_10m),
-            pressure: readNumber(entry.current?.pressure_msl),
-            speed: readNumber(entry.current?.wind_speed_10m),
-            temperature: readNumber(entry.current?.temperature_2m),
-            time: currentTime,
-            timezoneAbbreviation: entry.timezone_abbreviation ?? null,
-            weatherCode: readNumber(entry.current?.weather_code),
-          };
-        });
-        const stationReport =
-          reports.find((report) => report.id === WIND_STATION_ID) ?? reports[0];
+        const weather = payload.weather ?? {};
 
         setWindReport({
           error: null,
-          points: reports.filter((report) => report.id !== stationReport?.id),
-          station: stationReport ?? null,
+          points: Array.isArray(weather.points) ? weather.points : [],
+          station: weather.station ?? null,
           status: "ready",
         });
       } catch (error) {
@@ -1061,7 +970,7 @@ const PersonalSection = () => {
     }
 
     void loadWind();
-    const interval = window.setInterval(loadWind, WIND_REFRESH_MS);
+    const interval = window.setInterval(loadWind, WEATHER_REFRESH_MS);
 
     return () => {
       active = false;
