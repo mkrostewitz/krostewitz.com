@@ -42,6 +42,11 @@ const HOVER_FORECAST_HOURS = 4;
 const CLOUD_FORECAST_HOURS = 24;
 const CLOUD_PATTERN_POINTS = 12;
 const FORECAST_REQUEST_HOURS = CLOUD_FORECAST_HOURS + 2;
+const SAILING_SKELETON_METRICS = Array.from({length: 3}, (_, index) => index);
+const SAILING_SKELETON_INSTRUMENTS = Array.from(
+  {length: 2},
+  (_, index) => index,
+);
 const WIND_STATION_ID = "cyc-prien";
 const WEBCAM_IMAGE_URL = "https://www.cyc-prien.de/_data/webcam.jpg";
 const CYC_WEBCAM_URL = "https://www.cyc-prien.de/wetter/webcam/";
@@ -659,12 +664,70 @@ function buildOpenMeteoUrl() {
   return `https://api.open-meteo.com/v1/forecast?${params.toString()}`;
 }
 
+function SailingStationSkeleton() {
+  return (
+    <>
+      <div className={`${styles.windMap} ${styles.windMapLoading}`} aria-hidden>
+        <div className={`${styles.weatherOverlay} ${styles.weatherOverlayTop}`}>
+          {SAILING_SKELETON_METRICS.map((item) => (
+            <div className={styles.weatherBox} key={`weather-skeleton-${item}`}>
+              <span className={styles.weatherLabelSkeleton} />
+              <span className={styles.weatherValueSkeleton} />
+              {item === 1 && <span className={styles.weatherTextSkeleton} />}
+            </div>
+          ))}
+        </div>
+        <div className={styles.windMapSkeletonCanvas}>
+          <span />
+          <span />
+          <span />
+          <span />
+        </div>
+        <div className={`${styles.weatherOverlay} ${styles.weatherOverlayBottom}`}>
+          <div className={`${styles.weatherBox} ${styles.weatherBoxWide}`}>
+            <span className={styles.weatherLabelSkeleton} />
+            <span className={styles.weatherValueRow}>
+              <span className={styles.weatherIconSkeleton} />
+              <span className={styles.weatherCloudText}>
+                <span className={styles.weatherValueSkeleton} />
+                <span className={styles.weatherTextSkeleton} />
+              </span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className={styles.instrumentGrid} aria-hidden>
+        {SAILING_SKELETON_INSTRUMENTS.map((item) => (
+          <div
+            className={`${styles.instrument} ${styles.instrumentLoading}`}
+            key={`instrument-skeleton-${item}`}
+          >
+            <div className={styles.instrumentReadout}>
+              <span className={styles.weatherLabelSkeleton} />
+              <small className={styles.weatherTextSkeleton} />
+            </div>
+            <div className={styles.instrumentDialSkeleton} />
+            <p className={styles.instrumentMeta}>
+              <span className={styles.weatherTextSkeleton} />
+            </p>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
 const PersonalSection = () => {
   const {t, i18n} = useTranslation(undefined, {keyPrefix: "personal"});
   const {t: tConsent} = useTranslation(undefined, {
     keyPrefix: "cookieConsent",
   });
-  const {allowExternalServices, openConsentSettings} = useCookieConsent();
+  const {
+    allowExternalServices,
+    isReady: isConsentReady,
+    openConsentSettings,
+  } = useCookieConsent();
   const canvasRef = useRef(null);
   const windMapDragRef = useRef({
     active: false,
@@ -682,6 +745,7 @@ const PersonalSection = () => {
   const [windMapReady, setWindMapReady] = useState(false);
   const [webcamTick, setWebcamTick] = useState(Date.now());
   const [webcamAvailable, setWebcamAvailable] = useState(true);
+  const [webcamImageReady, setWebcamImageReady] = useState(false);
   const [windMapHover, setWindMapHover] = useState(null);
   const [cloudPatternOpen, setCloudPatternOpen] = useState(false);
   const [waterTemperatureReport, setWaterTemperatureReport] = useState({
@@ -715,7 +779,15 @@ const PersonalSection = () => {
   const temperature = station?.temperature;
   const weatherCode = station?.weatherCode;
   const waterTemperature = waterTemperatureReport.data?.value;
-  const externalDataStatus = allowExternalServices ? windReport.status : "blocked";
+  const externalDataStatus = !isConsentReady
+    ? "loading"
+    : allowExternalServices
+      ? windReport.status
+      : "blocked";
+  const isInitialWindLoading = externalDataStatus === "loading";
+  const isWaterTemperatureLoading =
+    !isConsentReady ||
+    (allowExternalServices && waterTemperatureReport.status === "loading");
   const cloudCoverValue = cloudCover == null ? "--" : `${Math.round(cloudCover)}%`;
   const pressureValue = pressure == null ? "--" : `${Math.round(pressure)} hPa`;
   const temperatureValue = temperature == null ? "--" : `${temperature.toFixed(1)} °C`;
@@ -1048,8 +1120,13 @@ const PersonalSection = () => {
     () => `${WEBCAM_IMAGE_URL}?t=${Math.floor(webcamTick / WEBCAM_REFRESH_MS)}`,
     [webcamTick],
   );
+  const shouldShowWebcamSkeleton =
+    !isConsentReady ||
+    (allowExternalServices && webcamAvailable && !webcamImageReady);
 
   useEffect(() => {
+    if (!isConsentReady) return undefined;
+
     if (!allowExternalServices) {
       setWindReport({
         error: null,
@@ -1134,9 +1211,11 @@ const PersonalSection = () => {
       controller.abort();
       window.clearInterval(interval);
     };
-  }, [allowExternalServices]);
+  }, [allowExternalServices, isConsentReady]);
 
   useEffect(() => {
+    if (!isConsentReady) return undefined;
+
     if (!allowExternalServices) {
       setWaterTemperatureReport({
         data: null,
@@ -1194,20 +1273,29 @@ const PersonalSection = () => {
       controller.abort();
       window.clearInterval(interval);
     };
-  }, [allowExternalServices]);
+  }, [allowExternalServices, isConsentReady]);
 
   useEffect(() => {
-    if (!allowExternalServices) return undefined;
+    if (!isConsentReady || !allowExternalServices) return undefined;
 
     const interval = window.setInterval(() => {
       setWebcamTick(Date.now());
     }, WEBCAM_REFRESH_MS);
 
     return () => window.clearInterval(interval);
-  }, [allowExternalServices]);
+  }, [allowExternalServices, isConsentReady]);
+
+  useEffect(() => {
+    if (!isConsentReady) return;
+
+    if (allowExternalServices && webcamAvailable) {
+      setWebcamImageReady(false);
+    }
+  }, [allowExternalServices, isConsentReady, webcamAvailable, webcamSrc]);
 
   useEffect(() => {
     if (
+      !isConsentReady ||
       !allowExternalServices ||
       !mapboxToken ||
       !mapContainerRef.current ||
@@ -1249,7 +1337,7 @@ const PersonalSection = () => {
       mapRef.current = null;
       setWindMapReady(false);
     };
-  }, [allowExternalServices, mapboxToken]);
+  }, [allowExternalServices, isConsentReady, mapboxToken]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -1400,7 +1488,10 @@ const PersonalSection = () => {
         ))}
       </div>
 
-      <div className={styles.sailingPanel}>
+      <div
+        className={styles.sailingPanel}
+        aria-busy={isInitialWindLoading || isWaterTemperatureLoading}
+      >
         <div className={styles.sailingHeader}>
           <div>
             <p className={styles.panelEyebrow}>{t("sailing.eyebrow")}</p>
@@ -1420,359 +1511,377 @@ const PersonalSection = () => {
           </div>
         </div>
 
-        <div className={styles.windLayout}>
-          <div className={styles.windMap}>
-            <div className={`${styles.weatherOverlay} ${styles.weatherOverlayTop}`}>
-              <div
-                className={`${styles.weatherBox} ${styles.weatherBoxInteractive}`}
-                role="img"
-                aria-label={temperatureTooltip}
-                tabIndex={0}
-              >
-                <span>{t("sailing.temperature")}</span>
-                <strong>{temperatureValue}</strong>
+        {isInitialWindLoading ? (
+          <div
+            className={`${styles.windLayout} ${styles.windLayoutSkeleton}`}
+            role="status"
+            aria-label={t("sailing.loading")}
+          >
+            <SailingStationSkeleton />
+          </div>
+        ) : (
+          <div className={styles.windLayout}>
+            <div className={styles.windMap}>
+              <div className={`${styles.weatherOverlay} ${styles.weatherOverlayTop}`}>
                 <div
-                  className={`${styles.forecastTooltip} ${styles.weatherForecastTooltip}`}
-                  aria-hidden
+                  className={`${styles.weatherBox} ${styles.weatherBoxInteractive}`}
+                  role="img"
+                  aria-label={temperatureTooltip}
+                  tabIndex={0}
                 >
-                  <strong>{forecastLabel}</strong>
-                  {metricForecastRows.length ? (
-                    <div className={`${styles.forecastTable} ${styles.forecastTableCompact}`}>
-                      <span>{t("sailing.forecastTime")}</span>
-                      <span>{t("sailing.temperature")}</span>
-                      {metricForecastRows.map((forecast) => (
-                        <span
-                          key={`temperature-forecast-${forecast.time}`}
-                          className={styles.forecastRow}
-                        >
-                          <span>{forecast.time}</span>
-                          <span>{forecast.temperature}</span>
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <span className={styles.forecastEmpty}>{noForecastLabel}</span>
-                  )}
-                </div>
-              </div>
-              <div
-                className={`${styles.weatherBox} ${styles.weatherBoxWater} ${styles.weatherBoxInteractive}`}
-                role="img"
-                aria-label={waterTemperatureTooltip}
-                tabIndex={0}
-              >
-                <span>{t("sailing.waterTemperature")}</span>
-                <strong>{waterTemperatureValue}</strong>
-                <small>{waterTemperatureMeta}</small>
-                <div
-                  className={`${styles.forecastTooltip} ${styles.weatherForecastTooltip}`}
-                  aria-hidden
-                >
-                  <strong>{t("sailing.waterMeasurements")}</strong>
-                  {waterTemperatureRows.length ? (
-                    <div className={`${styles.forecastTable} ${styles.forecastTableCompact}`}>
-                      <span>{t("sailing.forecastTime")}</span>
-                      <span>{t("sailing.waterTemperature")}</span>
-                      {waterTemperatureRows.map((reading) => (
-                        <span
-                          key={`water-temperature-reading-${reading.time}`}
-                          className={styles.forecastRow}
-                        >
-                          <span>{reading.time}</span>
-                          <span>{reading.temperature}</span>
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <span className={styles.forecastEmpty}>{noForecastLabel}</span>
-                  )}
-                </div>
-              </div>
-              <div
-                className={`${styles.weatherBox} ${styles.weatherBoxInteractive}`}
-                role="img"
-                aria-label={pressureTooltip}
-                tabIndex={0}
-              >
-                <span>{t("sailing.airPressure")}</span>
-                <strong>{pressureValue}</strong>
-                <div
-                  className={`${styles.forecastTooltip} ${styles.weatherForecastTooltip}`}
-                  aria-hidden
-                >
-                  <strong>{forecastLabel}</strong>
-                  {metricForecastRows.length ? (
-                    <div className={`${styles.forecastTable} ${styles.forecastTableCompact}`}>
-                      <span>{t("sailing.forecastTime")}</span>
-                      <span>{t("sailing.airPressure")}</span>
-                      {metricForecastRows.map((forecast) => (
-                        <span
-                          key={`pressure-forecast-${forecast.time}`}
-                          className={styles.forecastRow}
-                        >
-                          <span>{forecast.time}</span>
-                          <span>{forecast.pressure}</span>
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <span className={styles.forecastEmpty}>{noForecastLabel}</span>
-                  )}
-                </div>
-              </div>
-            </div>
-            <div className={styles.windMapFrame}>
-              {mapboxToken && allowExternalServices && (
-                <div
-                  ref={mapContainerRef}
-                  className={styles.windMapBackground}
-                  aria-hidden
-                />
-              )}
-              <canvas
-                ref={canvasRef}
-                aria-label={t("sailing.windMapAlt")}
-                onPointerCancel={handleWindMapPointerCancel}
-                onPointerDown={handleWindMapPointerDown}
-                onPointerLeave={handleWindMapPointerLeave}
-                onPointerMove={handleWindMapPointerMove}
-                onPointerUp={handleWindMapPointerUp}
-              />
-              {!allowExternalServices && (
-                <div className={styles.consentNotice}>
-                  <p>{tConsent("externalServicesBlocked")}</p>
-                  <button onClick={openConsentSettings} type="button">
-                    {tConsent("actions.manage")}
-                  </button>
-                </div>
-              )}
-              {windMapHover && (
-                <div
-                  className={styles.windMapTooltip}
-                  style={{
-                    left: `${windMapHover.x}px`,
-                    top: `${windMapHover.y}px`,
-                  }}
-                >
-                  <strong>{windMapHover.point.name ?? windMapHover.point.id}</strong>
-                  <span>
-                    {t("sailing.windSpeed")}:{" "}
-                    {windMapHover.point.speed == null
-                      ? "--"
-                      : windMapHover.point.speed.toFixed(1)}{" "}
-                    kn
-                  </span>
-                  <span>
-                    {t("sailing.windGusts")}:{" "}
-                    {windMapHover.point.gusts == null
-                      ? "--"
-                      : windMapHover.point.gusts.toFixed(1)}{" "}
-                    kn
-                  </span>
-                  <span>
-                    {t("sailing.windDirection")}:{" "}
-                    {windMapHover.point.direction == null
-                      ? "--"
-                      : `${Math.round(windMapHover.point.direction)}° ${
-                          windMapHover.directionLabel
-                        }`}
-                  </span>
-                </div>
-              )}
-            </div>
-            <div className={`${styles.weatherOverlay} ${styles.weatherOverlayBottom}`}>
-              <button
-                type="button"
-                className={`${styles.weatherBox} ${styles.weatherBoxWide} ${styles.cloudForecastToggle}`}
-                aria-controls="cloud-forecast-pattern"
-                aria-expanded={cloudPatternOpen}
-                aria-label={cloudPatternToggleLabel}
-                title={cloudPatternToggleLabel}
-                onClick={() => setCloudPatternOpen((open) => !open)}
-              >
-                <span className={styles.weatherBoxHeader}>
-                  <span>{t("sailing.cloudDevelopment")}</span>
-                  <ChevronDown className={styles.cloudToggleIcon} aria-hidden size={15} />
-                </span>
-                <span className={styles.weatherValueRow}>
-                  <span
-                    className={`${styles.weatherIcon} ${weatherIconClass}`}
+                  <span>{t("sailing.temperature")}</span>
+                  <strong>{temperatureValue}</strong>
+                  <div
+                    className={`${styles.forecastTooltip} ${styles.weatherForecastTooltip}`}
                     aria-hidden
                   >
-                    <span />
-                    <span />
-                    <span />
-                  </span>
-                  <span className={styles.weatherCloudText}>
-                    <strong>{weatherStateLabel}</strong>
-                    <small>
-                      {cloudCoverValue} {t("sailing.cloudCover")}
-                    </small>
-                  </span>
-                </span>
-                <small>{cloudTrendText}</small>
-                {cloudPatternOpen && (
-                  <span id="cloud-forecast-pattern" className={styles.cloudPattern}>
-                    <span className={styles.cloudPatternTitle}>
-                      {t("sailing.cloudPatternTitle")}
-                    </span>
-                    {cloudPatternRows.length ? (
-                      <span className={styles.cloudPatternBars}>
-                        {cloudPatternRows.map((forecast) => (
-                          <span key={forecast.key} className={styles.cloudPatternPoint}>
-                            <span
-                              className={`${styles.cloudPatternIcon} ${forecast.iconClass}`}
-                              aria-hidden
-                            >
-                              <span />
-                              <span />
-                              <span />
-                            </span>
+                    <strong>{forecastLabel}</strong>
+                    {metricForecastRows.length ? (
+                      <div className={`${styles.forecastTable} ${styles.forecastTableCompact}`}>
+                        <span>{t("sailing.forecastTime")}</span>
+                        <span>{t("sailing.temperature")}</span>
+                        {metricForecastRows.map((forecast) => (
+                          <span
+                            key={`temperature-forecast-${forecast.time}`}
+                            className={styles.forecastRow}
+                          >
                             <span>{forecast.time}</span>
-                            <small>{forecast.cloudCover}</small>
+                            <span>{forecast.temperature}</span>
                           </span>
                         ))}
-                      </span>
+                      </div>
                     ) : (
-                      <span className={styles.cloudPatternEmpty}>{noForecastLabel}</span>
+                      <span className={styles.forecastEmpty}>{noForecastLabel}</span>
                     )}
-                  </span>
-                )}
-              </button>
-            </div>
-          </div>
-
-          <div className={styles.instrumentGrid}>
-            <div className={styles.instrument}>
-              <div className={styles.instrumentReadout}>
-                <span>{t("sailing.windSpeed")}</span>
-                <small>Datenpunkt: {stationName}</small>
+                  </div>
+                </div>
+                <div
+                  className={`${styles.weatherBox} ${styles.weatherBoxWater} ${styles.weatherBoxInteractive}`}
+                  role="img"
+                  aria-label={waterTemperatureTooltip}
+                  tabIndex={0}
+                >
+                  <span>{t("sailing.waterTemperature")}</span>
+                  {isWaterTemperatureLoading ? (
+                    <span className={styles.weatherValueSkeleton} aria-hidden />
+                  ) : (
+                    <strong>{waterTemperatureValue}</strong>
+                  )}
+                  {isWaterTemperatureLoading ? (
+                    <span
+                      className={`${styles.weatherTextSkeleton} ${styles.weatherTextSkeletonShort}`}
+                      aria-hidden
+                    />
+                  ) : (
+                    <small>{waterTemperatureMeta}</small>
+                  )}
+                  <div
+                    className={`${styles.forecastTooltip} ${styles.weatherForecastTooltip}`}
+                    aria-hidden
+                  >
+                    <strong>{t("sailing.waterMeasurements")}</strong>
+                    {waterTemperatureRows.length ? (
+                      <div className={`${styles.forecastTable} ${styles.forecastTableCompact}`}>
+                        <span>{t("sailing.forecastTime")}</span>
+                        <span>{t("sailing.waterTemperature")}</span>
+                        {waterTemperatureRows.map((reading) => (
+                          <span
+                            key={`water-temperature-reading-${reading.time}`}
+                            className={styles.forecastRow}
+                          >
+                            <span>{reading.time}</span>
+                            <span>{reading.temperature}</span>
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className={styles.forecastEmpty}>{noForecastLabel}</span>
+                    )}
+                  </div>
+                </div>
+                <div
+                  className={`${styles.weatherBox} ${styles.weatherBoxInteractive}`}
+                  role="img"
+                  aria-label={pressureTooltip}
+                  tabIndex={0}
+                >
+                  <span>{t("sailing.airPressure")}</span>
+                  <strong>{pressureValue}</strong>
+                  <div
+                    className={`${styles.forecastTooltip} ${styles.weatherForecastTooltip}`}
+                    aria-hidden
+                  >
+                    <strong>{forecastLabel}</strong>
+                    {metricForecastRows.length ? (
+                      <div className={`${styles.forecastTable} ${styles.forecastTableCompact}`}>
+                        <span>{t("sailing.forecastTime")}</span>
+                        <span>{t("sailing.airPressure")}</span>
+                        {metricForecastRows.map((forecast) => (
+                          <span
+                            key={`pressure-forecast-${forecast.time}`}
+                            className={styles.forecastRow}
+                          >
+                            <span>{forecast.time}</span>
+                            <span>{forecast.pressure}</span>
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className={styles.forecastEmpty}>{noForecastLabel}</span>
+                    )}
+                  </div>
+                </div>
               </div>
-              <div
-                className={styles.gaugeDial}
-                role="img"
-                aria-label={windSpeedTooltip}
-                tabIndex={0}
-                style={{
-                  "--gauge-angle": `${gaugeAngle}deg`,
-                }}
-              >
-                {SPEED_TICKS.map((tick) => (
-                  <span
-                    key={`speed-tick-${tick.value}`}
-                    className={`${styles.speedTick}${
-                      tick.major ? ` ${styles.speedTickMajor}` : ""
-                    }`}
+              <div className={styles.windMapFrame}>
+                {mapboxToken && allowExternalServices && (
+                  <div
+                    ref={mapContainerRef}
+                    className={styles.windMapBackground}
                     aria-hidden
-                    style={{"--tick-angle": `${tick.angle}deg`}}
                   />
-                ))}
-                {SPEED_MARKS.map((mark) => (
-                  <span
-                    key={`speed-mark-${mark.value}`}
-                    className={styles.speedMark}
-                    aria-hidden
+                )}
+                <canvas
+                  ref={canvasRef}
+                  aria-label={t("sailing.windMapAlt")}
+                  onPointerCancel={handleWindMapPointerCancel}
+                  onPointerDown={handleWindMapPointerDown}
+                  onPointerLeave={handleWindMapPointerLeave}
+                  onPointerMove={handleWindMapPointerMove}
+                  onPointerUp={handleWindMapPointerUp}
+                />
+                {!allowExternalServices && (
+                  <div className={styles.consentNotice}>
+                    <p>{tConsent("externalServicesBlocked")}</p>
+                    <button onClick={openConsentSettings} type="button">
+                      {tConsent("actions.manage")}
+                    </button>
+                  </div>
+                )}
+                {windMapHover && (
+                  <div
+                    className={styles.windMapTooltip}
                     style={{
-                      "--mark-angle": `${mark.angle}deg`,
-                      "--mark-counter-angle": `${-mark.angle}deg`,
+                      left: `${windMapHover.x}px`,
+                      top: `${windMapHover.y}px`,
                     }}
                   >
-                    {mark.value}
-                  </span>
-                ))}
-                <div className={styles.gaugeNeedle} aria-hidden />
-                <div className={styles.forecastTooltip} aria-hidden>
-                  <strong>{forecastLabel}</strong>
-                  {forecastRows.length ? (
-                    <div className={styles.forecastTable}>
-                      <span>{t("sailing.forecastTime")}</span>
-                      <span>{t("sailing.windSpeed")}</span>
-                      <span>{t("sailing.windGusts")}</span>
-                      {forecastRows.map((forecast) => (
-                        <span
-                          key={`speed-forecast-${forecast.time}`}
-                          className={styles.forecastRow}
-                        >
-                          <span>{forecast.time}</span>
-                          <span>{forecast.speed}</span>
-                          <span>{forecast.gusts}</span>
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <span className={styles.forecastEmpty}>{noForecastLabel}</span>
-                  )}
-                </div>
+                    <strong>{windMapHover.point.name ?? windMapHover.point.id}</strong>
+                    <span>
+                      {t("sailing.windSpeed")}:{" "}
+                      {windMapHover.point.speed == null
+                        ? "--"
+                        : windMapHover.point.speed.toFixed(1)}{" "}
+                      kn
+                    </span>
+                    <span>
+                      {t("sailing.windGusts")}:{" "}
+                      {windMapHover.point.gusts == null
+                        ? "--"
+                        : windMapHover.point.gusts.toFixed(1)}{" "}
+                      kn
+                    </span>
+                    <span>
+                      {t("sailing.windDirection")}:{" "}
+                      {windMapHover.point.direction == null
+                        ? "--"
+                        : `${Math.round(windMapHover.point.direction)}° ${
+                            windMapHover.directionLabel
+                          }`}
+                    </span>
+                  </div>
+                )}
               </div>
-              <p className={`${styles.instrumentMeta} ${styles.windMeta}`}>
-                <span>
-                  {t("sailing.windSpeed")}: <strong>{windSpeedValue} kn</strong>
-                </span>
-                <span>
-                  {t("sailing.windGusts")}: <strong>{windGustValue} kn</strong>
-                </span>
-              </p>
+              <div className={`${styles.weatherOverlay} ${styles.weatherOverlayBottom}`}>
+                <button
+                  type="button"
+                  className={`${styles.weatherBox} ${styles.weatherBoxWide} ${styles.cloudForecastToggle}`}
+                  aria-controls="cloud-forecast-pattern"
+                  aria-expanded={cloudPatternOpen}
+                  aria-label={cloudPatternToggleLabel}
+                  title={cloudPatternToggleLabel}
+                  onClick={() => setCloudPatternOpen((open) => !open)}
+                >
+                  <span className={styles.weatherBoxHeader}>
+                    <span>{t("sailing.cloudDevelopment")}</span>
+                    <ChevronDown className={styles.cloudToggleIcon} aria-hidden size={15} />
+                  </span>
+                  <span className={styles.weatherValueRow}>
+                    <span
+                      className={`${styles.weatherIcon} ${weatherIconClass}`}
+                      aria-hidden
+                    >
+                      <span />
+                      <span />
+                      <span />
+                    </span>
+                    <span className={styles.weatherCloudText}>
+                      <strong>{weatherStateLabel}</strong>
+                      <small>
+                        {cloudCoverValue} {t("sailing.cloudCover")}
+                      </small>
+                    </span>
+                  </span>
+                  <small>{cloudTrendText}</small>
+                  {cloudPatternOpen && (
+                    <span id="cloud-forecast-pattern" className={styles.cloudPattern}>
+                      <span className={styles.cloudPatternTitle}>
+                        {t("sailing.cloudPatternTitle")}
+                      </span>
+                      {cloudPatternRows.length ? (
+                        <span className={styles.cloudPatternBars}>
+                          {cloudPatternRows.map((forecast) => (
+                            <span key={forecast.key} className={styles.cloudPatternPoint}>
+                              <span
+                                className={`${styles.cloudPatternIcon} ${forecast.iconClass}`}
+                                aria-hidden
+                              >
+                                <span />
+                                <span />
+                                <span />
+                              </span>
+                              <span>{forecast.time}</span>
+                              <small>{forecast.cloudCover}</small>
+                            </span>
+                          ))}
+                        </span>
+                      ) : (
+                        <span className={styles.cloudPatternEmpty}>{noForecastLabel}</span>
+                      )}
+                    </span>
+                  )}
+                </button>
+              </div>
             </div>
 
-            <div className={styles.instrument}>
-              <div className={styles.instrumentReadout}>
-                <span>{t("sailing.windDirection")}</span>
-                <small>Datenpunkt: {stationName}</small>
-              </div>
-              <div
-                className={styles.compassDial}
-                role="img"
-                aria-label={compassTooltip}
-                tabIndex={0}
-                style={{"--direction": `${direction ?? 0}deg`}}
-              >
-                {COMPASS_TICKS.map((tick) => (
-                  <span
-                    key={`compass-tick-${tick.angle}`}
-                    className={`${styles.compassTick}${
-                      tick.major ? ` ${styles.compassTickMajor}` : ""
-                    }`}
-                    aria-hidden
-                    style={{"--tick-angle": `${tick.angle}deg`}}
-                  />
-                ))}
-                <span className={`${styles.compassLabel} ${styles.north}`}>N</span>
-                <span className={`${styles.compassLabel} ${styles.east}`}>E</span>
-                <span className={`${styles.compassLabel} ${styles.south}`}>S</span>
-                <span className={`${styles.compassLabel} ${styles.west}`}>W</span>
-                <div className={styles.compassNeedle} data-empty={direction == null} />
-                <div className={styles.forecastTooltip} aria-hidden>
-                  <strong>{forecastLabel}</strong>
-                  {forecastRows.length ? (
-                    <div className={styles.forecastTable}>
-                      <span>{t("sailing.forecastTime")}</span>
-                      <span>{t("sailing.windDirection")}</span>
-                      <span>{t("sailing.windSpeed")}</span>
-                      {forecastRows.map((forecast) => (
-                        <span
-                          key={`direction-forecast-${forecast.time}`}
-                          className={styles.forecastRow}
-                        >
-                          <span>{forecast.time}</span>
-                          <span>{forecast.direction}</span>
-                          <span>{forecast.speed}</span>
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <span className={styles.forecastEmpty}>{noForecastLabel}</span>
-                  )}
+            <div className={styles.instrumentGrid}>
+              <div className={styles.instrument}>
+                <div className={styles.instrumentReadout}>
+                  <span>{t("sailing.windSpeed")}</span>
+                  <small>Datenpunkt: {stationName}</small>
                 </div>
+                <div
+                  className={styles.gaugeDial}
+                  role="img"
+                  aria-label={windSpeedTooltip}
+                  tabIndex={0}
+                  style={{
+                    "--gauge-angle": `${gaugeAngle}deg`,
+                  }}
+                >
+                  {SPEED_TICKS.map((tick) => (
+                    <span
+                      key={`speed-tick-${tick.value}`}
+                      className={`${styles.speedTick}${
+                        tick.major ? ` ${styles.speedTickMajor}` : ""
+                      }`}
+                      aria-hidden
+                      style={{"--tick-angle": `${tick.angle}deg`}}
+                    />
+                  ))}
+                  {SPEED_MARKS.map((mark) => (
+                    <span
+                      key={`speed-mark-${mark.value}`}
+                      className={styles.speedMark}
+                      aria-hidden
+                      style={{
+                        "--mark-angle": `${mark.angle}deg`,
+                        "--mark-counter-angle": `${-mark.angle}deg`,
+                      }}
+                    >
+                      {mark.value}
+                    </span>
+                  ))}
+                  <div className={styles.gaugeNeedle} aria-hidden />
+                  <div className={styles.forecastTooltip} aria-hidden>
+                    <strong>{forecastLabel}</strong>
+                    {forecastRows.length ? (
+                      <div className={styles.forecastTable}>
+                        <span>{t("sailing.forecastTime")}</span>
+                        <span>{t("sailing.windSpeed")}</span>
+                        <span>{t("sailing.windGusts")}</span>
+                        {forecastRows.map((forecast) => (
+                          <span
+                            key={`speed-forecast-${forecast.time}`}
+                            className={styles.forecastRow}
+                          >
+                            <span>{forecast.time}</span>
+                            <span>{forecast.speed}</span>
+                            <span>{forecast.gusts}</span>
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className={styles.forecastEmpty}>{noForecastLabel}</span>
+                    )}
+                  </div>
+                </div>
+                <p className={`${styles.instrumentMeta} ${styles.windMeta}`}>
+                  <span>
+                    {t("sailing.windSpeed")}: <strong>{windSpeedValue} kn</strong>
+                  </span>
+                  <span>
+                    {t("sailing.windGusts")}: <strong>{windGustValue} kn</strong>
+                  </span>
+                </p>
               </div>
-              <p className={styles.instrumentMeta}>
-                {t("sailing.windDirection")}:{" "}
-                <strong>
-                  {windDirectionValue}
-                </strong>
-              </p>
+
+              <div className={styles.instrument}>
+                <div className={styles.instrumentReadout}>
+                  <span>{t("sailing.windDirection")}</span>
+                  <small>Datenpunkt: {stationName}</small>
+                </div>
+                <div
+                  className={styles.compassDial}
+                  role="img"
+                  aria-label={compassTooltip}
+                  tabIndex={0}
+                  style={{"--direction": `${direction ?? 0}deg`}}
+                >
+                  {COMPASS_TICKS.map((tick) => (
+                    <span
+                      key={`compass-tick-${tick.angle}`}
+                      className={`${styles.compassTick}${
+                        tick.major ? ` ${styles.compassTickMajor}` : ""
+                      }`}
+                      aria-hidden
+                      style={{"--tick-angle": `${tick.angle}deg`}}
+                    />
+                  ))}
+                  <span className={`${styles.compassLabel} ${styles.north}`}>N</span>
+                  <span className={`${styles.compassLabel} ${styles.east}`}>E</span>
+                  <span className={`${styles.compassLabel} ${styles.south}`}>S</span>
+                  <span className={`${styles.compassLabel} ${styles.west}`}>W</span>
+                  <div className={styles.compassNeedle} data-empty={direction == null} />
+                  <div className={styles.forecastTooltip} aria-hidden>
+                    <strong>{forecastLabel}</strong>
+                    {forecastRows.length ? (
+                      <div className={styles.forecastTable}>
+                        <span>{t("sailing.forecastTime")}</span>
+                        <span>{t("sailing.windDirection")}</span>
+                        <span>{t("sailing.windSpeed")}</span>
+                        {forecastRows.map((forecast) => (
+                          <span
+                            key={`direction-forecast-${forecast.time}`}
+                            className={styles.forecastRow}
+                          >
+                            <span>{forecast.time}</span>
+                            <span>{forecast.direction}</span>
+                            <span>{forecast.speed}</span>
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className={styles.forecastEmpty}>{noForecastLabel}</span>
+                    )}
+                  </div>
+                </div>
+                <p className={styles.instrumentMeta}>
+                  {t("sailing.windDirection")}: <strong>{windDirectionValue}</strong>
+                </p>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         <div className={styles.sourceRow}>
           <span>{t("sailing.sources")}</span>
@@ -1802,8 +1911,20 @@ const PersonalSection = () => {
             </a>
           </div>
         </div>
-        <div className={styles.webcamFrame}>
-          {!allowExternalServices ? (
+        <div className={styles.webcamFrame} aria-busy={shouldShowWebcamSkeleton}>
+          {!isConsentReady ? (
+            <div
+              className={styles.webcamSkeleton}
+              role="status"
+              aria-label={t("sailing.webcamLoading", {
+                defaultValue: "Loading webcam",
+              })}
+            >
+              <span />
+              <span />
+              <span />
+            </div>
+          ) : !allowExternalServices ? (
             <div className={styles.webcamFallback}>
               <p>{tConsent("externalServicesBlocked")}</p>
               <button onClick={openConsentSettings} type="button">
@@ -1811,17 +1932,38 @@ const PersonalSection = () => {
               </button>
             </div>
           ) : webcamAvailable ? (
-            <Image
-              src={webcamSrc}
-              alt={t("sailing.webcamTitle")}
-              className={styles.webcamImage}
-              fill
-              loading="lazy"
-              sizes="(max-width: 980px) 100vw, 58vw"
-              unoptimized
-              onError={() => setWebcamAvailable(false)}
-              onLoad={() => setWebcamAvailable(true)}
-            />
+            <>
+              {shouldShowWebcamSkeleton && (
+                <div
+                  className={styles.webcamSkeleton}
+                  role="status"
+                  aria-label={t("sailing.webcamLoading", {
+                    defaultValue: "Loading webcam",
+                  })}
+                >
+                  <span />
+                  <span />
+                  <span />
+                </div>
+              )}
+              <Image
+                src={webcamSrc}
+                alt={t("sailing.webcamTitle")}
+                className={styles.webcamImage}
+                fill
+                loading="lazy"
+                sizes="(max-width: 980px) 100vw, 58vw"
+                unoptimized
+                onError={() => {
+                  setWebcamAvailable(false);
+                  setWebcamImageReady(false);
+                }}
+                onLoad={() => {
+                  setWebcamAvailable(true);
+                  setWebcamImageReady(true);
+                }}
+              />
+            </>
           ) : (
             <div className={styles.webcamFallback}>
               <p>{t("sailing.webcamUnavailable")}</p>

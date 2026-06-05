@@ -72,7 +72,11 @@ const PortfolioSection = () => {
   };
 
   return (
-    <section id="portfolio" className={pageStyles.section}>
+    <section
+      id="portfolio"
+      className={pageStyles.section}
+      aria-busy={state.loading}
+    >
       <div className={styles.headerRow}>
         <div className={pageStyles.sectionHeader}>
           <p className={pageStyles.eyebrow}>{t("portfolio.eyebrow")}</p>
@@ -94,10 +98,11 @@ const PortfolioSection = () => {
       {state.loading && (
         <div
           className={styles.projectsGrid}
+          role="status"
           aria-label={t("portfolio.loading")}
         >
           {skeletonItems.map((item) => (
-            <div key={item} className={styles.skeletonCard}>
+            <div key={item} className={styles.skeletonCard} aria-hidden="true">
               <span />
               <span />
               <span />

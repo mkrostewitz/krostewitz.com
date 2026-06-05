@@ -60,7 +60,11 @@ export default function AddressMap({
 }) {
   const pathname = usePathname();
   const {t} = useTranslation(undefined, {keyPrefix: "cookieConsent"});
-  const {allowExternalServices, openConsentSettings} = useCookieConsent();
+  const {
+    allowExternalServices,
+    isReady: isConsentReady,
+    openConsentSettings,
+  } = useCookieConsent();
   const [containerNode, setContainerNode] = useState(null);
   const [loadedMapKey, setLoadedMapKey] = useState("");
   const [mapErrorKey, setMapErrorKey] = useState("");
@@ -71,7 +75,9 @@ export default function AddressMap({
   const longitude = getCoordinate(address?.longitude);
   const latitude = getCoordinate(address?.latitude);
   const consentRequired = !pathname?.startsWith("/admin");
-  const canUseExternalServices = !consentRequired || allowExternalServices;
+  const isWaitingForConsent = consentRequired && !isConsentReady;
+  const canUseExternalServices =
+    !consentRequired || (isConsentReady && allowExternalServices);
   const canRenderMap = Boolean(
     canUseExternalServices && token && hasValidCoordinates(longitude, latitude)
   );
@@ -173,6 +179,20 @@ export default function AddressMap({
 
   if (!address?.label) {
     return null;
+  }
+
+  if (isWaitingForConsent) {
+    return (
+      <div
+        className={`${styles.mapRoot} ${styles.mapSkeleton} ${className}`}
+        role="status"
+        aria-label={label}
+      >
+        <span />
+        <span />
+        <span />
+      </div>
+    );
   }
 
   if (!canUseExternalServices) {

@@ -1,4 +1,5 @@
 import {Geist, Geist_Mono} from "next/font/google";
+import {Suspense} from "react";
 
 import {
   getDefaultAiChatIntegration,
@@ -48,6 +49,7 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
+const defaultSiteThemeStyle = toSiteThemeCss(getDefaultSiteMetadata());
 
 export const revalidate = 300;
 
@@ -60,7 +62,7 @@ export async function generateMetadata() {
   }
 }
 
-async function getRootSettings() {
+async function loadRuntimeSettings() {
   try {
     const profile = await getSiteProfile();
 
@@ -70,22 +72,35 @@ async function getRootSettings() {
     };
   } catch (error) {
     console.warn("Unable to load root site settings", error);
-    return {
-      aiChat: getDefaultAiChatIntegration(),
-      siteThemeStyle: toSiteThemeCss(getDefaultSiteMetadata()),
-    };
+    return null;
   }
 }
 
-export default async function RootLayout({children}) {
-  const {aiChat, siteThemeStyle} = await getRootSettings();
+async function SiteRuntimeSettings() {
+  const runtimeSettings = await loadRuntimeSettings();
+  if (!runtimeSettings) return null;
 
+  return (
+    <>
+      <style
+        data-site-theme="runtime"
+        dangerouslySetInnerHTML={{__html: runtimeSettings.siteThemeStyle}}
+      />
+      <AiChatScriptLoader
+        enabled={runtimeSettings.aiChat.enabled}
+        scriptTag={runtimeSettings.aiChat.scriptTag}
+      />
+    </>
+  );
+}
+
+export default function RootLayout({children}) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
         <style
-          data-site-theme=""
-          dangerouslySetInnerHTML={{__html: siteThemeStyle}}
+          data-site-theme="default"
+          dangerouslySetInnerHTML={{__html: defaultSiteThemeStyle}}
         />
         <script dangerouslySetInnerHTML={{__html: themeScript}} />
       </head>
@@ -97,11 +112,10 @@ export default async function RootLayout({children}) {
           <CookieConsentProvider gaMeasurementId={gaMeasurementId}>
             <PublicSettingsProvider>
               <SnackbarProvider>{children}</SnackbarProvider>
+              <Suspense fallback={null}>
+                <SiteRuntimeSettings />
+              </Suspense>
             </PublicSettingsProvider>
-            <AiChatScriptLoader
-              enabled={aiChat.enabled}
-              scriptTag={aiChat.scriptTag}
-            />
           </CookieConsentProvider>
         </LoadingProvider>
       </body>

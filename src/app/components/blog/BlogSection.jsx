@@ -8,10 +8,10 @@ import {useTranslation} from "react-i18next";
 
 import {getSupportedSiteLanguage} from "../../../lib/siteLanguages";
 import pageStyles from "../../page.module.css";
-import {useLoadingState} from "../loading/LoadingProvider";
 import styles from "./blog-section.module.css";
 
 const ALL_CATEGORIES = "all";
+const BLOG_SKELETON_ITEMS = Array.from({length: 3}, (_, index) => index);
 
 function formatDate(value, language) {
   if (!value) return "";
@@ -58,6 +58,25 @@ function getPreviewMedia(post) {
   return galleryImage || null;
 }
 
+function BlogCardSkeleton() {
+  return (
+    <article className={styles.skeletonCard} aria-hidden="true">
+      <div className={`${styles.media} ${styles.skeletonMedia}`} />
+      <div className={styles.skeletonBody}>
+        <span className={`${styles.skeletonLine} ${styles.skeletonDate}`} />
+        <div className={styles.skeletonCategories}>
+          <span />
+          <span />
+        </div>
+        <span className={`${styles.skeletonLine} ${styles.skeletonTitle}`} />
+        <span className={styles.skeletonLine} />
+        <span className={`${styles.skeletonLine} ${styles.skeletonSummary}`} />
+        <span className={`${styles.skeletonLine} ${styles.skeletonAction}`} />
+      </div>
+    </article>
+  );
+}
+
 export default function BlogSection() {
   const {t, i18n} = useTranslation();
   const topics = t("blog.topics", {returnObjects: true});
@@ -68,12 +87,6 @@ export default function BlogSection() {
   const [activeCategory, setActiveCategory] = useState(ALL_CATEGORIES);
   const [blogEnabled, setBlogEnabled] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-
-  useLoadingState({
-    isLoading,
-    label: t("blog.loading", {defaultValue: "Loading posts..."}),
-    type: "action",
-  });
 
   const availableCategories = useMemo(() => {
     const bySlug = new Map();
@@ -157,7 +170,11 @@ export default function BlogSection() {
   if (blogEnabled === false) return null;
 
   return (
-    <section id="blog" className={`${pageStyles.section} ${styles.section}`}>
+    <section
+      id="blog"
+      className={`${pageStyles.section} ${styles.section}`}
+      aria-busy={isLoading}
+    >
       <div className={styles.sectionHeader}>
         <span className={pageStyles.eyebrow}>{t("blog.eyebrow")}</span>
         <h2>{t("blog.title")}</h2>
@@ -198,7 +215,17 @@ export default function BlogSection() {
         ) : null}
       </div>
 
-      {!isLoading && visiblePosts.length > 0 ? (
+      {isLoading ? (
+        <div
+          className={styles.grid}
+          role="status"
+          aria-label={t("blog.loading", {defaultValue: "Loading posts..."})}
+        >
+          {BLOG_SKELETON_ITEMS.map((item) => (
+            <BlogCardSkeleton key={item} />
+          ))}
+        </div>
+      ) : visiblePosts.length > 0 ? (
         <div className={styles.grid}>
           {visiblePosts.map((post) => {
             const previewMedia = getPreviewMedia(post);

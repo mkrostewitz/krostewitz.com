@@ -41,6 +41,7 @@ const CookieConsentContext = createContext({
   allowExternalServices: false,
   consent: DEFAULT_CONSENT,
   hasDecision: false,
+  isReady: false,
   openConsentSettings: () => {},
   updateConsent: () => {},
 });
@@ -337,6 +338,7 @@ export function CookieConsentProvider({children, gaMeasurementId = ""}) {
       allowExternalServices: Boolean(consent.externalServices),
       consent,
       hasDecision,
+      isReady,
       openConsentSettings,
       updateConsent: applyConsent,
     }),
@@ -345,6 +347,7 @@ export function CookieConsentProvider({children, gaMeasurementId = ""}) {
       applyConsent,
       consent,
       hasDecision,
+      isReady,
       openConsentSettings,
     ],
   );

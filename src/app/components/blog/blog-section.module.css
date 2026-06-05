@@ -78,7 +78,8 @@
   gap: 16px;
 }
 
-.card {
+.card,
+.skeletonCard {
   min-height: 100%;
   display: grid;
   grid-template-rows: auto 1fr;
@@ -87,6 +88,9 @@
   border-radius: 8px;
   background: var(--surface);
   color: var(--foreground);
+}
+
+.card {
   transition:
     border-color 0.18s ease,
     transform 0.18s ease,
@@ -102,6 +106,12 @@
 .media {
   aspect-ratio: 4 / 3;
   background: var(--media-background);
+}
+
+.skeletonMedia {
+  background: var(--skeleton-gradient);
+  background-size: 200% 100%;
+  animation: blog-skeleton-pulse 1.4s ease-in-out infinite;
 }
 
 .media img,
@@ -121,6 +131,57 @@
   gap: 10px;
   align-content: start;
   padding: 18px;
+}
+
+.skeletonBody {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+  padding: 18px;
+}
+
+.skeletonLine,
+.skeletonCategories span {
+  display: block;
+  height: 14px;
+  border-radius: 8px;
+  background: var(--skeleton-gradient);
+  background-size: 200% 100%;
+  animation: blog-skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+.skeletonDate {
+  width: 34%;
+}
+
+.skeletonCategories {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.skeletonCategories span {
+  width: 72px;
+  height: 24px;
+  border-radius: 999px;
+}
+
+.skeletonCategories span:nth-child(2) {
+  width: 96px;
+}
+
+.skeletonTitle {
+  width: 82%;
+  height: 22px;
+}
+
+.skeletonSummary {
+  width: 68%;
+}
+
+.skeletonAction {
+  width: 92px;
+  margin-top: 2px;
 }
 
 .date {
@@ -173,6 +234,16 @@
   padding: 18px;
 }
 
+@keyframes blog-skeleton-pulse {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
 @media (max-width: 768px) {
   .section {
     margin-top: 34px;
@@ -184,5 +255,17 @@
 
   .cardBody {
     padding: 16px;
+  }
+
+  .skeletonBody {
+    padding: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeletonMedia,
+  .skeletonLine,
+  .skeletonCategories span {
+    animation-duration: 2.4s;
   }
 }

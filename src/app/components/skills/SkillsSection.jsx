@@ -1,4 +1,4 @@
-import {useEffect, useRef} from "react";
+import {useEffect, useRef, useState} from "react";
 import {useTranslation} from "react-i18next";
 import mapboxgl from "mapbox-gl";
 
@@ -54,6 +54,7 @@ const regionCodes = mapRegions.reduce(
   },
   {all: [], lived: [], worked: []}
 );
+const SKILL_SKELETON_ROWS = Array.from({length: 6}, (_, index) => index);
 
 const labelFeatures = {
   type: "FeatureCollection",
@@ -68,13 +69,22 @@ const labelFeatures = {
   })),
 };
 
+function readFiniteNumber(value) {
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) ? numericValue : null;
+}
+
 const SkillsSection = ({skills}) => {
   const {t} = useTranslation(undefined, {keyPrefix: "skills"});
   const {t: tConsent} = useTranslation(undefined, {
     keyPrefix: "cookieConsent",
   });
-  const {allowExternalServices, openConsentSettings} = useCookieConsent();
-  const [sectionRef, isInView] = useInViewOnce({
+  const {
+    allowExternalServices,
+    isReady: isConsentReady,
+    openConsentSettings,
+  } = useCookieConsent();
+  const [sectionRef, isSkillsInView] = useInViewOnce({
     threshold: 0.2,
     rootMargin: "0px 0px -5% 0px",
   });
@@ -85,6 +95,7 @@ const SkillsSection = ({skills}) => {
   const mapContainer = useRef(null);
   const mapRef = useRef(null);
   const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+  const [mapReady, setMapReady] = useState(false);
 
   const levelForScore = (score) => {
     if (score <= 4) return "support";
@@ -96,6 +107,13 @@ const SkillsSection = ({skills}) => {
     returnObjects: true,
     defaultValue: [],
   });
+  const skillList = Array.isArray(skills) ? skills : [];
+  const canShowMapFrame = Boolean(
+    token && (!isConsentReady || allowExternalServices)
+  );
+  const shouldShowMapSkeleton = Boolean(
+    token && (!isConsentReady || !mapReady)
+  );
 
   useEffect(() => {
     if (!allowExternalServices || !mapInView || !token || !mapContainer.current) {
@@ -188,6 +206,11 @@ const SkillsSection = ({skills}) => {
           "text-halo-blur": 0.4,
         },
       });
+      setMapReady(true);
+    });
+
+    map.on("error", () => {
+      setMapReady(false);
     });
 
     return () => {
@@ -195,6 +218,7 @@ const SkillsSection = ({skills}) => {
         mapRef.current.remove();
         mapRef.current = null;
       }
+      setMapReady(false);
     };
   }, [allowExternalServices, mapInView, token]);
 
@@ -206,9 +230,11 @@ const SkillsSection = ({skills}) => {
         <p className={pageStyles.lead}>{t("description")}</p>
       </div>
       <div className={styles.skills}>
-        {skills.map((skill, idx) => {
-          const level = levelForScore(skill.score || 0);
-          const clamped = Math.min(Math.max(skill.score, 0), 10);
+        {skillList.length ? skillList.map((skill, idx) => {
+          const score = readFiniteNumber(skill.score);
+          const hasScore = score !== null;
+          const level = levelForScore(score ?? 0);
+          const clamped = hasScore ? Math.min(Math.max(score, 0), 10) : 0;
           const fillScale = clamped / 10;
           return (
             <div key={skill.label} className={styles.skill}>
@@ -223,23 +249,36 @@ const SkillsSection = ({skills}) => {
                   {t(`skills.levels.${level}`)}
                 </span> */}
               </div>
-              <div className={styles.skillBar}>
-                <div
-                  className={styles.skillFill}
-                  data-active={isInView}
-                  data-label={t(`levels.${level}`)}
-                  style={{
-                    "--fill-scale": fillScale,
-                    "--animation-delay": `${idx * 0.08}s`,
-                    transform: isInView
-                      ? `scaleX(${fillScale})`
-                      : "scaleX(0)",
-                  }}
-                />
+              <div
+                className={styles.skillBar}
+                data-loading={!hasScore || !isSkillsInView || undefined}
+                aria-busy={!hasScore || !isSkillsInView || undefined}
+              >
+                {hasScore && isSkillsInView ? (
+                  <div
+                    className={styles.skillFill}
+                    data-active="true"
+                    data-label={t(`levels.${level}`)}
+                    style={{
+                      "--fill-scale": fillScale,
+                      "--animation-delay": `${idx * 0.08}s`,
+                    }}
+                  />
+                ) : null}
               </div>
             </div>
           );
-        })}
+        }) : SKILL_SKELETON_ROWS.map((index) => (
+          <div
+            key={`skill-skeleton-${index}`}
+            className={`${styles.skill} ${styles.skillSkeleton}`}
+            aria-hidden
+          >
+            <span />
+            <span />
+            <div className={styles.skillBar} data-loading="true" />
+          </div>
+        ))}
       </div>
       <div className={styles.legend}>
         <span>{t("levels.support")}</span>
@@ -271,21 +310,46 @@ const SkillsSection = ({skills}) => {
         </div>
 
         <div className={styles.mapShell}>
-          {token && allowExternalServices ? (
+          {canShowMapFrame ? (
             <>
-              <div ref={mapRefObserver}>
-                <div ref={mapContainer} className={styles.map} />
+              <div
+                ref={mapRefObserver}
+                className={styles.mapFrame}
+                data-map-ready={mapReady ? "true" : "false"}
+                aria-busy={shouldShowMapSkeleton}
+              >
+                {allowExternalServices && (
+                  <div ref={mapContainer} className={styles.map} />
+                )}
+                {shouldShowMapSkeleton && (
+                  <div
+                    className={styles.mapSkeleton}
+                    role="status"
+                    aria-label={t("map.loading", {
+                      defaultValue: "Loading experience map",
+                    })}
+                  >
+                    <span />
+                    <span />
+                    <span />
+                    <span />
+                    <span />
+                    <span />
+                  </div>
+                )}
               </div>
-              <div className={styles.mapLegend}>
-                <span>
-                  <span className={`${styles.dot} ${styles.dotLived}`} />
-                  {t("map.lived")}
-                </span>
-                <span>
-                  <span className={`${styles.dot} ${styles.dotWorked}`} />
-                  {t("map.worked")}
-                </span>
-              </div>
+              {allowExternalServices && (
+                <div className={styles.mapLegend}>
+                  <span>
+                    <span className={`${styles.dot} ${styles.dotLived}`} />
+                    {t("map.lived")}
+                  </span>
+                  <span>
+                    <span className={`${styles.dot} ${styles.dotWorked}`} />
+                    {t("map.worked")}
+                  </span>
+                </div>
+              )}
             </>
           ) : (
             <div className={styles.mapFallback}>

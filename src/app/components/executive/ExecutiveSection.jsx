@@ -5,28 +5,52 @@ import {useInViewOnce} from "@/lib/useInViewOnce";
 import pageStyles from "../../page.module.css";
 import styles from "./executive-section.module.css";
 
+function readFiniteNumber(value) {
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) ? numericValue : null;
+}
+
+function formatStatNumber(value, maximumFractionDigits = 0) {
+  return new Intl.NumberFormat("en-US", {
+    maximumFractionDigits,
+    minimumFractionDigits: Number.isInteger(value) ? 0 : maximumFractionDigits,
+  }).format(value);
+}
+
 function useCountUp(target, duration = 2000, shouldStart = false) {
-  const [value, setValue] = useState(0);
+  const [value, setValue] = useState(null);
 
   useEffect(() => {
-    if (!shouldStart) return;
+    if (!shouldStart || target === null) {
+      return undefined;
+    }
 
     let raf;
     let startTime;
+    const minimumVisibleValue = target > 0 ? (Number.isInteger(target) ? 1 : 0.1) : target;
+
     const step = (timestamp) => {
       if (!startTime) startTime = timestamp;
+
       const progress = Math.min((timestamp - startTime) / duration, 1);
       const eased = 1 - Math.pow(1 - progress, 3);
-      const next = target * eased;
       const decimals = Number.isInteger(target) ? 0 : 1;
-      setValue(Number(next.toFixed(decimals)));
+      const nextValue = Number((target * eased).toFixed(decimals));
+
+      setValue(
+        progress >= 1
+          ? target
+          : Math.min(target, Math.max(minimumVisibleValue, nextValue)),
+      );
+
       if (progress < 1) {
         raf = requestAnimationFrame(step);
       }
     };
+
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
-  }, [target, duration, shouldStart]);
+  }, [duration, shouldStart, target]);
 
   return value;
 }
@@ -48,21 +72,44 @@ const ExecutiveSummary = ({skills = []}) => {
       revenue: 253.5,
       markets: 4,
     }),
-    []
+    [],
   );
 
+  const leadershipYears = readFiniteNumber(stats.leadershipYears);
+  const revenue = readFiniteNumber(stats.revenue);
+  const markets = readFiniteNumber(stats.markets);
+  const skillBars = Array.isArray(skills)
+    ? skills
+        .map((skill, index) => ({
+          id: `${skill?.label || "skill"}-${index}`,
+          label: String(skill?.label || "").trim(),
+          score: readFiniteNumber(skill?.score),
+        }))
+        .filter((skill) => skill.score !== null)
+    : [];
+  const isStatsLoading =
+    leadershipYears === null || revenue === null || markets === null;
   const [sectionRef, isInView] = useInViewOnce({
     threshold: 0.2,
     rootMargin: "0px",
   });
-  const leadershipYears = useCountUp(stats.leadershipYears, 2200, isInView);
-  const revenue = useCountUp(stats.revenue, 2200, isInView);
-  const markets = useCountUp(stats.markets, 2200, isInView);
+  const animatedLeadershipYears = useCountUp(
+    leadershipYears,
+    2200,
+    isInView && leadershipYears !== null,
+  );
+  const animatedRevenue = useCountUp(revenue, 2200, isInView && revenue !== null);
+  const animatedMarkets = useCountUp(markets, 2200, isInView && markets !== null);
+  const isAnimationLoading =
+    animatedLeadershipYears === null ||
+    animatedRevenue === null ||
+    animatedMarkets === null;
 
   return (
     <section
       id="executiveSummary"
       className={`${pageStyles.section} ${styles.section}`}
+      aria-busy={isStatsLoading || isAnimationLoading}
       ref={sectionRef}
     >
       <div className={pageStyles.sectionHeader}>
@@ -75,25 +122,33 @@ const ExecutiveSummary = ({skills = []}) => {
         <div className={styles.statColumn}>
           <div className={styles.statLabel}>{t("stats.yearsLeadership")}</div>
           <div className={styles.statValue}>
-            {leadershipYears}
-            <span className={styles.statSuffix}>+</span>
+            {animatedLeadershipYears === null ? (
+              <span className={`${styles.valueSkeleton} ${styles.valueSkeletonLarge}`} />
+            ) : (
+              <>
+                {formatStatNumber(animatedLeadershipYears)}
+                <span className={styles.statSuffix}>+</span>
+              </>
+            )}
           </div>
           <div
-            className={`${styles.sparkline} ${
-              isInView ? styles.sparklineVisible : ""
-            }`}
+            className={styles.sparkline}
+            data-active={isInView && skillBars.length ? "true" : undefined}
+            data-loading={!isInView || !skillBars.length || undefined}
           >
-            {skills.map((skill, idx) => (
+            {skillBars.length ? skillBars.map((skill, index) => (
               <span
-                key={`${skill.label}-${idx}`}
+                key={skill.id}
                 style={{
                   "--bar-height": `${
-                    Math.min(Math.max(skill.score ?? 0, 0), 10) * 10
+                    Math.min(Math.max(skill.score, 0), 10) * 10
                   }%`,
-                  "--bar-delay": `${idx * 80}ms`,
+                  "--bar-delay": `${index * 80}ms`,
                 }}
                 title={skill.label}
               />
+            )) : Array.from({length: 6}, (_, index) => (
+              <span key={`sparkline-skeleton-${index}`} />
             ))}
           </div>
         </div>
@@ -102,11 +157,19 @@ const ExecutiveSummary = ({skills = []}) => {
           <div className={styles.outcomeGrid}>
             <div className={styles.outcome}>
               <p>{t("stats.revenuePerHead")}</p>
-              <strong>{revenue}M US$</strong>
+              {animatedRevenue === null ? (
+                <span className={styles.valueSkeleton} />
+              ) : (
+                <strong>{formatStatNumber(animatedRevenue, 1)}M US$</strong>
+              )}
             </div>
             <div className={styles.outcome}>
               <p>{t("stats.markets")}</p>
-              <strong>{markets}</strong>
+              {animatedMarkets === null ? (
+                <span className={styles.valueSkeleton} />
+              ) : (
+                <strong>{formatStatNumber(animatedMarkets)}</strong>
+              )}
             </div>
           </div>
 

@@ -31,9 +31,9 @@
   cursor: pointer;
   position: relative;
   z-index: 1;
-  opacity: 0;
-  transform: translateY(22px) scale(0.98);
-  filter: blur(4px);
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  filter: blur(0);
   transition: opacity 0.5s ease, transform 0.5s ease, filter 0.5s ease;
   transition-delay: var(--item-delay, 0ms);
 }
@@ -178,9 +178,23 @@
 }
 
 .timelineItemVisible {
-  opacity: 1;
-  transform: translateY(0) scale(1);
+  animation: timelineItemReveal 0.5s ease both;
+  animation-delay: var(--item-delay, 0ms);
   filter: blur(0);
+}
+
+@keyframes timelineItemReveal {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.98);
+    filter: blur(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
 }
 
 .modalBackdrop {
@@ -350,5 +364,11 @@
 
   .closeButton {
     justify-self: start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .timelineItemVisible {
+    animation: none;
   }
 }
