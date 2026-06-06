@@ -130,6 +130,7 @@
   display: grid;
   gap: 10px;
   align-content: start;
+  min-width: 0;
   padding: 18px;
 }
 
@@ -212,11 +213,15 @@
   font-size: 1.15rem;
   line-height: 1.3;
   letter-spacing: 0;
+  hyphens: auto;
+  overflow-wrap: anywhere;
 }
 
 .cardBody p {
   color: var(--text-soft);
+  hyphens: auto;
   line-height: 1.6;
+  overflow-wrap: anywhere;
 }
 
 .readMore {
