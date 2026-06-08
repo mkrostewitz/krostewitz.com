@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import {useState} from "react";
 import {useTranslation} from "react-i18next";
@@ -15,9 +16,10 @@ const CONTACT_EMAIL = String(process.env.NEXT_PUBLIC_CONTACT_EMAIL || "").trim()
 const ContactSection = () => {
   const {i18n, t} = useTranslation();
   const {closeSnackbar} = useSnackbar();
-  const {bookingUrl, profile} = usePublicSettings();
+  const {bookingUrl, profile, profileName} = usePublicSettings();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const address = profile.address?.label ? profile.address : null;
+  const contactPortraitAlt = profileName || "Mathias Krostewitz";
   const addressLabelDefault = i18n.language?.toLowerCase().startsWith("de")
     ? "Adresse"
     : "Address";
@@ -43,6 +45,16 @@ const ContactSection = () => {
           <div className={styles.cardIntro}>
             <h3>{t("contact.directTitle")}</h3>
             <p>{t("contact.directNote")}</p>
+          </div>
+
+          <div className={styles.contactPortrait}>
+            <Image
+              src="/mk.png"
+              alt={contactPortraitAlt}
+              className={styles.contactPortraitImage}
+              fill
+              sizes="(max-width: 960px) 120px, 180px"
+            />
           </div>
 
           <div className={styles.contactStack}>

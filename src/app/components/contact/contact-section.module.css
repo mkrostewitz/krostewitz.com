@@ -12,9 +12,17 @@
   border-radius: 16px;
   color: var(--foreground);
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto minmax(148px, 190px);
+  grid-template-areas:
+    "intro actions portrait"
+    "details details portrait";
   gap: 16px 18px;
   align-items: start;
+}
+
+.cardIntro {
+  grid-area: intro;
+  min-width: 0;
 }
 
 .contactDetails {
@@ -24,7 +32,8 @@
 }
 
 .contactStack {
-  grid-column: 1 / -1;
+  grid-area: details;
+  min-width: 0;
 }
 
 .contactLink,
@@ -55,8 +64,7 @@
 }
 
 .contactActions {
-  grid-column: 2;
-  grid-row: 1;
+  grid-area: actions;
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
@@ -88,6 +96,24 @@
   border-color: var(--accent);
   background: var(--accent-soft);
   color: var(--accent-hover);
+}
+
+.contactPortrait {
+  grid-area: portrait;
+  position: relative;
+  align-self: stretch;
+  min-height: 152px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface-subtle);
+}
+
+.contactPortraitImage {
+  object-fit: cover;
+  object-position: 50% 36%;
+  transform: scale(1.42);
+  transform-origin: 50% 35%;
 }
 
 .contactMap {
@@ -363,6 +389,20 @@
   text-align: left;
 }
 
+@media (max-width: 1180px) {
+  .contactCard {
+    grid-template-columns: minmax(0, 1fr) minmax(120px, 160px);
+    grid-template-areas:
+      "intro portrait"
+      "actions portrait"
+      "details details";
+  }
+
+  .contactActions {
+    justify-content: flex-start;
+  }
+}
+
 @media (max-width: 960px) {
   .contactGrid {
     grid-template-columns: 1fr;
@@ -370,12 +410,21 @@
 
   .contactCard {
     grid-template-columns: 1fr;
+    grid-template-areas:
+      "portrait"
+      "intro"
+      "actions"
+      "details";
   }
 
   .contactActions {
-    grid-column: 1;
-    grid-row: auto;
     justify-content: flex-start;
+  }
+
+  .contactPortrait {
+    width: 120px;
+    min-height: 120px;
+    justify-self: start;
   }
 
   .contactDetails {

@@ -135,15 +135,17 @@
     }
   },
   "offer": {
-    "eyebrow": "B2B Digitalization · Sales · Operations",
-    "title": "Sustainable growth needs digital structures.",
-    "subtitle": "I support mid-sized industrial and technology companies that want to enter new markets, digitalize sales processes, and make operations scalable, bringing more than 15 years of experience in building, scaling, and repositioning businesses.",
+    "eyebrow": "Offer · USP · Execution",
+    "title": "I build <span>digital growth structures</span> for industrial B2B companies.",
+    "subtitle": "From market entry to sales systems and scalable operations: I turn complex industrial growth challenges into executable commercial structures.",
+    "usp": "My USP: I combine 15+ years of international market-building with hands-on CRM, ERP, e-commerce, and automation implementation, so strategy becomes working infrastructure.",
     "points": [
-      "<strong>Market Entry & Internationalization</strong>. Go-to-market, partners, distribution, and sales, including late market entries in Asia and the Americas.",
-      "<strong>Digital B2B Sales & E-Commerce</strong>. Efficient tools and processes for modern quoting, ordering, and customer requirements.",
-      "<strong>Process Automation & Operations</strong>. Lean structures, clear responsibilities, and scalable workflows for growing order volumes."
+      "<strong>Market Entry & Internationalization</strong><br/>Go-to-market, partners, distribution, and sales structures for Asia, the Americas, and late-entry markets.",
+      "<strong>Digital B2B Sales & E-Commerce</strong><br/>CRM, quoting, ordering, and customer workflows that shorten cycles and improve transparency.",
+      "<strong>Process Automation & Operations</strong><br/>Lean responsibilities, automated reporting, and scalable order handling for growing teams."
     ],
     "cta": "Schedule a call",
+    "mapLoading": "Loading experience map",
     "alt": "Portrait of {{profileName}}",
     "altFallback": "Portrait"
   },

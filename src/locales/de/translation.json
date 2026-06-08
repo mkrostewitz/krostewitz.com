@@ -135,15 +135,17 @@
     }
   },
   "offer": {
-    "eyebrow": "B2B-Digitalisierung · Vertrieb · Operations",
-    "title": "Nachhaltiges Wachstum braucht digitale Strukturen.",
-    "subtitle": "Ich unterstütze mittelständische Industrie- und Technologieunternehmen, die neue Märkte erschließen, Vertriebsprozesse digitalisieren und operative Abläufe skalierbar machen wollen und biete über 15 Jahren Erfahrung im Aufbau, Skalierung und Neuausrichtung.",
+    "eyebrow": "Angebot · USP · Umsetzung",
+    "title": "Ich baue <span>digitale Wachstumsstrukturen</span> für industrielle B2B-Unternehmen.",
+    "subtitle": "Vom Markteintritt bis zu Vertriebssystemen und skalierbaren Abläufen: Ich übersetze komplexe industrielle Wachstumsaufgaben in umsetzbare kommerzielle Strukturen.",
+    "usp": "Mein USP: Ich verbinde 15+ Jahre internationalen Marktaufbau mit praktischer CRM-, ERP-, E-Commerce- und Automatisierungserfahrung, damit Strategie zu funktionierender Infrastruktur wird.",
     "points": [
-      "<strong>Markteintritt & Internationalisierung</strong>. Go-to-Market, Partner, Distribution und Vertrieb, auch für späte Markteintritte in Asien und Amerika.",
-      "<strong>Digitaler B2B-Vertrieb & E-Commerce</strong>. Effiziente Tools und Prozesse für moderne Angebots-, Bestell- und Kundenanforderungen.",
-      "<strong>Prozessautomatisierung & Operations</strong>. Schlanke Strukturen, klare Verantwortlichkeiten und skalierbare Abläufe für wachsende Auftragsvolumina."
+      "<strong>Markteintritt & Internationalisierung</strong><br/>Go-to-Market, Partner, Distribution und Vertriebsstrukturen für Asien, Amerika und späte Markteintritte.",
+      "<strong>Digitaler B2B-Vertrieb & E-Commerce</strong><br/>CRM, Angebote, Bestellungen und Kundenprozesse, die Zyklen verkürzen und Transparenz schaffen.",
+      "<strong>Prozessautomatisierung & Operations</strong><br/>Klare Verantwortlichkeiten, automatisiertes Reporting und skalierbare Auftragsabwicklung für wachsende Teams."
     ],
     "cta": "Gespräch vereinbaren",
+    "mapLoading": "Erfahrungskarte wird geladen",
     "alt": "Portrait von {{profileName}}",
     "altFallback": "Portrait"
   },
@@ -178,13 +180,13 @@
   },
   "about": {
     "headline": "Neue Wege finden, wo es keine Blaupause gibt.",
-    "body": "In den letzten 15+ Jahren habe ich Industrieunternehmen in Nordamerika und Asien aufgebaut, weiterentwickelt und neu ausgerichtet. Selten gab es dafür eine fertige Blaupause. Meist ging es darum, mit begrenzten Ressourcen neue Märkte zu erschließen, lokale Strukturen aufzubauen und Wachstum überhaupt erst tragfähig zu machen.<br/><br/>Der Unterschied lag für mich nie nur in sauberer Umsetzung. Entscheidend war oft, ein Unternehmen anders zu lesen: Wofür steht es wirklich? Welche Stärken zählen im jeweiligen Markt? Und wo können Produkte oder Technologien außerhalb des bisherigen Fokus Wert schaffen?<br/><br/>Während andere noch nach der perfekten Lösung suchen, teste ich lieber früh, lerne schnell und entwickle den nächsten Ansatz. So entstehen neue USPs, Anwendungen, Kundengruppen und Go-to-Market-Modelle, die nicht nur gut klingen, sondern im Markt funktionieren.",
+    "body": "In den letzten 15+ Jahren habe ich Industrieunternehmen in Nordamerika und Asien aufgebaut, weiterentwickelt und neu ausgerichtet. Meist ohne fertige Blaupause: mit begrenzten Ressourcen, neuen Märkten, lokalen Strukturen und der Aufgabe, Wachstum tragfähig zu machen.<br/><br/>Entscheidend war dabei, Unternehmen anders zu lesen: Wofür steht es wirklich, welche Stärken zählen im Markt und wo Produkte oder Technologien außerhalb des bisherigen Fokus Wert schaffen? Ich teste Ansätze früh, lerne schnell und übersetze daraus USPs, Anwendungen, Kundengruppen und Go-to-Market-Modelle, die im Markt funktionieren.",
     "highlights": [
-      "Neue Märkte in Nordamerika und Asien aufgebaut, oft ohne Blaupause und mit begrenzten Ressourcen",
-      "Unternehmen, Produkte und Märkte neu bewertet, um echte Stärken und relevante USPs sichtbar zu machen",
-      "Neue Anwendungen, Kundengruppen und Branchenzugänge entwickelt, die zusätzliches Wachstum ermöglicht haben",
-      "Go-to-Market-Ansätze früh im Markt getestet, verbessert und in skalierbare Vertriebsmodelle übersetzt",
-      "Digitale Tools und Prozesse geschaffen, mit denen kleine Teams hohe Auftrags- und Umsatzvolumina steuern können"
+      "Neue Märkte in Nordamerika und Asien mit begrenzten Ressourcen aufgebaut",
+      "Unternehmen, Produkte und Märkte neu bewertet und relevante USPs sichtbar gemacht",
+      "Neue Anwendungen, Kundengruppen und Branchenzugänge für zusätzliches Wachstum entwickelt",
+      "Go-to-Market-Ansätze getestet und in skalierbare Vertriebsmodelle übersetzt",
+      "Digitale Tools und Prozesse für hohe Auftrags- und Umsatzvolumina geschaffen"
     ]
   },
   "personal": {

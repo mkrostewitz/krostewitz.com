@@ -7,13 +7,14 @@
 .highlightList {
   list-style: none;
   display: grid;
-  gap: 10px;
+  gap: 8px;
 }
 
 .highlightList li {
   color: var(--foreground);
-  padding: 12px 14px;
-  border-radius: 12px;
+  line-height: 1.3;
+  padding: 10px 14px;
+  border-radius: 10px;
   background: transparent;
   border: 1px solid var(--border);
 }
