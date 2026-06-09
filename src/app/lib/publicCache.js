@@ -15,6 +15,7 @@ export const PUBLIC_CACHE_TAGS = {
   portfolio: "public-github-portfolio",
   posts: "public-posts",
   profile: "public-site-profile",
+  skills: "public-skills",
   translations: "public-site-translations",
 };
 

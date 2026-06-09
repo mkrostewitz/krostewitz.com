@@ -2,9 +2,12 @@
 
 /* eslint-disable @next/next/no-img-element */
 
+import {ArrowDown, ArrowUp, Plus, Trash2} from "lucide-react";
 import {useEffect, useMemo, useRef, useState} from "react";
 import {useTranslation} from "react-i18next";
 
+import {FALLBACK_LANGUAGE} from "@/lib/languageDetection";
+import {SITE_LANGUAGES} from "@/lib/siteLanguages";
 import {loadRuntimeTranslations} from "../../../lib/i18n";
 import AddressMap from "../../components/address-map/AddressMap";
 import {useLoadingState} from "../../components/loading/LoadingProvider";
@@ -40,6 +43,8 @@ const UPLOAD_ASSET_LABEL_KEYS = {
   iconUrl: "fields.iconUrl",
   logoUrl: "fields.logoUrl",
 };
+const DEFAULT_SKILL_SCORE = 5;
+const MAX_SKILL_SCORE = 10;
 
 const EMPTY_PROFILE = {
   address: null,
@@ -195,6 +200,92 @@ function normalizeNameForm(name = {}) {
   };
 }
 
+function createSkillId() {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+
+  return `skill-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function createEmptySkillTranslations() {
+  return SITE_LANGUAGES.reduce((acc, language) => {
+    acc[language.code] = {label: "", detail: ""};
+    return acc;
+  }, {});
+}
+
+function createEmptySkill() {
+  return {
+    id: createSkillId(),
+    score: DEFAULT_SKILL_SCORE,
+    translations: createEmptySkillTranslations(),
+  };
+}
+
+function normalizeSkillScore(value) {
+  const score = Number(value);
+  if (!Number.isFinite(score)) return DEFAULT_SKILL_SCORE;
+
+  const clampedScore = Math.min(MAX_SKILL_SCORE, Math.max(0, score));
+  return Math.round(clampedScore * 10) / 10;
+}
+
+function normalizeSkillForm(skill = {}, index = 0) {
+  const translations =
+    skill?.translations &&
+    typeof skill.translations === "object" &&
+    !Array.isArray(skill.translations)
+      ? skill.translations
+      : {};
+  const fallbackTranslation =
+    translations[FALLBACK_LANGUAGE] &&
+    typeof translations[FALLBACK_LANGUAGE] === "object"
+      ? translations[FALLBACK_LANGUAGE]
+      : {};
+  const fallbackLabel =
+    fallbackTranslation.label || skill.label || skill.title || "";
+  const fallbackDetail =
+    fallbackTranslation.detail || skill.detail || skill.description || "";
+
+  return {
+    id: String(skill.id || skill.key || `skill-${index + 1}`),
+    score: normalizeSkillScore(skill.score),
+    translations: SITE_LANGUAGES.reduce((acc, language) => {
+      const translation =
+        translations[language.code] &&
+        typeof translations[language.code] === "object"
+          ? translations[language.code]
+          : {};
+
+      acc[language.code] = {
+        label: String(
+          translation.label || translation.title || fallbackLabel
+        ).trim(),
+        detail: String(
+          translation.detail || translation.description || fallbackDetail
+        ).trim(),
+      };
+      return acc;
+    }, {}),
+  };
+}
+
+function normalizeSkillsForm(skills = []) {
+  return Array.isArray(skills)
+    ? skills.map((skill, index) => normalizeSkillForm(skill, index))
+    : [];
+}
+
+function getSkillPreviewLabel(skill, fallbackLabel) {
+  const translations = skill.translations || {};
+  return (
+    translations[FALLBACK_LANGUAGE]?.label ||
+    Object.values(translations).find((translation) => translation?.label)?.label ||
+    fallbackLabel
+  );
+}
+
 export default function ProfileSettings({user}) {
   const {t, i18n} = useTranslation(undefined, {keyPrefix: "admin.profile"});
   const {closeSnackbar, showSnackbar} = useSnackbar();
@@ -220,6 +311,7 @@ export default function ProfileSettings({user}) {
   const [metadataForm, setMetadataForm] = useState(() =>
     normalizeMetadataForm(EMPTY_PROFILE.metadata)
   );
+  const [skillsForm, setSkillsForm] = useState(() => normalizeSkillsForm([]));
   const [suggestions, setSuggestions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -282,14 +374,24 @@ export default function ProfileSettings({user}) {
 
     async function loadProfile() {
       try {
-        const response = await fetch("/api/admin/profile", {cache: "no-store"});
-        const data = await response.json().catch(() => ({}));
+        const [profileResponse, skillsResponse] = await Promise.all([
+          fetch("/api/admin/profile", {cache: "no-store"}),
+          fetch("/api/admin/skills", {cache: "no-store"}),
+        ]);
+        const [profileData, skillsData] = await Promise.all([
+          profileResponse.json().catch(() => ({})),
+          skillsResponse.json().catch(() => ({})),
+        ]);
 
-        if (!response.ok) {
-          throw new Error(data.error || t("errors.loadProfile"));
+        if (!profileResponse.ok) {
+          throw new Error(profileData.error || t("errors.loadProfile"));
         }
 
-        const nextProfile = data.profile || EMPTY_PROFILE;
+        if (!skillsResponse.ok) {
+          throw new Error(skillsData.error || t("errors.loadProfile"));
+        }
+
+        const nextProfile = profileData.profile || EMPTY_PROFILE;
 
         if (!cancelled) {
           setProfile(nextProfile);
@@ -300,6 +402,7 @@ export default function ProfileSettings({user}) {
           setAiChatForm(normalizeAiChatForm(nextProfile.aiChat));
           setNameForm(normalizeNameForm(nextProfile.name));
           setMetadataForm(normalizeMetadataForm(nextProfile.metadata));
+          setSkillsForm(normalizeSkillsForm(skillsData.skills));
           closeSnackbar();
         }
       } catch (error) {
@@ -441,6 +544,60 @@ export default function ProfileSettings({user}) {
     setAiChatForm((current) => ({...current, [field]: value}));
   }
 
+  function addSkill() {
+    setSkillsForm((current) => [...current, createEmptySkill()]);
+  }
+
+  function removeSkill(skillId) {
+    setSkillsForm((current) =>
+      current.filter((skill) => skill.id !== skillId)
+    );
+  }
+
+  function moveSkill(skillId, direction) {
+    setSkillsForm((current) => {
+      const index = current.findIndex((skill) => skill.id === skillId);
+      const nextIndex = index + direction;
+
+      if (index < 0 || nextIndex < 0 || nextIndex >= current.length) {
+        return current;
+      }
+
+      const next = [...current];
+      [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
+      return next;
+    });
+  }
+
+  function handleSkillScore(skillId, value) {
+    setSkillsForm((current) =>
+      current.map((skill) =>
+        skill.id === skillId
+          ? {...skill, score: normalizeSkillScore(value)}
+          : skill
+      )
+    );
+  }
+
+  function handleSkillTranslation(skillId, language, field, value) {
+    setSkillsForm((current) =>
+      current.map((skill) =>
+        skill.id === skillId
+          ? {
+              ...skill,
+              translations: {
+                ...(skill.translations || {}),
+                [language]: {
+                  ...(skill.translations?.[language] || {}),
+                  [field]: value,
+                },
+              },
+            }
+          : skill
+      )
+    );
+  }
+
   async function saveKoalendarIntegration() {
     setIsSaving(true);
     closeSnackbar();
@@ -503,6 +660,37 @@ export default function ProfileSettings({user}) {
       showSnackbar({
         type: "error",
         message: error.message || t("errors.saveAiChat"),
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function saveSkills() {
+    setIsSaving(true);
+    closeSnackbar();
+
+    try {
+      const response = await fetch("/api/admin/skills", {
+        method: "PUT",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({skills: skillsForm}),
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || t("errors.saveSkills"));
+      }
+
+      setSkillsForm(normalizeSkillsForm(data.skills));
+      showSnackbar({
+        type: "success",
+        message: t("status.skillsSaved"),
+      });
+    } catch (error) {
+      showSnackbar({
+        type: "error",
+        message: error.message || t("errors.saveSkills"),
       });
     } finally {
       setIsSaving(false);
@@ -935,6 +1123,193 @@ export default function ProfileSettings({user}) {
               <button className={styles.button} disabled={isSaving} type="submit">
                 {isSaving ? t("actions.saving") : t("actions.saveMetadata")}
               </button>
+            </div>
+          </section>
+
+          <section className={`${styles.profilePanel} ${styles.profilePanelFull}`}>
+            <div className={styles.panelHeader}>
+              <div className={styles.titleBlock}>
+                <h2>{t("sections.skills.title")}</h2>
+                <p className={styles.muted}>
+                  {t("sections.skills.description")}
+                </p>
+              </div>
+              <button
+                className={`${styles.secondaryButton} ${styles.iconTextButton}`}
+                disabled={isSaving}
+                type="button"
+                onClick={addSkill}
+              >
+                <Plus aria-hidden="true" size={17} strokeWidth={2.3} />
+                {t("actions.addSkill")}
+              </button>
+            </div>
+
+            <div className={styles.skillEditorList}>
+              {skillsForm.map((skill, index) => (
+                <article className={styles.skillEditorCard} key={skill.id}>
+                  <div className={styles.skillEditorHeader}>
+                    <div className={styles.titleBlock}>
+                      <h3>
+                        {getSkillPreviewLabel(
+                          skill,
+                          t("skills.newSkill", {number: index + 1})
+                        )}
+                      </h3>
+                      <p className={styles.muted}>
+                        {t("skills.scoreSummary", {
+                          score: skill.score,
+                          max: MAX_SKILL_SCORE,
+                        })}
+                      </p>
+                    </div>
+
+                    <div className={styles.skillEditorControls}>
+                      <button
+                        aria-label={t("actions.moveSkillUp")}
+                        className={styles.iconButton}
+                        disabled={isSaving || index === 0}
+                        title={t("actions.moveSkillUp")}
+                        type="button"
+                        onClick={() => moveSkill(skill.id, -1)}
+                      >
+                        <ArrowUp aria-hidden="true" size={17} strokeWidth={2.3} />
+                      </button>
+                      <button
+                        aria-label={t("actions.moveSkillDown")}
+                        className={styles.iconButton}
+                        disabled={isSaving || index === skillsForm.length - 1}
+                        title={t("actions.moveSkillDown")}
+                        type="button"
+                        onClick={() => moveSkill(skill.id, 1)}
+                      >
+                        <ArrowDown
+                          aria-hidden="true"
+                          size={17}
+                          strokeWidth={2.3}
+                        />
+                      </button>
+                      <button
+                        aria-label={t("actions.removeSkill")}
+                        className={`${styles.iconButton} ${styles.dangerButton}`}
+                        disabled={isSaving}
+                        title={t("actions.removeSkill")}
+                        type="button"
+                        onClick={() => removeSkill(skill.id)}
+                      >
+                        <Trash2 aria-hidden="true" size={17} strokeWidth={2.3} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className={styles.skillScoreRow}>
+                    <label className={`${styles.field} ${styles.skillRangeField}`}>
+                      <span className={styles.fieldLabel}>
+                        {t("fields.skillScore")}
+                      </span>
+                      <input
+                        max={MAX_SKILL_SCORE}
+                        min="0"
+                        step="0.1"
+                        type="range"
+                        value={skill.score}
+                        onChange={(event) =>
+                          handleSkillScore(skill.id, event.target.value)
+                        }
+                      />
+                    </label>
+                    <label className={styles.field}>
+                      <span className={styles.fieldLabel}>
+                        {t("fields.skillScoreValue")}
+                      </span>
+                      <input
+                        inputMode="numeric"
+                        max={MAX_SKILL_SCORE}
+                        min="0"
+                        step="0.1"
+                        type="number"
+                        value={skill.score}
+                        onChange={(event) =>
+                          handleSkillScore(skill.id, event.target.value)
+                        }
+                      />
+                    </label>
+                  </div>
+
+                  <div className={styles.skillLanguageGrid}>
+                    {SITE_LANGUAGES.map((language) => (
+                      <div
+                        className={styles.skillLanguagePanel}
+                        key={`${skill.id}-${language.code}`}
+                      >
+                        <h4>{language.label}</h4>
+                        <label className={styles.field}>
+                          <span className={styles.fieldLabel}>
+                            {t("fields.skillLabel")}
+                          </span>
+                          <input
+                            maxLength={90}
+                            value={skill.translations?.[language.code]?.label || ""}
+                            onChange={(event) =>
+                              handleSkillTranslation(
+                                skill.id,
+                                language.code,
+                                "label",
+                                event.target.value
+                              )
+                            }
+                          />
+                        </label>
+                        <label className={styles.field}>
+                          <span className={styles.fieldLabel}>
+                            {t("fields.skillDetail")}
+                          </span>
+                          <textarea
+                            maxLength={220}
+                            rows={3}
+                            value={skill.translations?.[language.code]?.detail || ""}
+                            onChange={(event) =>
+                              handleSkillTranslation(
+                                skill.id,
+                                language.code,
+                                "detail",
+                                event.target.value
+                              )
+                            }
+                          />
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </article>
+              ))}
+            </div>
+
+            <div className={styles.editorActions}>
+              <p className={styles.muted}>
+                {t("fields.lastSaved", {
+                  date: formatDate(profile.updatedAt, locale, notSavedLabel),
+                })}
+              </p>
+              <div className={styles.buttonRow}>
+                <button
+                  className={`${styles.secondaryButton} ${styles.iconTextButton}`}
+                  disabled={isSaving}
+                  type="button"
+                  onClick={addSkill}
+                >
+                  <Plus aria-hidden="true" size={17} strokeWidth={2.3} />
+                  {t("actions.addSkill")}
+                </button>
+                <button
+                  className={styles.button}
+                  disabled={isSaving}
+                  type="button"
+                  onClick={() => void saveSkills()}
+                >
+                  {isSaving ? t("actions.saving") : t("actions.saveSkills")}
+                </button>
+              </div>
             </div>
           </section>
 

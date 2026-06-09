@@ -69,7 +69,8 @@ const SkillsSection = ({skills}) => {
     returnObjects: true,
     defaultValue: [],
   });
-  const skillList = Array.isArray(skills) ? skills : [];
+  const hasSkillData = Array.isArray(skills);
+  const skillList = hasSkillData ? skills : [];
   const canShowMapFrame = Boolean(
     token && (!isConsentReady || allowExternalServices)
   );
@@ -123,7 +124,7 @@ const SkillsSection = ({skills}) => {
               </div>
             </div>
           );
-        }) : SKILL_SKELETON_ROWS.map((index) => (
+        }) : !hasSkillData ? SKILL_SKELETON_ROWS.map((index) => (
           <div
             key={`skill-skeleton-${index}`}
             className={`${styles.skill} ${styles.skillSkeleton}`}
@@ -133,13 +134,15 @@ const SkillsSection = ({skills}) => {
             <span />
             <div className={styles.skillBar} data-loading="true" />
           </div>
-        ))}
+        )) : null}
       </div>
-      <div className={styles.legend}>
-        <span>{t("levels.support")}</span>
-        <span>{t("levels.lead")}</span>
-        <span>{t("levels.own")}</span>
-      </div>
+      {skillList.length || !hasSkillData ? (
+        <div className={styles.legend}>
+          <span>{t("levels.support")}</span>
+          <span>{t("levels.lead")}</span>
+          <span>{t("levels.own")}</span>
+        </div>
+      ) : null}
 
       <div className={styles.flashcardsHeader}>
         <h2>{t("industriesTitle")}</h2>

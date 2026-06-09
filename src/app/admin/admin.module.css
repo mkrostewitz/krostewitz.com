@@ -1839,6 +1839,77 @@
   line-height: 1.55;
 }
 
+.skillEditorList {
+  display: grid;
+  gap: 14px;
+}
+
+.skillEditorCard {
+  display: grid;
+  gap: 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px;
+  background: var(--surface-subtle);
+  min-width: 0;
+}
+
+.skillEditorHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.skillEditorHeader h3 {
+  color: var(--foreground);
+  font-size: 1rem;
+  line-height: 1.25;
+}
+
+.skillEditorControls {
+  display: flex;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.skillScoreRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(100px, 130px);
+  gap: 12px;
+  align-items: end;
+}
+
+.skillRangeField input[type="range"] {
+  padding: 0;
+  accent-color: var(--accent);
+}
+
+.skillLanguageGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.skillLanguagePanel {
+  display: grid;
+  gap: 10px;
+  border: 1px solid var(--border-muted);
+  border-radius: 8px;
+  padding: 12px;
+  background: var(--surface);
+  min-width: 0;
+}
+
+.skillLanguagePanel h4 {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .autocompleteField {
   display: grid;
   gap: 8px;
@@ -2530,9 +2601,19 @@
   .settingsGrid,
   .aiSettingsFields,
   .integrationFields,
+  .skillLanguageGrid,
+  .skillScoreRow,
   .categoryInputRow,
   .mediaPreview {
     grid-template-columns: 1fr;
+  }
+
+  .skillEditorHeader {
+    flex-direction: column;
+  }
+
+  .skillEditorControls {
+    flex-wrap: wrap;
   }
 
   .postListHeader {

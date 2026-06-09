@@ -78,7 +78,8 @@ const ExecutiveSummary = ({skills = []}) => {
   const leadershipYears = readFiniteNumber(stats.leadershipYears);
   const revenue = readFiniteNumber(stats.revenue);
   const markets = readFiniteNumber(stats.markets);
-  const skillBars = Array.isArray(skills)
+  const hasSkillData = Array.isArray(skills);
+  const skillBars = hasSkillData
     ? skills
         .map((skill, index) => ({
           id: `${skill?.label || "skill"}-${index}`,
@@ -134,7 +135,11 @@ const ExecutiveSummary = ({skills = []}) => {
           <div
             className={styles.sparkline}
             data-active={isInView && skillBars.length ? "true" : undefined}
-            data-loading={!isInView || !skillBars.length || undefined}
+            data-loading={
+              !hasSkillData || (!isInView && skillBars.length > 0)
+                ? "true"
+                : undefined
+            }
           >
             {skillBars.length ? skillBars.map((skill, index) => (
               <span
@@ -147,9 +152,9 @@ const ExecutiveSummary = ({skills = []}) => {
                 }}
                 title={skill.label}
               />
-            )) : Array.from({length: 6}, (_, index) => (
+            )) : !hasSkillData ? Array.from({length: 6}, (_, index) => (
               <span key={`sparkline-skeleton-${index}`} />
-            ))}
+            )) : null}
           </div>
         </div>
         <div className={styles.statGrid}>
