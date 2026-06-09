@@ -4,6 +4,7 @@ import {NextResponse} from "next/server";
 
 import {
   getAppleMailTransport,
+  getDefaultRecipients,
   getDefaultSender,
 } from "../../../lib/mail";
 import {
@@ -87,8 +88,7 @@ function getOwnerNotificationText(lead) {
 }
 
 export async function POST(request) {
-  const {APPLE_MAIL_USER, APPLE_MAIL_TO} = process.env;
-  const transporter = getAppleMailTransport();
+  const transporter = await getAppleMailTransport();
   if (!transporter) {
     return NextResponse.json(
       {errorCode: "contact.form.mailNotConfigured"},
@@ -134,11 +134,13 @@ export async function POST(request) {
   // Send the actual message to us after verification
   const isCvRequest = lead.source.type === "cv_download";
   const origin = getRequestOrigin(request);
-  const from = getDefaultSender();
+  const from = await getDefaultSender();
+  const notificationRecipients = await getDefaultRecipients();
+  const ownerRecipient = notificationRecipients[0] || from;
   const requesterDownloadHref = requesterDownloadUrl || downloadUrl;
   const ownerMailOptions = {
     from,
-    to: APPLE_MAIL_TO || APPLE_MAIL_USER,
+    to: notificationRecipients,
     subject: isCvRequest
       ? `CV download request from ${lead.name}`
       : `New contact from ${lead.name}`,
@@ -150,7 +152,7 @@ export async function POST(request) {
     from,
     to: lead.email,
     subject: await getRequesterCopyEmailSubject(lead),
-    replyTo: APPLE_MAIL_TO || APPLE_MAIL_USER,
+    replyTo: ownerRecipient,
     text: await getRequesterCopyEmailText(
       lead,
       requesterDownloadHref,

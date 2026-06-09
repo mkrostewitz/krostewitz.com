@@ -15,7 +15,7 @@ import {createPendingLead, LeadValidationError} from "../../lib/leads";
 import {getRequestOrigin} from "../../lib/requestOrigin";
 
 export async function POST(request) {
-  const transporter = getAppleMailTransport();
+  const transporter = await getAppleMailTransport();
   if (!transporter) {
     return NextResponse.json(
       {errorCode: "contact.form.mailNotConfigured"},
@@ -47,7 +47,7 @@ export async function POST(request) {
   }
 
   const mailOptions = {
-    from: getDefaultSender(),
+    from: await getDefaultSender(),
     to: lead.email,
     subject: await getLeadVerificationEmailSubject(lead),
     text: await getLeadVerificationEmailText({lead, verificationCode}),
