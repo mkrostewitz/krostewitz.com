@@ -11,7 +11,9 @@ import "../../buttons.css";
 import LeadCaptureModal from "./LeadCaptureModal";
 import styles from "./contact-section.module.css";
 
-const CONTACT_EMAIL = String(process.env.NEXT_PUBLIC_CONTACT_EMAIL || "").trim();
+const CONTACT_EMAIL = String(
+  process.env.NEXT_PUBLIC_CONTACT_EMAIL || "",
+).trim();
 
 const ContactSection = () => {
   const {i18n, t} = useTranslation();
@@ -49,7 +51,7 @@ const ContactSection = () => {
 
           <div className={styles.contactPortrait}>
             <Image
-              src="/mk.png"
+              src="/mk-contact.jpg"
               alt={contactPortraitAlt}
               className={styles.contactPortraitImage}
               fill

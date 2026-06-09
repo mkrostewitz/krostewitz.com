@@ -1,3 +1,4 @@
+import Image from "next/image";
 import {Trans, useTranslation} from "react-i18next";
 
 import pageStyles from "../../page.module.css";
@@ -16,17 +17,31 @@ const AboutSection = () => {
           </Trans>
         </h2>
       </div>
+
       <div className={styles.aboutGrid}>
-        <p className={pageStyles.lead}>
-          <Trans i18nKey="about.body" components={{strong: <strong />}}>
-            {t("about.body")}
-          </Trans>
-        </p>
-        <ul className={styles.highlightList}>
-          {t("about.highlights", {returnObjects: true}).map((item) => (
-            <li key={item}>{item}</li>
-          ))}
-        </ul>
+        <div className={styles.aboutCopy}>
+          <p className={pageStyles.lead}>
+            <Trans i18nKey="about.body" components={{strong: <strong />}}>
+              {t("about.body")}
+            </Trans>
+          </p>
+
+          <ul className={styles.highlightList}>
+            {t("about.highlights", {returnObjects: true}).map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </div>
+
+        <div className={styles.aboutMePortrait}>
+          <Image
+            src="/about-me.jpg"
+            alt="Mathias Krostewitz"
+            className={styles.aboutMePortraitImage}
+            fill
+            sizes="(max-width: 960px) 100vw, 32vw"
+          />
+        </div>
       </div>
     </section>
   );

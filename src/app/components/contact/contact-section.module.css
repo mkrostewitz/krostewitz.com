@@ -89,7 +89,10 @@
   font-weight: 900;
   line-height: 1;
   text-decoration: none;
-  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease;
 }
 
 .linkedinIcon:hover {
@@ -111,8 +114,8 @@
 
 .contactPortraitImage {
   object-fit: cover;
-  object-position: 50% 36%;
-  transform: scale(1.42);
+  object-position: 30% 30%;
+  transform: scale(1);
   transform-origin: 50% 35%;
 }
 
@@ -192,7 +195,9 @@
   font: inherit;
   font-size: 0.95rem;
   line-height: 1.4;
-  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
 }
 
 .form input,
@@ -350,7 +355,10 @@
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
-  transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease,
+    color 0.16s ease;
 }
 
 .modalClose:hover,

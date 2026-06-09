@@ -1,7 +1,17 @@
 .aboutGrid {
   display: grid;
-  gap: 18px;
-  grid-template-columns: 1.3fr 1fr;
+  grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.75fr);
+  grid-template-areas: "copy portrait";
+  gap: 24px;
+  align-items: stretch;
+}
+
+.aboutCopy {
+  grid-area: copy;
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 16px;
 }
 
 .highlightList {
@@ -19,8 +29,31 @@
   border: 1px solid var(--border);
 }
 
+.aboutMePortrait {
+  grid-area: portrait;
+  position: relative;
+  min-height: clamp(340px, 34vw, 560px);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface-subtle);
+  align-self: stretch;
+}
+
+.aboutMePortraitImage {
+  object-fit: cover;
+  object-position: 50% 28%;
+}
+
 @media (max-width: 960px) {
   .aboutGrid {
     grid-template-columns: 1fr;
+    grid-template-areas:
+      "copy"
+      "portrait";
+  }
+
+  .aboutMePortrait {
+    min-height: clamp(320px, 82vw, 520px);
   }
 }
