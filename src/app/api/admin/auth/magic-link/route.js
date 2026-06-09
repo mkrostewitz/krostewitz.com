@@ -91,7 +91,7 @@ export async function POST(request) {
     return NextResponse.json({ok: true});
   }
 
-  const transporter = getAppleMailTransport();
+  const transporter = await getAppleMailTransport();
   if (!transporter) {
     return NextResponse.json(
       {error: "Email transport is not configured."},
@@ -126,7 +126,7 @@ export async function POST(request) {
 
   try {
     await transporter.sendMail({
-      from: getDefaultSender(),
+      from: await getDefaultSender(),
       to: admin.email,
       subject: isPasswordReset
         ? `Reset your ${siteHost} admin password`

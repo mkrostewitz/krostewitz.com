@@ -15,7 +15,13 @@ const DEFAULT_SITE_TITLE = process.env.NEXT_PUBLIC_SITE_NAME || "Site";
 const ADMIN_MENU_ID = "admin-menu-panel";
 const ADMIN_NAV_ITEMS = [
   {active: "profile", href: "/admin/profile", label: "Profile"},
-  {active: "posts", href: "/admin/posts", label: "Posts"},
+  {
+    active: "mailCalendar",
+    href: "/admin/mail-calendar",
+    label: "Mail & Calendar",
+  },
+  {active: "posts", href: "/admin/posts", label: "Blog"},
+  {active: "skills", href: "/admin/skills", label: "Skills"},
   {
     active: "githubPortfolio",
     href: "/admin/github-portfolio",

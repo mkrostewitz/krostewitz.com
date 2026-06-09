@@ -1828,6 +1828,94 @@
   align-items: end;
 }
 
+.mailHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.mailSaveButton {
+  min-width: 96px;
+}
+
+.mailToggleRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.mailToggleRow .checkboxField,
+.mailSecurityOptions .checkboxField {
+  font-weight: 700;
+}
+
+.mailFormStack {
+  display: grid;
+  gap: 16px;
+}
+
+.mailAccountGrid,
+.mailServerGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+
+.mailRecipientsField textarea {
+  min-height: 78px;
+}
+
+.mailFooterRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px 18px;
+  border-top: 1px solid var(--border-muted);
+  padding-top: 14px;
+  flex-wrap: wrap;
+}
+
+.mailSecurityOptions,
+.mailPasswordActions {
+  display: flex;
+  align-items: center;
+  gap: 12px 18px;
+  flex-wrap: wrap;
+}
+
+.mailPasswordActions {
+  justify-content: flex-end;
+  margin-left: auto;
+}
+
+.mailMissingKeys {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  border: 1px solid var(--border-muted);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: var(--surface-subtle);
+}
+
+.mailMissingKeys span {
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.mailMissingKeys strong {
+  color: var(--foreground);
+  font-size: 0.9rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
 .chatScriptFields {
   grid-template-columns: minmax(0, 1fr);
 }
@@ -2551,6 +2639,7 @@
   .toolbar,
   .panelHeader,
   .editorActions,
+  .mailFooterRow,
   .editorTitleRow,
   .languageTabBar,
   .postMediaHeader {
@@ -2601,6 +2690,8 @@
   .settingsGrid,
   .aiSettingsFields,
   .integrationFields,
+  .mailAccountGrid,
+  .mailServerGrid,
   .skillLanguageGrid,
   .skillScoreRow,
   .categoryInputRow,
@@ -2614,6 +2705,12 @@
 
   .skillEditorControls {
     flex-wrap: wrap;
+  }
+
+  .mailPasswordActions {
+    width: 100%;
+    justify-content: flex-start;
+    margin-left: 0;
   }
 
   .postListHeader {

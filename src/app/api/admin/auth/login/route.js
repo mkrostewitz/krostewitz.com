@@ -25,9 +25,11 @@ function invalidLogin() {
   );
 }
 
-function getConfiguredSecondFactors(admin) {
+async function getConfiguredSecondFactors(admin) {
+  const mailConfigured = await isAppleMailConfigured();
+
   return getAvailableSecondFactors(admin).filter(
-    (method) => method !== "email" || isAppleMailConfigured(),
+    (method) => method !== "email" || mailConfigured,
   );
 }
 
@@ -59,7 +61,7 @@ export async function POST(request) {
   const passwordOk = await verifyAdminPassword(password, admin);
   if (!passwordOk) return invalidLogin();
 
-  const methods = getConfiguredSecondFactors(admin);
+  const methods = await getConfiguredSecondFactors(admin);
   if (methods.length === 0) {
     return NextResponse.json(
       {error: "No second factor is configured."},
@@ -88,7 +90,7 @@ export async function POST(request) {
   }
 
   if (challenge.method === "email") {
-    const transporter = getAppleMailTransport();
+    const transporter = await getAppleMailTransport();
     if (!transporter) {
       return NextResponse.json(
         {error: "Email transport is not configured."},
@@ -101,7 +103,7 @@ export async function POST(request) {
 
     try {
       await transporter.sendMail({
-        from: getDefaultSender(),
+        from: await getDefaultSender(),
         to: admin.email,
         subject: `Your ${siteHost} admin sign-in code`,
         text: `Your admin sign-in code is ${challenge.code}.\n\nThis code expires in 10 minutes. If you did not request it, change your password immediately.`,
