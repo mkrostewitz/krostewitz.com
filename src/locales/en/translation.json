@@ -254,37 +254,32 @@
     "industriesSubtitle": "Where I’ve driven outcomes across GTM, operations, and systems delivery.",
     "industries": [
       {
-        "icon": "🏭",
+        "icon": "factory",
         "title": "Industrial Manufacturing",
         "detail": "Factory / discrete manufacturing environments"
       },
       {
-        "icon": "⚙️",
+        "icon": "automation",
         "title": "Automation & Controls",
         "detail": "Industrial components and systems suppliers"
       },
       {
-        "icon": "📦",
-        "title": "Wholesale / Distribution",
-        "detail": "B2B technical and industrial distribution"
-      },
-      {
-        "icon": "🚉",
+        "icon": "infrastructure",
         "title": "Transportation & Infrastructure",
         "detail": "Traffic / transit tech and related systems"
       },
       {
-        "icon": "🚗",
+        "icon": "automotive",
         "title": "Automotive",
         "detail": "OEMs and Tier suppliers, China market experience"
       },
       {
-        "icon": "🔌",
+        "icon": "electronics",
         "title": "Electronics Manufacturing",
         "detail": "Industrial electronics / EMS contexts"
       },
       {
-        "icon": "📦",
+        "icon": "intralogistics",
         "title": "Intralogistics / Warehousing",
         "detail": "Supply-chain execution and logistics automation"
       }

@@ -259,37 +259,32 @@
     "industriesSubtitle": "Branchen, in denen ich Unternehmen aufgebaut, skaliert und operativ verantwortet habe.",
     "industries": [
       {
-        "icon": "🏭",
+        "icon": "factory",
         "title": "Industrielle Fertigung",
         "detail": "Fabrik- / diskrete Fertigungsumgebungen"
       },
       {
-        "icon": "⚙️",
+        "icon": "automation",
         "title": "Automation & Steuerung",
         "detail": "Industriekomponenten- und Systemlieferanten"
       },
       {
-        "icon": "📦",
-        "title": "Großhandel / Distribution",
-        "detail": "B2B-Technik- und Industriedistribution"
-      },
-      {
-        "icon": "🚉",
+        "icon": "infrastructure",
         "title": "Transport & Infrastruktur",
         "detail": "Verkehrs- / ÖPNV-Technik und verwandte Systeme"
       },
       {
-        "icon": "🚗",
+        "icon": "automotive",
         "title": "Automotive",
         "detail": "OEMs und Tier-Zulieferer, China-Erfahrung"
       },
       {
-        "icon": "🔌",
+        "icon": "electronics",
         "title": "Elektronikfertigung",
         "detail": "Industrielle Elektronik- / EMS-Umfelder"
       },
       {
-        "icon": "📦",
+        "icon": "intralogistics",
         "title": "Intralogistik / Lager",
         "detail": "Supply-Chain-Execution und Logistikautomation"
       }

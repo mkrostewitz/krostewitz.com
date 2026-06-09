@@ -125,8 +125,8 @@
 .flashcards {
   margin-top: 20px;
   display: grid;
-  gap: 12px;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .flashcardsHeader {
@@ -151,24 +151,47 @@
 .flashcard {
   border: 1px solid var(--border);
   border-radius: 14px;
-  padding: 12px 14px;
+  padding: 16px;
   color: var(--foreground);
+  min-width: 0;
 }
 
 .flashcardHeader {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
 }
 
 .flashcardIcon {
-  font-size: 1.2rem;
+  align-items: center;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--foreground);
+  display: inline-flex;
+  flex: 0 0 32px;
+  height: 32px;
+  justify-content: center;
+  width: 32px;
+}
+
+.flashcardIcon svg {
+  display: block;
+}
+
+.flashcardBody {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
 }
 
 .flashcard h4 {
-  margin: 0 0 6px;
+  margin: 0;
   color: var(--foreground);
   font-size: 1rem;
+  line-height: 1.18;
+  overflow-wrap: break-word;
 }
 
 .flashcard p {
@@ -176,6 +199,7 @@
   color: var(--text-muted);
   line-height: 1.5;
   font-size: 0.95rem;
+  overflow-wrap: break-word;
 }
 
 .mapSection {
@@ -369,6 +393,10 @@
 }
 
 @media (max-width: 960px) {
+  .flashcards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .skillTop {
     flex-direction: column;
     gap: 6px;
@@ -390,6 +418,12 @@
 
   .legend {
     display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .flashcards {
+    grid-template-columns: 1fr;
   }
 }
 

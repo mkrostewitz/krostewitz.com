@@ -1,3 +1,11 @@
+import {
+  CarFront,
+  CircuitBoard,
+  Cog,
+  Factory,
+  TrainFront,
+  Warehouse,
+} from "lucide-react";
 import {useTranslation} from "react-i18next";
 
 import {useInViewOnce} from "@/lib/useInViewOnce";
@@ -7,6 +15,24 @@ import SkillsMap from "./SkillsMap";
 import styles from "./skills-section.module.css";
 
 const SKILL_SKELETON_ROWS = Array.from({length: 6}, (_, index) => index);
+
+const INDUSTRY_ICONS = {
+  factory: Factory,
+  automation: Cog,
+  infrastructure: TrainFront,
+  automotive: CarFront,
+  electronics: CircuitBoard,
+  intralogistics: Warehouse,
+};
+
+const DEFAULT_INDUSTRY_ICONS = [
+  Factory,
+  Cog,
+  TrainFront,
+  CarFront,
+  CircuitBoard,
+  Warehouse,
+];
 
 function readFiniteNumber(value) {
   const numericValue = Number(value);
@@ -120,15 +146,25 @@ const SkillsSection = ({skills}) => {
       </div>
 
       <div className={styles.flashcards}>
-        {industries.map((card, idx) => (
-          <div key={`${card.title}-${idx}`} className={styles.flashcard}>
-            <div className={styles.flashcardHeader}>
-              <span className={styles.flashcardIcon}>{card.icon}</span>
-              <h4>{card.title}</h4>
+        {industries.map((card, idx) => {
+          const Icon =
+            INDUSTRY_ICONS[card.icon] ||
+            DEFAULT_INDUSTRY_ICONS[idx % DEFAULT_INDUSTRY_ICONS.length];
+
+          return (
+            <div key={`${card.title}-${idx}`} className={styles.flashcard}>
+              <div className={styles.flashcardHeader}>
+                <span className={styles.flashcardIcon} aria-hidden="true">
+                  <Icon size={18} strokeWidth={1.75} />
+                </span>
+                <div className={styles.flashcardBody}>
+                  <h4>{card.title}</h4>
+                  <p>{card.detail}</p>
+                </div>
+              </div>
             </div>
-            <p>{card.detail}</p>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className={styles.mapSection}>
