@@ -68,14 +68,11 @@ export default function Home() {
       <FoldSection />
 
       <main className={styles.main}>
-        {/* Executive Summary & Outcomes */}
-        <ExecutiveSummary skills={skills} />
-
-        {/* Languages */}
-        {/* <LanguagesSection /> */}
-
         {/* About Me */}
         <AboutSection />
+
+        {/* Executive Summary & Outcomes */}
+        <ExecutiveSummary skills={skills} />
 
         {/* My Skills */}
         <SkillsSection skills={skills} />
