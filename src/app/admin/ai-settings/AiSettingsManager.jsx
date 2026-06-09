@@ -18,6 +18,11 @@ const EMPTY_FORM = {
   updatedBy: null,
 };
 
+const EMPTY_AI_CHAT_FORM = {
+  enabled: false,
+  scriptTag: "",
+};
+
 function formatDate(value) {
   if (!value) return "Not saved";
 
@@ -42,11 +47,23 @@ function normalizeForm(settings = {}) {
   };
 }
 
+function normalizeAiChatForm(aiChat = {}) {
+  return {
+    enabled: aiChat.enabled === true,
+    scriptTag: String(aiChat.scriptTag || ""),
+  };
+}
+
 export default function AiSettingsManager({user}) {
   const {closeSnackbar, showSnackbar} = useSnackbar();
   const [form, setForm] = useState(EMPTY_FORM);
+  const [aiChatForm, setAiChatForm] = useState(EMPTY_AI_CHAT_FORM);
+  const [profileUpdatedAt, setProfileUpdatedAt] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingAiChat, setIsSavingAiChat] = useState(false);
+  const aiChatHasScript = aiChatForm.scriptTag.trim().length > 0;
+  const aiChatEnabled = aiChatForm.enabled && aiChatHasScript;
 
   useLoadingState({
     isLoading,
@@ -58,23 +75,38 @@ export default function AiSettingsManager({user}) {
     label: "Saving AI settings...",
     type: "action",
   });
+  useLoadingState({
+    isLoading: isSavingAiChat,
+    label: "Saving AI chat...",
+    type: "action",
+  });
 
   useEffect(() => {
     let cancelled = false;
 
     async function loadSettings() {
       try {
-        const response = await fetch("/api/admin/ai-settings", {
-          cache: "no-store",
-        });
-        const data = await response.json().catch(() => ({}));
+        const [settingsResponse, profileResponse] = await Promise.all([
+          fetch("/api/admin/ai-settings", {cache: "no-store"}),
+          fetch("/api/admin/profile", {cache: "no-store"}),
+        ]);
+        const [settingsData, profileData] = await Promise.all([
+          settingsResponse.json().catch(() => ({})),
+          profileResponse.json().catch(() => ({})),
+        ]);
 
-        if (!response.ok) {
-          throw new Error(data.error || "Unable to load AI settings.");
+        if (!settingsResponse.ok) {
+          throw new Error(settingsData.error || "Unable to load AI settings.");
+        }
+
+        if (!profileResponse.ok) {
+          throw new Error(profileData.error || "Unable to load AI chat.");
         }
 
         if (!cancelled) {
-          setForm(normalizeForm(data.settings));
+          setForm(normalizeForm(settingsData.settings));
+          setAiChatForm(normalizeAiChatForm(profileData.profile?.aiChat));
+          setProfileUpdatedAt(profileData.profile?.updatedAt || null);
           closeSnackbar();
         }
       } catch (error) {
@@ -97,6 +129,13 @@ export default function AiSettingsManager({user}) {
 
   function updateField(name, value) {
     setForm((current) => ({
+      ...current,
+      [name]: value,
+    }));
+  }
+
+  function updateAiChatField(name, value) {
+    setAiChatForm((current) => ({
       ...current,
       [name]: value,
     }));
@@ -130,6 +169,37 @@ export default function AiSettingsManager({user}) {
       showSnackbar({type: "error", message: error.message});
     } finally {
       setIsSaving(false);
+    }
+  }
+
+  async function saveAiChatIntegration() {
+    setIsSavingAiChat(true);
+    closeSnackbar();
+
+    try {
+      const response = await fetch("/api/admin/profile", {
+        method: "PUT",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({aiChat: aiChatForm}),
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || "Unable to save AI chat.");
+      }
+
+      const nextProfile = data.profile || {};
+
+      setAiChatForm(normalizeAiChatForm(nextProfile.aiChat));
+      setProfileUpdatedAt(nextProfile.updatedAt || null);
+      showSnackbar({type: "success", message: "AI chat saved."});
+    } catch (error) {
+      showSnackbar({
+        type: "error",
+        message: error.message || "Unable to save AI chat.",
+      });
+    } finally {
+      setIsSavingAiChat(false);
     }
   }
 
@@ -227,6 +297,74 @@ export default function AiSettingsManager({user}) {
               </p>
               <button className={styles.button} disabled={isSaving} type="submit">
                 {isSaving ? "Saving..." : "Save settings"}
+              </button>
+            </div>
+          </section>
+
+          <section className={styles.portfolioPanel}>
+            <div className={styles.panelHeader}>
+              <div className={styles.titleBlock}>
+                <h2>AI chat</h2>
+                <p className={styles.muted}>
+                  Control the public chat embed loaded after external services
+                  consent.
+                </p>
+              </div>
+              <span className={styles.statusBadge}>
+                {aiChatEnabled ? "Enabled" : "Disabled"}
+              </span>
+            </div>
+
+            <label className={styles.featureToggle}>
+              <input
+                checked={aiChatForm.enabled}
+                disabled={isSavingAiChat}
+                type="checkbox"
+                onChange={(event) =>
+                  updateAiChatField("enabled", event.target.checked)
+                }
+              />
+              <span className={styles.featureSwitch} aria-hidden="true" />
+              <span className={styles.featureText}>
+                <strong>AI chat</strong>
+                <small>
+                  {aiChatEnabled
+                    ? "The saved chat script loads on public pages after consent."
+                    : "The chat script stays disabled until it is switched on and saved."}
+                </small>
+              </span>
+              <span className={styles.featureStatus}>
+                {aiChatEnabled ? "On" : "Off"}
+              </span>
+            </label>
+
+            <div className={`${styles.integrationFields} ${styles.chatScriptFields}`}>
+              <label className={`${styles.field} ${styles.chatScriptField}`}>
+                AI chat script tag
+                <textarea
+                  maxLength={20000}
+                  placeholder="<script async src=&quot;https://example.com/chat.js&quot;></script>"
+                  rows={8}
+                  spellCheck="false"
+                  value={aiChatForm.scriptTag}
+                  onChange={(event) =>
+                    updateAiChatField("scriptTag", event.target.value)
+                  }
+                />
+              </label>
+            </div>
+
+            <div className={styles.editorActions}>
+              <p className={styles.muted}>
+                Last saved: {formatDate(profileUpdatedAt)}
+              </p>
+              <button
+                className={styles.button}
+                disabled={isSavingAiChat}
+                type="button"
+                onClick={() => void saveAiChatIntegration()}
+              >
+                {isSavingAiChat ? "Saving..." : "Save AI chat"}
               </button>
             </div>
           </section>

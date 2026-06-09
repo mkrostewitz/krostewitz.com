@@ -358,20 +358,29 @@ const SHARE_HISTORY_STATUS_LABELS = {
 };
 
 async function loadPostManagerData() {
-  const [postsResponse, linkedinResponse] = await Promise.all([
+  const [postsResponse, linkedinResponse, profileResponse] = await Promise.all([
     fetch("/api/admin/posts", {cache: "no-store"}),
     fetch("/api/admin/linkedin", {cache: "no-store"}),
+    fetch("/api/admin/profile", {cache: "no-store"}),
   ]);
-  const postsData = await postsResponse.json().catch(() => ({}));
-  const linkedinData = await linkedinResponse.json().catch(() => ({}));
+  const [postsData, linkedinData, profileData] = await Promise.all([
+    postsResponse.json().catch(() => ({})),
+    linkedinResponse.json().catch(() => ({})),
+    profileResponse.json().catch(() => ({})),
+  ]);
 
   if (!postsResponse.ok) {
     throw new Error(postsData.error || "Unable to load posts.");
   }
 
+  if (!profileResponse.ok) {
+    throw new Error(profileData.error || "Unable to load blog settings.");
+  }
+
   return {
     integration: linkedinResponse.ok ? linkedinData.integration || {} : null,
     posts: postsData.posts || [],
+    profile: profileData.profile || {},
   };
 }
 
@@ -549,7 +558,10 @@ export default function PostManager({user}) {
     schedulerLastRunAt: null,
     schedulerLastRunSource: "",
   });
+  const [blogEnabled, setBlogEnabled] = useState(true);
+  const [blogSettingsUpdatedAt, setBlogSettingsUpdatedAt] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSavingBlogVisibility, setIsSavingBlogVisibility] = useState(false);
   const [isDisconnectingLinkedin, setIsDisconnectingLinkedin] = useState(false);
   const [cancelingScheduleId, setCancelingScheduleId] = useState("");
   const [isRunningScheduler, setIsRunningScheduler] = useState(false);
@@ -601,6 +613,11 @@ export default function PostManager({user}) {
     type: "page",
   });
   useLoadingState({
+    isLoading: isSavingBlogVisibility,
+    label: "Saving blog visibility...",
+    type: "action",
+  });
+  useLoadingState({
     isLoading: isDisconnectingLinkedin,
     label: "Disconnecting LinkedIn...",
     type: "action",
@@ -647,6 +664,8 @@ export default function PostManager({user}) {
 
         if (!cancelled) {
           setPosts(data.posts);
+          setBlogEnabled(data.profile.blogEnabled !== false);
+          setBlogSettingsUpdatedAt(data.profile.updatedAt || null);
           if (data.integration) {
             setLinkedin((current) => ({
               ...current,
@@ -677,6 +696,8 @@ export default function PostManager({user}) {
     const data = await loadPostManagerData();
 
     setPosts(data.posts);
+    setBlogEnabled(data.profile.blogEnabled !== false);
+    setBlogSettingsUpdatedAt(data.profile.updatedAt || null);
     if (data.integration) {
       setLinkedin((current) => ({
         ...current,
@@ -722,6 +743,47 @@ export default function PostManager({user}) {
       window.history.replaceState(null, "", nextUrl);
     }
   }, [showSnackbar]);
+
+  async function saveBlogVisibility(value) {
+    const previousValue = blogEnabled;
+
+    setBlogEnabled(value);
+    closeSnackbar();
+    setIsSavingBlogVisibility(true);
+
+    try {
+      const response = await fetch("/api/admin/profile", {
+        method: "PUT",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({blogEnabled: value}),
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || "Unable to save blog visibility.");
+      }
+
+      const nextProfile = data.profile || {};
+
+      setBlogEnabled(nextProfile.blogEnabled !== false);
+      setBlogSettingsUpdatedAt(nextProfile.updatedAt || null);
+      showSnackbar({
+        type: "success",
+        message:
+          nextProfile.blogEnabled === false
+            ? "Blog is hidden from the public website."
+            : "Blog is visible on the public website.",
+      });
+    } catch (error) {
+      setBlogEnabled(previousValue);
+      showSnackbar({
+        type: "error",
+        message: error.message || "Unable to save blog visibility.",
+      });
+    } finally {
+      setIsSavingBlogVisibility(false);
+    }
+  }
 
   async function disconnectLinkedIn() {
     setIsDisconnectingLinkedin(true);
@@ -1037,7 +1099,7 @@ export default function PostManager({user}) {
       <main className={styles.main} aria-busy={isLoading}>
         <div className={styles.toolbar}>
           <div className={styles.titleBlock}>
-            <h1>Posts</h1>
+            <h1>Blog</h1>
             <p className={styles.muted}>
               Create blog posts with rich text and hosted media.
             </p>
@@ -1045,6 +1107,44 @@ export default function PostManager({user}) {
         </div>
 
         <div className={styles.postWorkspace}>
+          <section className={styles.postListPanel}>
+            <div className={styles.panelHeader}>
+              <div className={styles.titleBlock}>
+                <h2>Public visibility</h2>
+                <p className={styles.muted}>
+                  Control whether the Blog appears on the public site.
+                </p>
+              </div>
+            </div>
+
+            <label className={styles.featureToggle}>
+              <input
+                checked={blogEnabled}
+                disabled={isSavingBlogVisibility}
+                type="checkbox"
+                onChange={(event) =>
+                  void saveBlogVisibility(event.target.checked)
+                }
+              />
+              <span className={styles.featureSwitch} aria-hidden="true" />
+              <span className={styles.featureText}>
+                <strong>Blog</strong>
+                <small>
+                  {blogEnabled
+                    ? "Shown in navigation, homepage, and public post pages."
+                    : "Hidden from navigation, homepage, posts API, and public post pages."}
+                </small>
+              </span>
+              <span className={styles.featureStatus}>
+                {blogEnabled ? "Visible" : "Hidden"}
+              </span>
+            </label>
+
+            <p className={styles.muted}>
+              Last saved: {formatDate(blogSettingsUpdatedAt)}
+            </p>
+          </section>
+
           <section className={styles.linkedinPanel}>
             <div className={styles.panelHeader}>
               <div className={styles.titleBlock}>
@@ -1173,7 +1273,7 @@ export default function PostManager({user}) {
               </Link>
             </div>
 
-            <div className={styles.postList} aria-label="Posts">
+            <div className={styles.postList} aria-label="Blog posts">
               <div className={styles.postListHeader} aria-hidden="true">
                 <span>Post</span>
                 <span>Status</span>
