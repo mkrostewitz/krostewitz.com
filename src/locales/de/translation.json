@@ -40,6 +40,10 @@
           "title": "Theme-Farben",
           "description": "Primär-, Sekundär- und Tertiärfarbe der öffentlichen Website festlegen."
         },
+        "skills": {
+          "title": "Skills",
+          "description": "Skill-Balken im öffentlichen Wirkungsbereich hinzufügen, entfernen, sortieren, bewerten und beschreiben."
+        },
         "address": {
           "title": "Aktuelle Adresse",
           "description": "Mit Mapbox suchen und ein Ergebnis auswählen, um es im Kontaktbereich zu veröffentlichen."
@@ -91,7 +95,11 @@
         "addressPlaceholder": "Adresse eingeben",
         "koalendarUrl": "Koalendar-Buchungs-URL",
         "aiChatScript": "AI-Chat-Script-Tag",
-        "aiChatScriptPlaceholder": "<script async src=\"https://example.com/chat.js\"></script>"
+        "aiChatScriptPlaceholder": "<script async src=\"https://example.com/chat.js\"></script>",
+        "skillLabel": "Titel",
+        "skillDetail": "Beschreibung",
+        "skillScore": "Bewertung",
+        "skillScoreValue": "Wert"
       },
       "actions": {
         "saving": "Speichert...",
@@ -102,7 +110,12 @@
         "saveProfile": "Profil speichern",
         "openKoalendar": "Koalendar öffnen",
         "saveKoalendar": "Koalendar speichern",
-        "saveAiChat": "AI-Chat speichern"
+        "saveAiChat": "AI-Chat speichern",
+        "addSkill": "Skill hinzufügen",
+        "removeSkill": "Skill entfernen",
+        "moveSkillUp": "Skill nach oben",
+        "moveSkillDown": "Skill nach unten",
+        "saveSkills": "Skills speichern"
       },
       "status": {
         "notSaved": "Nicht gespeichert",
@@ -116,7 +129,8 @@
         "profileSaved": "Profileinstellungen gespeichert.",
         "assetUploaded": "{{asset}} hochgeladen und veröffentlicht.",
         "koalendarSaved": "Koalendar-Integration gespeichert.",
-        "aiChatSaved": "AI-Chat-Integration gespeichert."
+        "aiChatSaved": "AI-Chat-Integration gespeichert.",
+        "skillsSaved": "Skills gespeichert."
       },
       "errors": {
         "loadProfile": "Profileinstellungen konnten nicht geladen werden.",
@@ -126,7 +140,12 @@
         "chooseAddress": "Bitte vor dem Speichern eine Adresse aus den Mapbox-Ergebnissen auswählen.",
         "saveProfile": "Profileinstellungen konnten nicht gespeichert werden.",
         "saveKoalendar": "Koalendar-Integration konnte nicht gespeichert werden.",
-        "saveAiChat": "AI-Chat-Integration konnte nicht gespeichert werden."
+        "saveAiChat": "AI-Chat-Integration konnte nicht gespeichert werden.",
+        "saveSkills": "Skills konnten nicht gespeichert werden."
+      },
+      "skills": {
+        "newSkill": "Neuer Skill {{number}}",
+        "scoreSummary": "{{score}} / {{max}}"
       },
       "preview": {
         "mapLabel": "Karte der ausgewählten Adresse",
@@ -194,12 +213,7 @@
     "title": "Abseits des Schreibtischs zieht es mich nach draußen.",
     "intro": "Skifahren, Radfahren und Wandern halten mich in Bewegung, aber zum Segeln komme ich am liebsten zurück. Auf dem Wasser zählen Vorbereitung, ein klarer Kurs und die Fähigkeit, Bedingungen schnell neu zu lesen.",
     "hobbyLabel": "Hobbys",
-    "hobbies": [
-      "Segeln",
-      "Skifahren",
-      "Radfahren",
-      "Wandern"
-    ],
+    "hobbies": ["Segeln", "Skifahren", "Radfahren", "Wandern"],
     "sailing": {
       "eyebrow": "Segelbedingungen am Chiemsee",
       "title": "Chiemsee-Wind",
@@ -299,8 +313,6 @@
     "financeDetail": "Liquiditätsplanung, Forecasting und Führung über Kennzahlen",
     "productLabel": "Produkt & Entwicklung",
     "productDetail": "Übersetzung von Marktanforderungen in klare Produkt- und Entwicklungsplanung",
-    "productionLabel": "Produktion & Fertigung",
-    "productionDetail": "Durchsatz, Qualität und Kapazitätssteuerung im Einklang mit der Nachfrage",
     "levels": {
       "support": "Mitwirkung",
       "lead": "Federführende Verantwortung",
@@ -448,11 +460,7 @@
     "topicLabel": "Blogthemen",
     "filterLabel": "Beiträge nach Kategorie filtern",
     "filterAll": "Alle",
-    "topics": [
-      "Berufliches",
-      "Segeln",
-      "Kochen"
-    ],
+    "topics": ["Berufliches", "Segeln", "Kochen"],
     "loading": "Beiträge werden geladen...",
     "empty": "Berufliche Notizen, Segelgeschichten und Küchenexperimente erscheinen hier, sobald sie veröffentlicht sind.",
     "emptyFiltered": "Für diese Kategorie gibt es noch keine veröffentlichten Beiträge.",

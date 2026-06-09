@@ -40,6 +40,10 @@
           "title": "Theme colors",
           "description": "Set the primary, secondary, and tertiary colors used by the public site."
         },
+        "skills": {
+          "title": "Skills",
+          "description": "Add, remove, reorder, score, and describe the skill bars shown in the public Impact section."
+        },
         "address": {
           "title": "Current address",
           "description": "Search with Mapbox and select a result to publish it in Contact."
@@ -91,7 +95,11 @@
         "addressPlaceholder": "Start typing an address",
         "koalendarUrl": "Koalendar booking URL",
         "aiChatScript": "AI chat script tag",
-        "aiChatScriptPlaceholder": "<script async src=\"https://example.com/chat.js\"></script>"
+        "aiChatScriptPlaceholder": "<script async src=\"https://example.com/chat.js\"></script>",
+        "skillLabel": "Title",
+        "skillDetail": "Description",
+        "skillScore": "Score",
+        "skillScoreValue": "Value"
       },
       "actions": {
         "saving": "Saving...",
@@ -102,7 +110,12 @@
         "saveProfile": "Save profile",
         "openKoalendar": "Open Koalendar",
         "saveKoalendar": "Save Koalendar",
-        "saveAiChat": "Save AI chat"
+        "saveAiChat": "Save AI chat",
+        "addSkill": "Add skill",
+        "removeSkill": "Remove skill",
+        "moveSkillUp": "Move skill up",
+        "moveSkillDown": "Move skill down",
+        "saveSkills": "Save skills"
       },
       "status": {
         "notSaved": "Not saved",
@@ -116,7 +129,8 @@
         "profileSaved": "Profile settings saved.",
         "assetUploaded": "{{asset}} uploaded and published.",
         "koalendarSaved": "Koalendar integration saved.",
-        "aiChatSaved": "AI chat integration saved."
+        "aiChatSaved": "AI chat integration saved.",
+        "skillsSaved": "Skills saved."
       },
       "errors": {
         "loadProfile": "Unable to load profile settings.",
@@ -126,7 +140,12 @@
         "chooseAddress": "Choose an address from the Mapbox results before saving.",
         "saveProfile": "Unable to save profile settings.",
         "saveKoalendar": "Unable to save Koalendar integration.",
-        "saveAiChat": "Unable to save AI chat integration."
+        "saveAiChat": "Unable to save AI chat integration.",
+        "saveSkills": "Unable to save skills."
+      },
+      "skills": {
+        "newSkill": "New skill {{number}}",
+        "scoreSummary": "{{score}} / {{max}}"
       },
       "preview": {
         "mapLabel": "Selected address map",
@@ -294,8 +313,6 @@
     "financeDetail": "Forecasting, cash flow, KPI discipline",
     "productLabel": "Engineering / Product",
     "productDetail": "Market-to-product translation, roadmap clarity",
-    "productionLabel": "Production / Manufacturing",
-    "productionDetail": "Throughput and quality aligned to demand",
     "levels": {
       "support": "Support",
       "lead": "Lead",
