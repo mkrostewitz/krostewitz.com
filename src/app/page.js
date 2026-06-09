@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect, useMemo, useState} from "react";
+import {useEffect, useMemo} from "react";
 import {useTranslation} from "react-i18next";
 
 import {FALLBACK_LANGUAGE} from "@/lib/languageDetection";
@@ -18,6 +18,7 @@ import CvSection from "./components/cv/CvSection";
 import BlogSection from "./components/blog/BlogSection";
 import PortfolioSection from "./components/portfolio/PortfolioSection";
 import PublicFooter from "./components/footer/PublicFooter";
+import {usePublicSettings} from "./components/public-settings/PublicSettingsProvider";
 
 function getLocalizedSkill(skill, language) {
   const translations =
@@ -52,8 +53,11 @@ function getLocalizedSkill(skill, language) {
 }
 
 export default function Home() {
-  const {i18n, t} = useTranslation();
-  const [storedSkills, setStoredSkills] = useState(null);
+  const {i18n} = useTranslation();
+  const {
+    skills: storedSkills,
+    skillsAvailable,
+  } = usePublicSettings();
   const activeLanguage = String(
     i18n.resolvedLanguage || i18n.language || FALLBACK_LANGUAGE
   ).split("-")[0];
@@ -62,73 +66,14 @@ export default function Home() {
     void loadRuntimeTranslations();
   }, []);
 
-  useEffect(() => {
-    const controller = new AbortController();
-
-    async function loadSkills() {
-      try {
-        const response = await fetch("/api/content/skills", {
-          signal: controller.signal,
-        });
-        const data = await response.json().catch(() => ({}));
-
-        if (!response.ok) {
-          throw new Error("Unable to load skills.");
-        }
-
-        setStoredSkills(Array.isArray(data.skills) ? data.skills : []);
-      } catch (error) {
-        if (error?.name !== "AbortError") {
-          console.warn("Unable to load skills", error);
-        }
-      }
-    }
-
-    void loadSkills();
-
-    return () => {
-      controller.abort();
-    };
-  }, []);
-
-  const fallbackSkills = useMemo(
-    () => [
-      {
-        label: t("skills.salesLabel"),
-        detail: t("skills.salesDetail"),
-        score: 10,
-      },
-      {
-        label: t("skills.marketingLabel"),
-        detail: t("skills.marketingDetail"),
-        score: 8,
-      },
-      {
-        label: t("skills.opsLabel"),
-        detail: t("skills.opsDetail"),
-        score: 9,
-      },
-      {
-        label: t("skills.financeLabel"),
-        detail: t("skills.financeDetail"),
-        score: 8,
-      },
-      {
-        label: t("skills.productLabel"),
-        detail: t("skills.productDetail"),
-        score: 5,
-      },
-    ],
-    [t],
-  );
   const databaseSkills = useMemo(() => {
-    if (!Array.isArray(storedSkills)) return null;
+    if (!skillsAvailable || !Array.isArray(storedSkills)) return [];
 
     return storedSkills
       .map((skill) => getLocalizedSkill(skill, activeLanguage))
       .filter((skill) => skill.label);
-  }, [activeLanguage, storedSkills]);
-  const skills = databaseSkills || fallbackSkills;
+  }, [activeLanguage, skillsAvailable, storedSkills]);
+  const showSkillsSection = skillsAvailable && databaseSkills.length > 0;
 
   return (
     <div className={styles.page} id="top">
@@ -141,10 +86,10 @@ export default function Home() {
         <AboutSection />
 
         {/* Executive Summary & Outcomes */}
-        <ExecutiveSummary skills={skills} />
+        <ExecutiveSummary skills={databaseSkills} />
 
         {/* My Skills */}
-        <SkillsSection skills={skills} />
+        {showSkillsSection ? <SkillsSection skills={databaseSkills} /> : null}
 
         {/* Timeline */}
         <TimelineSection />

@@ -20,7 +20,7 @@ import "./nav.component.css";
 const navLinks = [
   {href: "/#executiveSummary", labelKey: "nav.executiveSummary"},
   {href: "/#about", labelKey: "nav.about"},
-  {href: "/#skills", labelKey: "nav.impact"},
+  {href: "/#skills", labelKey: "nav.impact", section: "skills"},
   {href: "/#timeline", labelKey: "nav.timeline"},
   {href: "/#cv", labelKey: "nav.cv"},
   {href: "/#blog", labelKey: "nav.blog", section: "blog"},
@@ -86,7 +86,7 @@ const NavBar = () => {
   const router = useRouter();
   const {t, i18n} = useTranslation();
   const {allowExternalServices} = useCookieConsent();
-  const {blogEnabled, siteMetadata} = usePublicSettings();
+  const {blogEnabled, siteMetadata, skillsAvailable} = usePublicSettings();
 
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -174,8 +174,12 @@ const NavBar = () => {
 
   const visibleNavLinks = useMemo(
     () =>
-      navLinks.filter((link) => link.section !== "blog" || blogEnabled === true),
-    [blogEnabled],
+      navLinks.filter((link) => {
+        if (link.section === "blog") return blogEnabled === true;
+        if (link.section === "skills") return skillsAvailable === true;
+        return true;
+      }),
+    [blogEnabled, skillsAvailable],
   );
 
   const syncBlogRouteLanguage = (language) => {

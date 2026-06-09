@@ -3,7 +3,7 @@ import "server-only";
 import {unstable_cache} from "next/cache";
 
 import {FALLBACK_LANGUAGE} from "../../lib/languageDetection";
-import {resources, supportedLanguages} from "../../lib/translationResources";
+import {supportedLanguages} from "../../lib/translationResources";
 import {getDb} from "./mongo";
 import {
   PUBLIC_CACHE_REVALIDATE_SECONDS,
@@ -21,39 +21,6 @@ const MAX_SKILL_ID_LENGTH = 80;
 const MAX_SKILL_LABEL_LENGTH = 90;
 const MAX_SKILL_SCORE = 10;
 const DEFAULT_SKILL_SCORE = 5;
-
-const DEFAULT_SKILL_DEFINITIONS = [
-  {
-    id: "sales",
-    labelKey: "salesLabel",
-    detailKey: "salesDetail",
-    score: 10,
-  },
-  {
-    id: "marketing",
-    labelKey: "marketingLabel",
-    detailKey: "marketingDetail",
-    score: 8,
-  },
-  {
-    id: "operations",
-    labelKey: "opsLabel",
-    detailKey: "opsDetail",
-    score: 9,
-  },
-  {
-    id: "finance",
-    labelKey: "financeLabel",
-    detailKey: "financeDetail",
-    score: 8,
-  },
-  {
-    id: "product",
-    labelKey: "productLabel",
-    detailKey: "productDetail",
-    score: 5,
-  },
-];
 
 class SkillsCollectionError extends Error {
   constructor(message, status = 400) {
@@ -112,32 +79,8 @@ function normalizeSkillScore(value, fallback = DEFAULT_SKILL_SCORE) {
   return Math.round(clampedScore * 10) / 10;
 }
 
-function getDefaultSkillTranslationValue(language, key) {
-  return String(resources[language]?.translation?.skills?.[key] || "");
-}
-
-function createDefaultSkillTranslations({labelKey, detailKey}) {
-  return supportedLanguages.reduce((acc, language) => {
-    acc[language] = {
-      label: cleanText(
-        getDefaultSkillTranslationValue(language, labelKey),
-        MAX_SKILL_LABEL_LENGTH
-      ),
-      detail: cleanText(
-        getDefaultSkillTranslationValue(language, detailKey),
-        MAX_SKILL_DETAIL_LENGTH
-      ),
-    };
-    return acc;
-  }, {});
-}
-
 export function getDefaultSkills() {
-  return DEFAULT_SKILL_DEFINITIONS.map((skill) => ({
-    id: skill.id,
-    score: skill.score,
-    translations: createDefaultSkillTranslations(skill),
-  }));
+  return [];
 }
 
 function getSkillTranslationSource(skill, language) {
@@ -220,7 +163,7 @@ export function normalizeSkills(input, options = {}) {
       throw new SkillsCollectionError("Skills must be a list.");
     }
 
-    return options.useDefaults === false ? [] : getDefaultSkills();
+    return [];
   }
 
   if (options.strict && input.length > MAX_SKILLS) {
@@ -269,7 +212,7 @@ async function readLegacyProfileSkills(db) {
     .findOne({_id: LEGACY_PROFILE_ID}, {projection: {skills: 1}});
   const migrated = normalizeSkills(profile?.skills, {useDefaults: false});
 
-  return migrated.length ? migrated : getDefaultSkills();
+  return migrated;
 }
 
 function buildSkillUpdates(skills, now, user) {

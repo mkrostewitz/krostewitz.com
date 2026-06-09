@@ -29,6 +29,7 @@ export async function GET() {
           koalendar: getDefaultKoalendarIntegration(),
           metadata: getDefaultSiteMetadata(),
           name: getDefaultProfileName(),
+          skillsEnabled: true,
           updatedAt: null,
           updatedBy: null,
         },

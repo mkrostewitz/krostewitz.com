@@ -60,6 +60,13 @@
         "visibleDescription": "Shown in navigation, homepage, and public post pages. Toggle saves immediately.",
         "hiddenDescription": "Hidden from navigation, homepage, posts API, and public post pages. Toggle saves immediately."
       },
+      "skillsVisibility": {
+        "title": "Impact / skills",
+        "visible": "Visible",
+        "hidden": "Hidden",
+        "visibleDescription": "Shown in navigation and on the homepage when at least one skill exists. Toggle saves immediately.",
+        "hiddenDescription": "Hidden from navigation and homepage. Skill data remains in the skills collection."
+      },
       "koalendar": {
         "title": "Koalendar booking",
         "connected": "Connected",
@@ -126,6 +133,8 @@
         "noMatchingAddresses": "No matching addresses found.",
         "blogHidden": "Blog is hidden from the public website.",
         "blogVisible": "Blog is visible on the public website.",
+        "skillsHidden": "Impact / skills is hidden from the public website.",
+        "skillsVisible": "Impact / skills is visible on the public website.",
         "profileSaved": "Profile settings saved.",
         "assetUploaded": "{{asset}} uploaded and published.",
         "koalendarSaved": "Koalendar integration saved.",
@@ -136,6 +145,7 @@
         "loadProfile": "Unable to load profile settings.",
         "mapboxSearch": "Mapbox address search failed.",
         "saveBlogVisibility": "Unable to save blog visibility.",
+        "saveSkillsVisibility": "Unable to save skills visibility.",
         "uploadAsset": "Unable to upload {{asset}}.",
         "chooseAddress": "Choose an address from the Mapbox results before saving.",
         "saveProfile": "Unable to save profile settings.",
@@ -303,16 +313,6 @@
         "detail": "Supply-chain execution and logistics automation"
       }
     ],
-    "salesLabel": "Sales",
-    "salesDetail": "Enterprise growth, channels, key accounts",
-    "marketingLabel": "Marketing",
-    "marketingDetail": "Positioning + performance marketing for pipeline",
-    "opsLabel": "Operations (Supply Chain / Execution)",
-    "opsDetail": "OTIF, localization, scalable execution cadence",
-    "financeLabel": "Administration & Finance",
-    "financeDetail": "Forecasting, cash flow, KPI discipline",
-    "productLabel": "Engineering / Product",
-    "productDetail": "Market-to-product translation, roadmap clarity",
     "levels": {
       "support": "Support",
       "lead": "Lead",

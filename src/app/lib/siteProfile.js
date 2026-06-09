@@ -658,6 +658,7 @@ function serializeProfile(document = {}) {
     koalendar: normalizeKoalendarIntegration(document.koalendar),
     metadata,
     name,
+    skillsEnabled: document.skillsEnabled !== false,
     updatedAt: document.updatedAt?.toISOString?.() || null,
     updatedBy: document.updatedBy || null,
   };
@@ -675,8 +676,10 @@ async function readSiteProfile() {
       {
         $setOnInsert: {
           aiChat: getDefaultAiChatIntegration(),
+          blogEnabled: true,
           koalendar: getDefaultKoalendarIntegration(),
           name: defaultName,
+          skillsEnabled: true,
           createdAt: new Date(),
         },
       },
@@ -710,6 +713,11 @@ async function readSiteProfile() {
     document = {...document, name};
   }
 
+  if (document && document.skillsEnabled === undefined) {
+    await collection.updateOne({_id: PROFILE_ID}, {$set: {skillsEnabled: true}});
+    document = {...document, skillsEnabled: true};
+  }
+
   return serializeProfile(document || {});
 }
 
@@ -732,6 +740,10 @@ export async function saveSiteProfile(input = {}, user) {
   const hasBlogEnabled = Object.prototype.hasOwnProperty.call(
     input,
     "blogEnabled"
+  );
+  const hasSkillsEnabled = Object.prototype.hasOwnProperty.call(
+    input,
+    "skillsEnabled"
   );
   const hasMetadata = Object.prototype.hasOwnProperty.call(input, "metadata");
   const hasKoalendar = Object.prototype.hasOwnProperty.call(input, "koalendar");
@@ -769,6 +781,10 @@ export async function saveSiteProfile(input = {}, user) {
     document.blogEnabled = input.blogEnabled !== false;
   }
 
+  if (hasSkillsEnabled) {
+    document.skillsEnabled = input.skillsEnabled !== false;
+  }
+
   if (hasMetadata) {
     document.metadata = metadata;
   }
@@ -788,6 +804,9 @@ export async function saveSiteProfile(input = {}, user) {
   const insertDefaults = {createdAt: now};
   if (!hasBlogEnabled) {
     insertDefaults.blogEnabled = true;
+  }
+  if (!hasSkillsEnabled) {
+    insertDefaults.skillsEnabled = true;
   }
   if (!hasKoalendar) {
     insertDefaults.koalendar = getDefaultKoalendarIntegration();

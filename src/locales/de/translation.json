@@ -60,6 +60,13 @@
         "visibleDescription": "In Navigation, Startseite und öffentlichen Beitragsseiten sichtbar. Der Schalter speichert sofort.",
         "hiddenDescription": "Aus Navigation, Startseite, Beitrags-API und öffentlichen Beitragsseiten ausgeblendet. Der Schalter speichert sofort."
       },
+      "skillsVisibility": {
+        "title": "Wirkung / Skills",
+        "visible": "Sichtbar",
+        "hidden": "Ausgeblendet",
+        "visibleDescription": "In Navigation und Startseite sichtbar, wenn mindestens ein Skill vorhanden ist. Der Schalter speichert sofort.",
+        "hiddenDescription": "Aus Navigation und Startseite ausgeblendet. Die Skill-Daten bleiben in der Skills-Collection erhalten."
+      },
       "koalendar": {
         "title": "Koalendar-Buchung",
         "connected": "Verbunden",
@@ -126,6 +133,8 @@
         "noMatchingAddresses": "Keine passenden Adressen gefunden.",
         "blogHidden": "Der Blog ist auf der öffentlichen Website ausgeblendet.",
         "blogVisible": "Der Blog ist auf der öffentlichen Website sichtbar.",
+        "skillsHidden": "Wirkung / Skills ist auf der öffentlichen Website ausgeblendet.",
+        "skillsVisible": "Wirkung / Skills ist auf der öffentlichen Website sichtbar.",
         "profileSaved": "Profileinstellungen gespeichert.",
         "assetUploaded": "{{asset}} hochgeladen und veröffentlicht.",
         "koalendarSaved": "Koalendar-Integration gespeichert.",
@@ -136,6 +145,7 @@
         "loadProfile": "Profileinstellungen konnten nicht geladen werden.",
         "mapboxSearch": "Mapbox-Adresssuche fehlgeschlagen.",
         "saveBlogVisibility": "Blog-Sichtbarkeit konnte nicht gespeichert werden.",
+        "saveSkillsVisibility": "Skills-Sichtbarkeit konnte nicht gespeichert werden.",
         "uploadAsset": "{{asset}} konnte nicht hochgeladen werden.",
         "chooseAddress": "Bitte vor dem Speichern eine Adresse aus den Mapbox-Ergebnissen auswählen.",
         "saveProfile": "Profileinstellungen konnten nicht gespeichert werden.",
@@ -303,16 +313,6 @@
         "detail": "Supply-Chain-Execution und Logistikautomation"
       }
     ],
-    "salesLabel": "Vertrieb",
-    "salesDetail": "Markteinführung, Vertriebskanäle und strategische Schlüsselkunden",
-    "marketingLabel": "Marketing",
-    "marketingDetail": "Positionierung, Marktbearbeitung und vertriebsunterstützendes Marketing",
-    "opsLabel": "Operations & Lieferkette",
-    "opsDetail": "Lieferfähigkeit (OTIF), Lokalisierung und verlässliche operative Umsetzung",
-    "financeLabel": "Finanzen & Administration",
-    "financeDetail": "Liquiditätsplanung, Forecasting und Führung über Kennzahlen",
-    "productLabel": "Produkt & Entwicklung",
-    "productDetail": "Übersetzung von Marktanforderungen in klare Produkt- und Entwicklungsplanung",
     "levels": {
       "support": "Mitwirkung",
       "lead": "Federführende Verantwortung",
