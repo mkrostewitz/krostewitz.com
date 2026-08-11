@@ -15,6 +15,11 @@ const nextConfig = {
         hostname: "www.cyc-prien.de",
         pathname: "/_data/webcam.jpg",
       },
+      {
+        protocol: "https",
+        hostname: "cyc-chiemsee-live.nico-lutz.chatgpt.site",
+        pathname: "/api/webcam",
+      },
     ],
   },
   reactCompiler: true,

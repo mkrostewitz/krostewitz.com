@@ -35,7 +35,7 @@ const COMPASS_TICKS = Array.from({length: 24}, (_, index) => {
 });
 const WEATHER_REFRESH_MS = 60 * 1000;
 const WATER_TEMPERATURE_REFRESH_MS = 15 * 60 * 1000;
-const WEBCAM_REFRESH_MS = 3 * 60 * 1000;
+const WEBCAM_REFRESH_MS = 30 * 1000;
 const KNOT_TO_METERS_PER_SECOND = 0.514444;
 const WIND_FLOW_TIME_SCALE = 10 * 60;
 const HOVER_FORECAST_HOURS = 4;
@@ -52,7 +52,8 @@ const WEATHER_ENDPOINT =
   (process.env.NODE_ENV === "production"
     ? "/.netlify/functions/weather"
     : "/api/weather");
-const WEBCAM_IMAGE_URL = "https://www.cyc-prien.de/_data/webcam.jpg";
+const WEBCAM_IMAGE_URL =
+  "https://cyc-chiemsee-live.nico-lutz.chatgpt.site/api/webcam";
 const CYC_WEBCAM_URL = "https://www.cyc-prien.de/wetter/webcam/";
 const WETTER_WEBCAM_URL =
   "https://www.wetter.com/hd-live-webcams/deutschland/prien-am-chiemsee-chiemsee-schifffahrt/5785fdbf41e7d/";
@@ -908,7 +909,8 @@ const PersonalSection = () => {
     i18n.language,
   );
   const webcamSrc = useMemo(
-    () => `${WEBCAM_IMAGE_URL}?t=${Math.floor(webcamTick / WEBCAM_REFRESH_MS)}`,
+    () =>
+      `${WEBCAM_IMAGE_URL}?frame=${Math.floor(webcamTick / WEBCAM_REFRESH_MS)}`,
     [webcamTick],
   );
   const shouldShowWebcamSkeleton =
