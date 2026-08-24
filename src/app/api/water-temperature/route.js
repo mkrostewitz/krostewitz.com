@@ -8,17 +8,36 @@ const SOURCE_NAME = "GKD Bayern";
 const STATION_NAME = "Stock / Chiemsee";
 const READING_LIMIT = 8;
 
+function normalizeHtmlText(html) {
+  return String(html || "")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;|&#160;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function parseWaterTemperatureReadings(html) {
   const readings = [];
-  const rowPattern =
-    /<tr\b[^>]*>\s*<td\b[^>]*>\s*(\d{2}\.\d{2}\.\d{4}\s+\d{2}:\d{2})\s*<\/td>\s*<td\b[^>]*>\s*([+-]?\d+(?:[,.]\d+)?)\s*<\/td>\s*<\/tr>/gi;
+  const rowPattern = /<tr\b[^>]*>([\s\S]*?)<\/tr>/gi;
+  const cellPattern = /<td\b[^>]*>([\s\S]*?)<\/td>/gi;
+  const datePattern = /^(\d{2}\.\d{2}\.\d{4}\s+\d{2}:\d{2})(?:\s+Uhr)?$/i;
+  const valuePattern = /^[+-]?\d+(?:[,.]\d+)?$/;
 
-  for (const match of String(html || "").matchAll(rowPattern)) {
-    const value = Number(match[2].replace(",", "."));
+  for (const rowMatch of String(html || "").matchAll(rowPattern)) {
+    const cells = Array.from(rowMatch[1].matchAll(cellPattern), (match) =>
+      normalizeHtmlText(match[1])
+    );
+    const dateMatch = cells[0]?.match(datePattern);
+    const valueText = cells[1];
+
+    if (!dateMatch || !valuePattern.test(valueText)) continue;
+
+    const value = Number(valueText.replace(",", "."));
     if (!Number.isFinite(value)) continue;
 
     readings.push({
-      time: match[1],
+      time: dateMatch[1],
       unit: "°C",
       value,
     });
