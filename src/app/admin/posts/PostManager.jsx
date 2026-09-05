@@ -24,6 +24,7 @@ const LINKEDIN_IMAGE_CONTENT_TYPES = new Set([
   "image/jpeg",
   "image/png",
 ]);
+const LINKEDIN_ORGANIZATION_PUBLISHING_SCOPE = "w_organization_social";
 const LINKEDIN_SHARE_REQUEST_TIMEOUT_MS = 60000;
 const SHARE_EMOJIS = ["💡", "📈", "🤖", "🏭", "🌍", "✅"];
 const FALLBACK_TIME_ZONE = "Europe/Berlin";
@@ -348,6 +349,54 @@ function getShareImageStatus(post) {
   return media.fileName || "Attached blog image";
 }
 
+function hasLinkedInScope(linkedin, scope) {
+  return (Array.isArray(linkedin?.scopes) ? linkedin.scopes : []).includes(scope);
+}
+
+function getLinkedInOrganizationTarget(linkedin) {
+  const organization = linkedin?.organizationTarget;
+
+  return organization?.urn ? organization : null;
+}
+
+function isLinkedInOrganizationPublishingReady(linkedin) {
+  return Boolean(
+    linkedin?.organizationPublishingReady ||
+      (getLinkedInOrganizationTarget(linkedin) &&
+        hasLinkedInScope(linkedin, LINKEDIN_ORGANIZATION_PUBLISHING_SCOPE))
+  );
+}
+
+function getLinkedInOrganizationStatus(linkedin) {
+  const organization = getLinkedInOrganizationTarget(linkedin);
+
+  if (linkedin?.organizationPublishingError) {
+    return linkedin.organizationPublishingError;
+  }
+
+  if (!organization) {
+    return "Set LINKEDIN_ORGANIZATION_URN to enable company page publishing.";
+  }
+
+  if (linkedin?.needsReconnect) {
+    return "Reconnect LinkedIn before company page sharing.";
+  }
+
+  if (!hasLinkedInScope(linkedin, LINKEDIN_ORGANIZATION_PUBLISHING_SCOPE)) {
+    return "Reconnect LinkedIn to grant organization publishing access.";
+  }
+
+  return organization.urn;
+}
+
+function getShareDestinationLabel(target, organization) {
+  if (target === "company_page") {
+    return organization?.name || "Company page";
+  }
+
+  return "Personal profile";
+}
+
 const SHARE_HISTORY_STATUS_LABELS = {
   canceled: "Canceled",
   due: "Due",
@@ -496,6 +545,7 @@ function getLinkedInShareHistory(post) {
       kind: "Scheduled share",
       language: schedule.language,
       linkedInPostUrl: schedule.linkedInPostUrl || linkedShare?.postUrl || "",
+      organization: schedule.organization,
       processingStartedAt: schedule.processingStartedAt,
       publishedAt: schedule.publishedAt,
       canceledAt: schedule.canceledAt,
@@ -514,9 +564,11 @@ function getLinkedInShareHistory(post) {
       kind: "Immediate share",
       language: share.language,
       linkedInPostUrl: share.postUrl,
+      organization: share.organization,
       publishedAt: share.sharedAt,
       sharedAt: share.sharedAt,
       status: "published",
+      target: share.target || "personal_profile",
     }));
   const failedAttemptHistory = attempts.map((attempt) => ({
     id: `attempt-${attempt.attemptedAt || attempt.createdAt}`,
@@ -528,7 +580,9 @@ function getLinkedInShareHistory(post) {
     includeImage: attempt.includeImage,
     kind: attempt.attemptType === "scheduled" ? "Scheduled share" : "Immediate share",
     language: attempt.language,
+    organization: attempt.organization,
     status: attempt.status || "failed",
+    target: attempt.target || "personal_profile",
   }));
 
   return [
@@ -549,6 +603,10 @@ export default function PostManager({user}) {
     available: false,
     connected: false,
     needsReconnect: false,
+    organizationPublishingConfigured: false,
+    organizationPublishingError: "",
+    organizationPublishingReady: false,
+    organizationTarget: null,
     profile: null,
     schedulerConfigured: false,
     schedulerEnabled: false,
@@ -606,6 +664,14 @@ export default function PostManager({user}) {
     () => getSchedulerStatusText(linkedin),
     [linkedin]
   );
+  const linkedinOrganizationTarget = getLinkedInOrganizationTarget(linkedin);
+  const canShareToCompanyPage =
+    linkedin.connected &&
+    !linkedin.needsReconnect &&
+    isLinkedInOrganizationPublishingReady(linkedin);
+  const companyPageStatusText = getLinkedInOrganizationStatus(linkedin);
+  const canUseSelectedShareTarget =
+    shareTarget !== "company_page" || canShareToCompanyPage;
 
   useLoadingState({
     isLoading,
@@ -959,6 +1025,17 @@ export default function PostManager({user}) {
       return;
     }
 
+    if (
+      options.target === "company_page" &&
+      !isLinkedInOrganizationPublishingReady(linkedin)
+    ) {
+      showSnackbar({
+        type: "error",
+        message: getLinkedInOrganizationStatus(linkedin),
+      });
+      return;
+    }
+
     const scheduledAt =
       options.timing === "scheduled"
         ? toIsoDateTimeValue(options.scheduledAt, options.timeZone)
@@ -1150,7 +1227,8 @@ export default function PostManager({user}) {
               <div className={styles.titleBlock}>
                 <h2>LinkedIn publishing</h2>
                 <p className={styles.muted}>
-                  Share published blog posts to the connected LinkedIn member.
+                  Share published blog posts to the connected LinkedIn member or
+                  configured company page.
                 </p>
               </div>
               <span
@@ -1191,6 +1269,20 @@ export default function PostManager({user}) {
                       : `Token expires ${formatDate(
                           linkedin.accessTokenExpiresAt
                         )}`}
+                  </span>
+                )}
+                {linkedinOrganizationTarget && (
+                  <span>
+                    Company page: {linkedinOrganizationTarget.name} (
+                    {linkedinOrganizationTarget.urn})
+                  </span>
+                )}
+                {(linkedin.organizationPublishingError ||
+                  (linkedinOrganizationTarget &&
+                    linkedin.connected &&
+                    !canShareToCompanyPage)) && (
+                  <span className={styles.linkedinSchedulerWarning}>
+                    {companyPageStatusText}
                   </span>
                 )}
                 {linkedin.schedulerConfigured && dueLinkedInScheduleCount > 0 && (
@@ -1495,17 +1587,23 @@ export default function PostManager({user}) {
               </label>
 
               <label
-                className={`${styles.shareTargetOption} ${styles.shareTargetOptionDisabled}`}
+                className={`${styles.shareTargetOption} ${
+                  canShareToCompanyPage ? "" : styles.shareTargetOptionDisabled
+                }`}
               >
                 <input
-                  disabled
+                  checked={shareTarget === "company_page"}
+                  disabled={!canShareToCompanyPage}
                   name="linkedin-share-target"
                   type="radio"
                   value="company_page"
+                  onChange={(event) => setShareTarget(event.target.value)}
                 />
                 <span>
-                  <strong>Company page</strong>
-                  <small>Requires LinkedIn organization publishing setup.</small>
+                  <strong>
+                    {linkedinOrganizationTarget?.name || "Company page"}
+                  </strong>
+                  <small>{companyPageStatusText}</small>
                 </span>
               </label>
             </fieldset>
@@ -1797,6 +1895,15 @@ export default function PostManager({user}) {
                               Language: {getSiteLanguageLabel(entry.language)}
                             </span>
                           )}
+                          {entry.target && (
+                            <span>
+                              Destination:{" "}
+                              {getShareDestinationLabel(
+                                entry.target,
+                                entry.organization
+                              )}
+                            </span>
+                          )}
                           {entry.account?.email && (
                             <span>Account: {entry.account.email}</span>
                           )}
@@ -1873,7 +1980,7 @@ export default function PostManager({user}) {
               </button>
               <button
                 className={styles.button}
-                disabled={Boolean(sharingPostId)}
+                disabled={Boolean(sharingPostId) || !canUseSelectedShareTarget}
                 type="button"
                 onClick={() =>
                   sharePostToLinkedIn(pendingSharePost, {
