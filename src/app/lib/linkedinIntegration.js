@@ -28,6 +28,19 @@ const LINKEDIN_IMAGE_CONTENT_TYPES = new Set([
   "image/jpeg",
   "image/png",
 ]);
+const LINKEDIN_ORGANIZATION_ENV_KEYS = [
+  "LINKEDIN_ORGANIZATION_URN",
+  "LINKEDIN_ORGANIZATION_ID",
+  "LINKEDIN_COMPANY_PAGE_URN",
+  "LINKEDIN_COMPANY_PAGE_ID",
+  "LINKEDIN_COMPANY_ORGANIZATION_URN",
+];
+const LINKEDIN_ORGANIZATION_NAME_ENV_KEYS = [
+  "LINKEDIN_ORGANIZATION_NAME",
+  "LINKEDIN_COMPANY_PAGE_NAME",
+];
+const LINKEDIN_ORGANIZATION_PUBLISHING_SCOPE = "w_organization_social";
+const LINKEDIN_SHARE_TARGETS = new Set(["personal_profile", "company_page"]);
 const TOKEN_FORMAT = "v1";
 
 let shareJobsIndexPromise = null;
@@ -199,13 +212,78 @@ function cleanMultilineText(value, maxLength = 3000) {
     .slice(0, maxLength);
 }
 
+function getFirstEnvironmentValue(keys) {
+  for (const key of keys) {
+    const value = String(process.env[key] || "").trim();
+
+    if (value) return value;
+  }
+
+  return "";
+}
+
+function normalizeOrganizationUrn(value) {
+  const rawValue = String(value || "").trim();
+  const id = rawValue.match(/^\d+$/)?.[0];
+
+  if (id) return `urn:li:organization:${id}`;
+
+  const organizationMatch = rawValue.match(/^urn:li:organization:(\d+)$/);
+  if (organizationMatch) return `urn:li:organization:${organizationMatch[1]}`;
+
+  const brandMatch = rawValue.match(/^urn:li:organizationBrand:(\d+)$/);
+  if (brandMatch) return `urn:li:organization:${brandMatch[1]}`;
+
+  return "";
+}
+
+function getConfiguredLinkedInOrganizationValue() {
+  return getFirstEnvironmentValue(LINKEDIN_ORGANIZATION_ENV_KEYS);
+}
+
+function getLinkedInOrganizationConfigError() {
+  const configuredValue = getConfiguredLinkedInOrganizationValue();
+
+  if (!configuredValue || normalizeOrganizationUrn(configuredValue)) return "";
+
+  return "LINKEDIN_ORGANIZATION_URN must be a LinkedIn organization URN or numeric organization ID.";
+}
+
+export function getConfiguredLinkedInOrganizationTarget() {
+  const configuredValue = getConfiguredLinkedInOrganizationValue();
+  const urn = normalizeOrganizationUrn(configuredValue);
+
+  if (!urn) return null;
+
+  const id = urn.split(":").at(-1);
+  const name = cleanText(
+    getFirstEnvironmentValue(LINKEDIN_ORGANIZATION_NAME_ENV_KEYS),
+    160,
+  );
+
+  return {
+    id,
+    name: name || "Configured LinkedIn company page",
+    target: "company_page",
+    urn,
+  };
+}
+
 function normalizeShareTarget(value) {
   const target = String(value || "personal_profile").trim();
 
-  if (target !== "personal_profile") {
+  if (!LINKEDIN_SHARE_TARGETS.has(target)) {
     throw new LinkedInIntegrationError(
-      "Company page publishing is not configured yet.",
-      501,
+      "LinkedIn share target is invalid.",
+      400,
+    );
+  }
+
+  if (target === "company_page" && !getConfiguredLinkedInOrganizationTarget()) {
+    throw new LinkedInIntegrationError(
+      getLinkedInOrganizationConfigError() ||
+        "Set LINKEDIN_ORGANIZATION_URN before sharing to a LinkedIn company page.",
+      409,
     );
   }
 
@@ -375,6 +453,49 @@ function isExpired(value) {
   return new Date(value).getTime() <= Date.now();
 }
 
+function hasLinkedInScope(connection, scope) {
+  return (Array.isArray(connection?.scopes) ? connection.scopes : []).includes(scope);
+}
+
+function resolveLinkedInShareTarget(connection, target) {
+  const normalizedTarget = normalizeShareTarget(target);
+
+  if (normalizedTarget === "company_page") {
+    const organization = getConfiguredLinkedInOrganizationTarget();
+
+    if (!organization) {
+      throw new LinkedInIntegrationError(
+        getLinkedInOrganizationConfigError() ||
+          "Set LINKEDIN_ORGANIZATION_URN before sharing to a LinkedIn company page.",
+        409,
+      );
+    }
+
+    if (!hasLinkedInScope(connection, LINKEDIN_ORGANIZATION_PUBLISHING_SCOPE)) {
+      throw new LinkedInIntegrationError(
+        "Reconnect LinkedIn to grant organization publishing access.",
+        409,
+      );
+    }
+
+    return {
+      authorUrn: organization.urn,
+      organization,
+      target: normalizedTarget,
+    };
+  }
+
+  if (!connection?.authorUrn) {
+    throw new LinkedInIntegrationError("LinkedIn profile author is missing.", 409);
+  }
+
+  return {
+    authorUrn: connection.authorUrn,
+    organization: null,
+    target: normalizedTarget,
+  };
+}
+
 function serializeConnection(document, options = {}) {
   const connected = Boolean(
     document?.connected &&
@@ -383,11 +504,14 @@ function serializeConnection(document, options = {}) {
   );
   const expiresAt = toIsoDate(document?.accessTokenExpiresAt);
   const tokenInvalidatedAt = toIsoDate(document?.tokenInvalidatedAt);
+  const scopes = Array.isArray(document?.scopes) ? document.scopes : [];
+  const organizationTarget = getConfiguredLinkedInOrganizationTarget();
+  const needsReconnect =
+    connected &&
+    (isExpired(document.accessTokenExpiresAt) || Boolean(tokenInvalidatedAt));
   const connection = {
     connected,
-    needsReconnect:
-      connected &&
-      (isExpired(document.accessTokenExpiresAt) || Boolean(tokenInvalidatedAt)),
+    needsReconnect,
     profile: connected
       ? {
           sub: document.profile.sub,
@@ -397,7 +521,15 @@ function serializeConnection(document, options = {}) {
         }
       : null,
     authorUrn: connected ? document.authorUrn || "" : "",
-    scopes: Array.isArray(document?.scopes) ? document.scopes : [],
+    scopes,
+    organizationPublishingConfigured: Boolean(organizationTarget),
+    organizationPublishingError: getLinkedInOrganizationConfigError(),
+    organizationPublishingReady:
+      connected &&
+      !needsReconnect &&
+      Boolean(organizationTarget) &&
+      scopes.includes(LINKEDIN_ORGANIZATION_PUBLISHING_SCOPE),
+    organizationTarget,
     accessTokenExpiresAt: expiresAt,
     tokenInvalidatedAt,
     tokenInvalidationReason: document?.tokenInvalidationReason || "",
@@ -612,7 +744,7 @@ function attachPostToError(error, post) {
   return error;
 }
 
-async function initializeLinkedInImageUpload(connection) {
+async function initializeLinkedInImageUpload(connection, ownerUrn) {
   const response = await fetchWithTimeout(
     LINKEDIN_IMAGES_URL,
     {
@@ -622,7 +754,7 @@ async function initializeLinkedInImageUpload(connection) {
       }),
       body: JSON.stringify({
         initializeUploadRequest: {
-          owner: connection.authorUrn,
+          owner: ownerUrn,
         },
       }),
       cache: "no-store",
@@ -710,13 +842,16 @@ async function uploadLinkedInImageBinary({
   }
 }
 
-async function uploadPostImageToLinkedIn({connection, language, post}) {
+async function uploadPostImageToLinkedIn({connection, language, ownerUrn, post}) {
   const media = getLinkedInImageMedia(post);
 
   if (!media || !hasShareableLinkedInImage(post)) return null;
 
   const {buffer, contentType} = await downloadPostImage(media);
-  const {imageUrn, uploadUrl} = await initializeLinkedInImageUpload(connection);
+  const {imageUrn, uploadUrl} = await initializeLinkedInImageUpload(
+    connection,
+    ownerUrn,
+  );
 
   await uploadLinkedInImageBinary({
     buffer,
@@ -733,9 +868,9 @@ async function uploadPostImageToLinkedIn({connection, language, post}) {
   };
 }
 
-async function createLinkedInPost({connection, commentary, image}) {
+async function createLinkedInPost({authorUrn, commentary, connection, image}) {
   const payload = {
-    author: connection.authorUrn,
+    author: authorUrn,
     commentary,
     visibility: "PUBLIC",
     distribution: {
@@ -813,6 +948,7 @@ export async function publishPostToLinkedIn({
   let connection = null;
   let linkedInImage = null;
   let linkedInPostUrn;
+  let shareTarget = null;
 
   try {
     connection = await getLinkedInConnection({includeAccessToken: true});
@@ -825,14 +961,17 @@ export async function publishPostToLinkedIn({
       throw new LinkedInIntegrationError("Reconnect LinkedIn before sharing posts.", 401);
     }
 
+    shareTarget = resolveLinkedInShareTarget(connection, normalizedTarget);
     linkedInImage = includeImage
       ? await uploadPostImageToLinkedIn({
           connection,
           language: normalizedLanguage,
+          ownerUrn: shareTarget.authorUrn,
           post,
         })
       : null;
     linkedInPostUrn = await createLinkedInPost({
+      authorUrn: shareTarget.authorUrn,
       connection,
       commentary: finalCommentary,
       image: linkedInImage,
@@ -855,6 +994,11 @@ export async function publishPostToLinkedIn({
             failedAt: new Date(),
             failure: error?.message || "Unable to share post to LinkedIn.",
             account: connection?.profile || null,
+            organization:
+              shareTarget?.organization ||
+              (normalizedTarget === "company_page"
+                ? getConfiguredLinkedInOrganizationTarget()
+                : null),
           },
           user,
         );
@@ -895,6 +1039,7 @@ export async function publishPostToLinkedIn({
         }
       : null,
     account: connection.profile,
+    organization: shareTarget?.organization || null,
     sharedAt,
   };
   const updatedPost = await recordPostLinkedInShare(post.id, share, user);
@@ -989,6 +1134,7 @@ export async function schedulePostToLinkedIn({
     throw new LinkedInIntegrationError("Reconnect LinkedIn before scheduling posts.", 401);
   }
 
+  const shareTarget = resolveLinkedInShareTarget(connection, normalizedTarget);
   const publicOrigin = getConfiguredSiteOrigin() || origin;
   const postUrl = buildPostUrl(post, publicOrigin, normalizedLanguage);
   const customCommentary = cleanMultilineText(commentary, 2800);
@@ -1009,6 +1155,7 @@ export async function schedulePostToLinkedIn({
     includeImage: includeImage && hasShareableLinkedInImage(post),
     origin: publicOrigin,
     account: connection.profile,
+    organization: shareTarget.organization,
     scheduledAt: scheduleDate,
     scheduledTimeZone: normalizedTimeZone,
     createdAt: now,
@@ -1029,6 +1176,7 @@ export async function schedulePostToLinkedIn({
       commentary: customCommentary,
       includeImage: includeImage && hasShareableLinkedInImage(post),
       account: connection.profile,
+      organization: shareTarget.organization,
       scheduledAt: scheduleDate,
       scheduledTimeZone: normalizedTimeZone,
     },
@@ -1047,6 +1195,7 @@ export async function schedulePostToLinkedIn({
       commentary: finalCommentary,
       customCommentary,
       includeImage: includeImage && hasShareableLinkedInImage(post),
+      organization: shareTarget.organization,
     },
   };
 }
@@ -1115,6 +1264,7 @@ export async function updateScheduledPostToLinkedIn({
     throw new LinkedInIntegrationError("Reconnect LinkedIn before scheduling posts.", 401);
   }
 
+  const shareTarget = resolveLinkedInShareTarget(connection, normalizedTarget);
   const publicOrigin = getConfiguredSiteOrigin() || origin;
   const postUrl = buildPostUrl(post, publicOrigin, normalizedLanguage);
   const customCommentary = cleanMultilineText(commentary, 2800);
@@ -1132,6 +1282,7 @@ export async function updateScheduledPostToLinkedIn({
     includeImage: normalizedIncludeImage,
     origin: publicOrigin,
     account: connection.profile,
+    organization: shareTarget.organization,
     scheduledAt: scheduleDate,
     scheduledTimeZone: normalizedTimeZone,
     updatedAt: now,
@@ -1157,6 +1308,7 @@ export async function updateScheduledPostToLinkedIn({
     commentary: customCommentary,
     includeImage: normalizedIncludeImage,
     account: connection.profile,
+    organization: shareTarget.organization,
     scheduledAt: scheduleDate,
     scheduledTimeZone: normalizedTimeZone,
     updatedAt: now,
@@ -1179,6 +1331,7 @@ export async function updateScheduledPostToLinkedIn({
       commentary: finalCommentary,
       customCommentary,
       includeImage: normalizedIncludeImage,
+      organization: shareTarget.organization,
     },
   };
 }

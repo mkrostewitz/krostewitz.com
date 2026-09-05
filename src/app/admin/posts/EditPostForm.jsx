@@ -1409,7 +1409,7 @@ export default function EditPostForm({
                 <h2 id="ai-assistant-title">AI assistant</h2>
                 <p className={styles.muted}>
                   Uses the current title, summary, and content with{" "}
-                  <Link href="/admin/ai-settings">AI settings</Link>.
+                  <Link href="/admin/ai-settings">Agent settings</Link>.
                 </p>
               </div>
               <button

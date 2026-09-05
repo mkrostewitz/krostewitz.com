@@ -15,7 +15,30 @@ const CALLBACK_PATH = "/api/admin/auth/linkedin/callback";
 const STATE_COOKIE = "mk_admin_linkedin_state";
 const STATE_MAX_AGE_SECONDS = 60 * 10;
 const REQUIRED_SCOPES = ["openid", "profile", "email"];
-export const LINKEDIN_PUBLISHING_SCOPES = ["w_member_social"];
+const LINKEDIN_ORGANIZATION_ENV_KEYS = [
+  "LINKEDIN_ORGANIZATION_URN",
+  "LINKEDIN_ORGANIZATION_ID",
+  "LINKEDIN_COMPANY_PAGE_URN",
+  "LINKEDIN_COMPANY_PAGE_ID",
+  "LINKEDIN_COMPANY_ORGANIZATION_URN",
+];
+const LINKEDIN_MEMBER_PUBLISHING_SCOPES = ["w_member_social"];
+const LINKEDIN_ORGANIZATION_PUBLISHING_SCOPES = ["w_organization_social"];
+
+function hasLinkedInOrganizationPublishingConfig() {
+  return LINKEDIN_ORGANIZATION_ENV_KEYS.some((key) =>
+    Boolean(String(process.env[key] || "").trim()),
+  );
+}
+
+export function getLinkedInPublishingScopes() {
+  return [
+    ...LINKEDIN_MEMBER_PUBLISHING_SCOPES,
+    ...(hasLinkedInOrganizationPublishingConfig()
+      ? LINKEDIN_ORGANIZATION_PUBLISHING_SCOPES
+      : []),
+  ];
+}
 
 function isEnabledFlag(value) {
   return ["1", "true", "yes", "on"].includes(

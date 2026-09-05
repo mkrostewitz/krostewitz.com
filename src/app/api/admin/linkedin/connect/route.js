@@ -4,7 +4,7 @@ import {getCurrentAdminUser} from "../../../../lib/adminAuth";
 import {
   createLinkedInAuthorizationRequest,
   getCanonicalLinkedInStartUrl,
-  LINKEDIN_PUBLISHING_SCOPES,
+  getLinkedInPublishingScopes,
   setLinkedInStateCookie,
 } from "../../../../lib/linkedinAuth";
 
@@ -42,7 +42,7 @@ export async function GET(request) {
     authorization = createLinkedInAuthorizationRequest(request, {
       intent: "publishing_connection",
       returnTo: "/admin/posts",
-      scopes: LINKEDIN_PUBLISHING_SCOPES,
+      scopes: getLinkedInPublishingScopes(),
     });
   } catch (error) {
     console.error("LinkedIn publishing connect error", error);

@@ -20,7 +20,7 @@ function errorResponse(error) {
 
   console.error("Admin AI settings API error", error);
   return NextResponse.json(
-    {error: "Unable to process AI settings."},
+    {error: "Unable to process agent settings."},
     {status: 500}
   );
 }
