@@ -1547,246 +1547,253 @@ export default function EditPostForm({
           </div>
         </div>
 
-        <div className={styles.richTextToolbar} aria-label="Rich text toolbar">
-          <div className={styles.richTextToolbarGroup}>
-            <ToolbarButton
-              disabled={!editor}
-              icon={Undo2}
-              label="Undo"
-              onClick={() => editor?.chain().focus().undo().run()}
-            />
-            <ToolbarButton
-              disabled={!editor}
-              icon={Redo2}
-              label="Redo"
-              onClick={() => editor?.chain().focus().redo().run()}
-            />
+        <div className={styles.richTextEditorBox}>
+          <div className={styles.richTextToolbarBox}>
+            <div
+              className={styles.richTextToolbar}
+              aria-label="Rich text toolbar"
+            >
+              <div className={styles.richTextToolbarGroup}>
+                <ToolbarButton
+                  disabled={!editor}
+                  icon={Undo2}
+                  label="Undo"
+                  onClick={() => editor?.chain().focus().undo().run()}
+                />
+                <ToolbarButton
+                  disabled={!editor}
+                  icon={Redo2}
+                  label="Redo"
+                  onClick={() => editor?.chain().focus().redo().run()}
+                />
+              </div>
+
+              <div className={styles.richTextToolbarGroup}>
+                <ToolbarButton
+                  active={editor?.isActive("paragraph")}
+                  disabled={!editor}
+                  icon={Pilcrow}
+                  label="Paragraph"
+                  onClick={() => editor?.chain().focus().setParagraph().run()}
+                />
+                <ToolbarButton
+                  active={editor?.isActive("heading", {level: 2})}
+                  disabled={!editor}
+                  icon={Heading2}
+                  label="Heading 2"
+                  onClick={() =>
+                    editor?.chain().focus().toggleHeading({level: 2}).run()
+                  }
+                />
+                <ToolbarButton
+                  active={editor?.isActive("heading", {level: 3})}
+                  disabled={!editor}
+                  icon={Heading3}
+                  label="Heading 3"
+                  onClick={() =>
+                    editor?.chain().focus().toggleHeading({level: 3}).run()
+                  }
+                />
+                <ToolbarButton
+                  active={editor?.isActive("heading", {level: 4})}
+                  disabled={!editor}
+                  icon={Heading4}
+                  label="Heading 4"
+                  onClick={() =>
+                    editor?.chain().focus().toggleHeading({level: 4}).run()
+                  }
+                />
+                <ToolbarButton
+                  active={editor?.isActive("blockquote")}
+                  disabled={!editor}
+                  icon={Quote}
+                  label="Quote"
+                  onClick={() => editor?.chain().focus().toggleBlockquote().run()}
+                />
+              </div>
+
+              <div className={styles.richTextToolbarGroup}>
+                <ToolbarButton
+                  active={editor?.isActive("bold")}
+                  disabled={!editor}
+                  icon={Bold}
+                  label="Bold"
+                  onClick={() => editor?.chain().focus().toggleBold().run()}
+                />
+                <ToolbarButton
+                  active={editor?.isActive("italic")}
+                  disabled={!editor}
+                  icon={Italic}
+                  label="Italic"
+                  onClick={() => editor?.chain().focus().toggleItalic().run()}
+                />
+                <ToolbarButton
+                  active={editor?.isActive("underline")}
+                  disabled={!editor}
+                  icon={Underline}
+                  label="Underline"
+                  onClick={() => editor?.chain().focus().toggleUnderline().run()}
+                />
+                <ToolbarButton
+                  active={editor?.isActive("strike")}
+                  disabled={!editor}
+                  icon={Strikethrough}
+                  label="Strikethrough"
+                  onClick={() => editor?.chain().focus().toggleStrike().run()}
+                />
+              </div>
+
+              <div className={styles.richTextToolbarGroup}>
+                <ToolbarButton
+                  active={editor?.isActive("bulletList")}
+                  disabled={!editor}
+                  icon={List}
+                  label="Bulleted list"
+                  onClick={() => editor?.chain().focus().toggleBulletList().run()}
+                />
+                <ToolbarButton
+                  active={editor?.isActive("orderedList")}
+                  disabled={!editor}
+                  icon={ListOrdered}
+                  label="Numbered list"
+                  onClick={() => editor?.chain().focus().toggleOrderedList().run()}
+                />
+                <ToolbarButton
+                  disabled={!editor}
+                  icon={IndentDecrease}
+                  label="Outdent list item"
+                  onClick={() => editor?.chain().focus().liftListItem("listItem").run()}
+                />
+                <ToolbarButton
+                  disabled={!editor}
+                  icon={IndentIncrease}
+                  label="Indent list item"
+                  onClick={() => editor?.chain().focus().sinkListItem("listItem").run()}
+                />
+              </div>
+
+              <div className={styles.richTextToolbarGroup}>
+                <ToolbarButton
+                  active={isTableActive}
+                  disabled={!editor}
+                  icon={TableIcon}
+                  label="Insert table"
+                  onClick={() =>
+                    editor
+                      ?.chain()
+                      .focus()
+                      .insertTable({rows: 3, cols: 3, withHeaderRow: true})
+                      .run()
+                  }
+                />
+                <ToolbarButton
+                  disabled={!editor || !isTableActive}
+                  icon={TableProperties}
+                  label="Toggle header row"
+                  onClick={() => editor?.chain().focus().toggleHeaderRow().run()}
+                />
+                <ToolbarButton
+                  disabled={!editor || !isTableActive}
+                  icon={Trash2}
+                  label="Delete table"
+                  onClick={() => editor?.chain().focus().deleteTable().run()}
+                />
+              </div>
+
+              <div className={styles.richTextToolbarGroup}>
+                <ToolbarButton
+                  disabled={!editor || !isTableActive}
+                  icon={BetweenHorizontalStart}
+                  label="Add column before"
+                  onClick={() => editor?.chain().focus().addColumnBefore().run()}
+                />
+                <ToolbarButton
+                  disabled={!editor || !isTableActive}
+                  icon={BetweenHorizontalEnd}
+                  label="Add column after"
+                  onClick={() => editor?.chain().focus().addColumnAfter().run()}
+                />
+                <ToolbarButton
+                  disabled={!editor || !isTableActive}
+                  icon={PanelLeftClose}
+                  label="Delete column"
+                  onClick={() => editor?.chain().focus().deleteColumn().run()}
+                />
+                <ToolbarButton
+                  disabled={!editor || !isTableActive}
+                  icon={BetweenVerticalStart}
+                  label="Add row before"
+                  onClick={() => editor?.chain().focus().addRowBefore().run()}
+                />
+                <ToolbarButton
+                  disabled={!editor || !isTableActive}
+                  icon={BetweenVerticalEnd}
+                  label="Add row after"
+                  onClick={() => editor?.chain().focus().addRowAfter().run()}
+                />
+                <ToolbarButton
+                  disabled={!editor || !isTableActive}
+                  icon={PanelTopClose}
+                  label="Delete row"
+                  onClick={() => editor?.chain().focus().deleteRow().run()}
+                />
+              </div>
+
+              <div className={styles.richTextToolbarGroup}>
+                <ToolbarButton
+                  disabled={!editor || !isTableActive}
+                  icon={TableCellsMerge}
+                  label="Merge cells"
+                  onClick={() => editor?.chain().focus().mergeCells().run()}
+                />
+                <ToolbarButton
+                  disabled={!editor || !isTableActive}
+                  icon={TableCellsSplit}
+                  label="Split cell"
+                  onClick={() => editor?.chain().focus().splitCell().run()}
+                />
+              </div>
+
+              <div className={styles.richTextToolbarGroup}>
+                <ToolbarButton
+                  active={editor?.isActive("link")}
+                  disabled={!editor}
+                  icon={LinkIcon}
+                  label="Add or edit link"
+                  onClick={setEditorLink}
+                />
+                <ToolbarButton
+                  disabled={!editor}
+                  icon={Unlink}
+                  label="Remove link"
+                  onClick={() =>
+                    editor?.chain().focus().extendMarkRange("link").unsetLink().run()
+                  }
+                />
+                <ToolbarButton
+                  disabled={!editor}
+                  icon={Minus}
+                  label="Horizontal rule"
+                  onClick={() => editor?.chain().focus().setHorizontalRule().run()}
+                />
+                <ToolbarButton
+                  disabled={!editor}
+                  icon={Eraser}
+                  label="Clear formatting"
+                  onClick={() =>
+                    editor?.chain().focus().unsetAllMarks().clearNodes().run()
+                  }
+                />
+              </div>
+            </div>
           </div>
 
-          <div className={styles.richTextToolbarGroup}>
-            <ToolbarButton
-              active={editor?.isActive("paragraph")}
-              disabled={!editor}
-              icon={Pilcrow}
-              label="Paragraph"
-              onClick={() => editor?.chain().focus().setParagraph().run()}
-            />
-            <ToolbarButton
-              active={editor?.isActive("heading", {level: 2})}
-              disabled={!editor}
-              icon={Heading2}
-              label="Heading 2"
-              onClick={() =>
-                editor?.chain().focus().toggleHeading({level: 2}).run()
-              }
-            />
-            <ToolbarButton
-              active={editor?.isActive("heading", {level: 3})}
-              disabled={!editor}
-              icon={Heading3}
-              label="Heading 3"
-              onClick={() =>
-                editor?.chain().focus().toggleHeading({level: 3}).run()
-              }
-            />
-            <ToolbarButton
-              active={editor?.isActive("heading", {level: 4})}
-              disabled={!editor}
-              icon={Heading4}
-              label="Heading 4"
-              onClick={() =>
-                editor?.chain().focus().toggleHeading({level: 4}).run()
-              }
-            />
-            <ToolbarButton
-              active={editor?.isActive("blockquote")}
-              disabled={!editor}
-              icon={Quote}
-              label="Quote"
-              onClick={() => editor?.chain().focus().toggleBlockquote().run()}
-            />
-          </div>
-
-          <div className={styles.richTextToolbarGroup}>
-            <ToolbarButton
-              active={editor?.isActive("bold")}
-              disabled={!editor}
-              icon={Bold}
-              label="Bold"
-              onClick={() => editor?.chain().focus().toggleBold().run()}
-            />
-            <ToolbarButton
-              active={editor?.isActive("italic")}
-              disabled={!editor}
-              icon={Italic}
-              label="Italic"
-              onClick={() => editor?.chain().focus().toggleItalic().run()}
-            />
-            <ToolbarButton
-              active={editor?.isActive("underline")}
-              disabled={!editor}
-              icon={Underline}
-              label="Underline"
-              onClick={() => editor?.chain().focus().toggleUnderline().run()}
-            />
-            <ToolbarButton
-              active={editor?.isActive("strike")}
-              disabled={!editor}
-              icon={Strikethrough}
-              label="Strikethrough"
-              onClick={() => editor?.chain().focus().toggleStrike().run()}
-            />
-          </div>
-
-          <div className={styles.richTextToolbarGroup}>
-            <ToolbarButton
-              active={editor?.isActive("bulletList")}
-              disabled={!editor}
-              icon={List}
-              label="Bulleted list"
-              onClick={() => editor?.chain().focus().toggleBulletList().run()}
-            />
-            <ToolbarButton
-              active={editor?.isActive("orderedList")}
-              disabled={!editor}
-              icon={ListOrdered}
-              label="Numbered list"
-              onClick={() => editor?.chain().focus().toggleOrderedList().run()}
-            />
-            <ToolbarButton
-              disabled={!editor}
-              icon={IndentDecrease}
-              label="Outdent list item"
-              onClick={() => editor?.chain().focus().liftListItem("listItem").run()}
-            />
-            <ToolbarButton
-              disabled={!editor}
-              icon={IndentIncrease}
-              label="Indent list item"
-              onClick={() => editor?.chain().focus().sinkListItem("listItem").run()}
-            />
-          </div>
-
-          <div className={styles.richTextToolbarGroup}>
-            <ToolbarButton
-              active={isTableActive}
-              disabled={!editor}
-              icon={TableIcon}
-              label="Insert table"
-              onClick={() =>
-                editor
-                  ?.chain()
-                  .focus()
-                  .insertTable({rows: 3, cols: 3, withHeaderRow: true})
-                  .run()
-              }
-            />
-            <ToolbarButton
-              disabled={!editor || !isTableActive}
-              icon={TableProperties}
-              label="Toggle header row"
-              onClick={() => editor?.chain().focus().toggleHeaderRow().run()}
-            />
-            <ToolbarButton
-              disabled={!editor || !isTableActive}
-              icon={Trash2}
-              label="Delete table"
-              onClick={() => editor?.chain().focus().deleteTable().run()}
-            />
-          </div>
-
-          <div className={styles.richTextToolbarGroup}>
-            <ToolbarButton
-              disabled={!editor || !isTableActive}
-              icon={BetweenHorizontalStart}
-              label="Add column before"
-              onClick={() => editor?.chain().focus().addColumnBefore().run()}
-            />
-            <ToolbarButton
-              disabled={!editor || !isTableActive}
-              icon={BetweenHorizontalEnd}
-              label="Add column after"
-              onClick={() => editor?.chain().focus().addColumnAfter().run()}
-            />
-            <ToolbarButton
-              disabled={!editor || !isTableActive}
-              icon={PanelLeftClose}
-              label="Delete column"
-              onClick={() => editor?.chain().focus().deleteColumn().run()}
-            />
-            <ToolbarButton
-              disabled={!editor || !isTableActive}
-              icon={BetweenVerticalStart}
-              label="Add row before"
-              onClick={() => editor?.chain().focus().addRowBefore().run()}
-            />
-            <ToolbarButton
-              disabled={!editor || !isTableActive}
-              icon={BetweenVerticalEnd}
-              label="Add row after"
-              onClick={() => editor?.chain().focus().addRowAfter().run()}
-            />
-            <ToolbarButton
-              disabled={!editor || !isTableActive}
-              icon={PanelTopClose}
-              label="Delete row"
-              onClick={() => editor?.chain().focus().deleteRow().run()}
-            />
-          </div>
-
-          <div className={styles.richTextToolbarGroup}>
-            <ToolbarButton
-              disabled={!editor || !isTableActive}
-              icon={TableCellsMerge}
-              label="Merge cells"
-              onClick={() => editor?.chain().focus().mergeCells().run()}
-            />
-            <ToolbarButton
-              disabled={!editor || !isTableActive}
-              icon={TableCellsSplit}
-              label="Split cell"
-              onClick={() => editor?.chain().focus().splitCell().run()}
-            />
-          </div>
-
-          <div className={styles.richTextToolbarGroup}>
-            <ToolbarButton
-              active={editor?.isActive("link")}
-              disabled={!editor}
-              icon={LinkIcon}
-              label="Add or edit link"
-              onClick={setEditorLink}
-            />
-            <ToolbarButton
-              disabled={!editor}
-              icon={Unlink}
-              label="Remove link"
-              onClick={() =>
-                editor?.chain().focus().extendMarkRange("link").unsetLink().run()
-              }
-            />
-            <ToolbarButton
-              disabled={!editor}
-              icon={Minus}
-              label="Horizontal rule"
-              onClick={() => editor?.chain().focus().setHorizontalRule().run()}
-            />
-            <ToolbarButton
-              disabled={!editor}
-              icon={Eraser}
-              label="Clear formatting"
-              onClick={() =>
-                editor?.chain().focus().unsetAllMarks().clearNodes().run()
-              }
-            />
-          </div>
+          <EditorContent
+            aria-label="Post content"
+            className={styles.richEditor}
+            editor={editor}
+          />
         </div>
-
-        <EditorContent
-          aria-label="Post content"
-          className={styles.richEditor}
-          editor={editor}
-        />
       </section>
     </form>
   );
