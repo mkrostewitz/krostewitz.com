@@ -1090,6 +1090,14 @@ export default function EditPostForm({
           )}
         </div>
         <div className={styles.buttonRow}>
+          <button
+            className={`${styles.secondaryButton} ${styles.aiAssistantButton} ${styles.iconTextButton}`}
+            type="button"
+            onClick={() => setIsAiModalOpen(true)}
+          >
+            <Sparkles aria-hidden="true" size={17} strokeWidth={2.3} />
+            AI tools
+          </button>
           <Link
             className={`${styles.secondaryButton} ${styles.backButton}`}
             href={backHref}
@@ -1537,15 +1545,6 @@ export default function EditPostForm({
             <h2>Content</h2>
             <p className={styles.muted}>Write and format the post body.</p>
           </div>
-          <button
-            aria-label="AI assistant"
-            className={`${styles.iconButton} ${styles.aiAssistantButton}`}
-            title="AI assistant"
-            type="button"
-            onClick={() => setIsAiModalOpen(true)}
-          >
-            <Sparkles aria-hidden="true" size={18} strokeWidth={2.2} />
-          </button>
         </div>
 
         <div className={styles.richTextToolbar} aria-label="Rich text toolbar">
