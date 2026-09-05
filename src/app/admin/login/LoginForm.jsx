@@ -25,6 +25,7 @@ export default function LoginForm({linkedInSignInEnabled = false}) {
   const {closeSnackbar, showSnackbar} = useSnackbar();
   const [phase, setPhase] = useState("credentials");
   const [email, setEmail] = useState("");
+  const [magicLinkEmail, setMagicLinkEmail] = useState("");
   const [password, setPassword] = useState("");
   const [method, setMethod] = useState("email");
   const [availableMethods, setAvailableMethods] = useState(["email"]);
@@ -36,6 +37,7 @@ export default function LoginForm({linkedInSignInEnabled = false}) {
     () => METHODS.filter((item) => availableMethods.includes(item.id)),
     [availableMethods],
   );
+  const magicLinkRecipient = magicLinkEmail || "the configured admin email";
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -165,7 +167,9 @@ export default function LoginForm({linkedInSignInEnabled = false}) {
   }
 
   async function requestMagicLink(intent = "sign_in") {
-    if (!email.trim()) {
+    const requestedEmail = email.trim();
+
+    if (!requestedEmail) {
       showSnackbar({type: "error", message: "Enter the admin email first."});
       return;
     }
@@ -177,12 +181,20 @@ export default function LoginForm({linkedInSignInEnabled = false}) {
       const response = await fetch("/api/admin/auth/magic-link", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({email, intent}),
+        body: JSON.stringify({email: requestedEmail, intent}),
       });
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
         throw new Error(data.error || "Unable to send magic link.");
+      }
+
+      if (intent === "sign_in") {
+        setMagicLinkEmail(requestedEmail);
+        setPassword("");
+        setCode("");
+        setChallengeId("");
+        setPhase("magicLinkSent");
       }
 
       showSnackbar({
@@ -209,9 +221,11 @@ export default function LoginForm({linkedInSignInEnabled = false}) {
   return (
     <div className={styles.loginPanel}>
       <div className={styles.titleBlock}>
-        <h1>Admin sign in</h1>
+        <h1>{phase === "magicLinkSent" ? "Magic link sent" : "Admin sign in"}</h1>
         <p className={styles.muted}>
-          Access post management for {process.env.NEXT_PUBLIC_SITE_NAME}.
+          {phase === "magicLinkSent"
+            ? `Check ${magicLinkRecipient} for the sign-in link.`
+            : `Access post management for ${process.env.NEXT_PUBLIC_SITE_NAME}.`}
         </p>
       </div>
 
@@ -282,6 +296,31 @@ export default function LoginForm({linkedInSignInEnabled = false}) {
             </div>
           </form>
         </>
+      ) : phase === "magicLinkSent" ? (
+        <div className={styles.form}>
+          <p className={styles.muted}>
+            Open the link from that email to finish signing in.
+          </p>
+
+          <div className={styles.buttonRow}>
+            <button
+              type="button"
+              className={styles.button}
+              disabled={isSubmitting}
+              onClick={() => requestMagicLink()}
+            >
+              {isSubmitting ? "Sending..." : "Send again"}
+            </button>
+            <button
+              type="button"
+              className={styles.ghostButton}
+              disabled={isSubmitting}
+              onClick={resetToCredentials}
+            >
+              Back to password sign in
+            </button>
+          </div>
+        </div>
       ) : phase === "secondFactor" ? (
         <div className={styles.form}>
           <div className={styles.field}>
