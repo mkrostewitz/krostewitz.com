@@ -79,7 +79,7 @@ function cleanScriptSnippet(value, options = {}) {
 
   if (snippet.length > MAX_AI_CHAT_SCRIPT_LENGTH && options.strict) {
     throw new SiteProfileError(
-      `AI chat script must be ${MAX_AI_CHAT_SCRIPT_LENGTH} characters or fewer.`
+      `Agent embed script must be ${MAX_AI_CHAT_SCRIPT_LENGTH} characters or fewer.`
     );
   }
 
@@ -104,7 +104,7 @@ function normalizeAiChatScriptTag(value, options = {}) {
   if (!hasOnlyScriptTags(scriptTag)) {
     if (options.strict) {
       throw new SiteProfileError(
-        "AI chat script must contain only complete <script> tags."
+        "Agent embed script must contain only complete <script> tags."
       );
     }
 
@@ -575,7 +575,7 @@ export function normalizeAiChatIntegration(input = {}, options = {}) {
 
   if (options.strict && enabled && !scriptTag) {
     throw new SiteProfileError(
-      "AI chat script is required when the integration is enabled."
+      "Agent embed script is required when the integration is enabled."
     );
   }
 
