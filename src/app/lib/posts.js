@@ -494,6 +494,23 @@ function serializeMediaGallery(value) {
   return gallery;
 }
 
+function serializeLinkedInOrganization(value) {
+  if (!value || typeof value !== "object") return null;
+
+  const urn = String(value.urn || "").trim();
+  const id = String(value.id || urn.split(":").at(-1) || "").trim();
+  const name = String(value.name || "").trim();
+
+  if (!urn && !id && !name) return null;
+
+  return {
+    id,
+    name,
+    target: "company_page",
+    urn,
+  };
+}
+
 function serializeLinkedInShares(value) {
   return (Array.isArray(value) ? value : [])
     .filter((share) => share && typeof share === "object")
@@ -521,6 +538,7 @@ function serializeLinkedInShares(value) {
             picture: share.account.picture || "",
           }
         : null,
+      organization: serializeLinkedInOrganization(share.organization),
       sharedAt: toIsoDate(share.sharedAt),
       sharedBy: share.sharedBy || null,
     }))
@@ -564,6 +582,7 @@ function serializeLinkedInShareSchedules(value) {
             picture: schedule.account.picture || "",
           }
         : null,
+      organization: serializeLinkedInOrganization(schedule.organization),
     }))
     .sort((left, right) => {
       const leftTime = left.scheduledAt ? new Date(left.scheduledAt).getTime() : 0;
@@ -599,6 +618,7 @@ function serializeLinkedInShareAttempts(value) {
             picture: attempt.account.picture || "",
           }
         : null,
+      organization: serializeLinkedInOrganization(attempt.organization),
     }))
     .sort((left, right) => {
       const leftTime = new Date(
@@ -848,6 +868,7 @@ export async function recordPostLinkedInShare(postId, share = {}, user) {
           picture: String(share.account.picture || ""),
         }
       : null,
+    organization: serializeLinkedInOrganization(share.organization),
     sharedAt: share.sharedAt instanceof Date ? share.sharedAt : now,
     sharedBy: user?.email || null,
   };
@@ -905,6 +926,7 @@ export async function recordPostLinkedInShareSchedule(postId, schedule = {}, use
           picture: String(schedule.account.picture || ""),
         }
       : null,
+    organization: serializeLinkedInOrganization(schedule.organization),
     createdAt: now,
     createdBy: user?.email || null,
     updatedAt: now,
@@ -968,6 +990,7 @@ export async function recordPostLinkedInShareAttempt(postId, attempt = {}, user)
           picture: String(attempt.account.picture || ""),
         }
       : null,
+    organization: serializeLinkedInOrganization(attempt.organization),
     createdAt: now,
     createdBy: user?.email || null,
   };
