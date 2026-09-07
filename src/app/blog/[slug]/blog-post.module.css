@@ -361,6 +361,58 @@
   background: var(--border);
 }
 
+.content figure[data-content-image] {
+  --content-image-width: 620px;
+
+  clear: both;
+  display: flow-root;
+  margin: 1.2em 0;
+}
+
+.content figure[data-content-image][data-size="small"] {
+  --content-image-width: 260px;
+}
+
+.content figure[data-content-image][data-size="medium"] {
+  --content-image-width: 420px;
+}
+
+.content figure[data-content-image][data-align="block"] {
+  width: min(100%, var(--content-image-width));
+  margin-inline: auto;
+}
+
+.content figure[data-content-image][data-align="full"] {
+  width: 100%;
+  max-width: 100%;
+}
+
+.content figure[data-content-image][data-align="left"] {
+  float: left;
+  clear: none;
+  width: min(42%, var(--content-image-width));
+  margin: 0.45em 1.35em 0.9em 0;
+}
+
+.content figure[data-content-image][data-align="right"] {
+  float: right;
+  clear: none;
+  width: min(42%, var(--content-image-width));
+  margin: 0.45em 0 0.9em 1.35em;
+}
+
+.content figure[data-content-image] img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+}
+
+.content figure[data-content-image] img:not([width]):not([height]) {
+  aspect-ratio: auto 16 / 9;
+  object-fit: contain;
+}
+
 .content table {
   width: 100%;
   min-width: 520px;
@@ -426,6 +478,14 @@
   .shareBar {
     align-items: flex-start;
     display: grid;
+  }
+
+  .content figure[data-content-image][data-align="left"],
+  .content figure[data-content-image][data-align="right"] {
+    float: none;
+    clear: both;
+    width: min(100%, var(--content-image-width));
+    margin: 1.1em auto;
   }
 
   .carouselImage {

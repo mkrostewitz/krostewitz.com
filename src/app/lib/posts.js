@@ -37,6 +37,8 @@ const RICH_TEXT_TAGS = [
   "li",
   "blockquote",
   "a",
+  "figure",
+  "img",
   "code",
   "pre",
   "hr",
@@ -52,6 +54,9 @@ const RICH_TEXT_TAGS = [
   "div",
   "span",
 ];
+
+const CONTENT_IMAGE_ALIGNMENTS = new Set(["block", "left", "right", "full"]);
+const CONTENT_IMAGE_SIZES = new Set(["small", "medium", "large"]);
 
 let indexPromise = null;
 
@@ -115,11 +120,59 @@ function cleanText(value, maxLength = 220) {
     .slice(0, maxLength);
 }
 
+function hasContentImageMarkup(value) {
+  return /<(?:figure|img)\b[^>]*(?:data-content-image|src=)/i.test(
+    String(value || "")
+  );
+}
+
+function normalizeContentImageAlign(value) {
+  const align = String(value || "").toLowerCase();
+  return CONTENT_IMAGE_ALIGNMENTS.has(align) ? align : "block";
+}
+
+function normalizeContentImageSize(value) {
+  const size = String(value || "").toLowerCase();
+  return CONTENT_IMAGE_SIZES.has(size) ? size : "large";
+}
+
+function normalizeContentImageDimension(value) {
+  const dimension = Number.parseInt(String(value || ""), 10);
+
+  if (!Number.isFinite(dimension) || dimension <= 0) return null;
+
+  return Math.min(dimension, 20000);
+}
+
+function cleanAttributeText(value, maxLength = 160) {
+  return String(value || "")
+    .replace(/<[^>]*>/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, maxLength);
+}
+
+function isSafeContentImageSrc(value) {
+  const src = String(value || "").trim();
+
+  if (!src) return false;
+  if (src.startsWith("/")) return true;
+
+  try {
+    const url = new URL(src);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 export function sanitizePostHtml(value) {
   return sanitizeHtml(String(value || ""), {
     allowedTags: RICH_TEXT_TAGS,
     allowedAttributes: {
       a: ["href", "name", "target", "rel"],
+      figure: ["data-content-image", "data-align", "data-size"],
+      img: ["src", "alt", "title", "width", "height", "loading", "decoding"],
       table: ["style"],
       col: ["style"],
       th: ["colspan", "rowspan", "colwidth", "style"],
@@ -159,6 +212,43 @@ export function sanitizePostHtml(value) {
             href,
             target: "_blank",
             rel: "noopener noreferrer",
+          },
+        };
+      },
+      figure(tagName, attribs) {
+        return {
+          tagName,
+          attribs: {
+            "data-content-image": "true",
+            "data-align": normalizeContentImageAlign(attribs["data-align"]),
+            "data-size": normalizeContentImageSize(attribs["data-size"]),
+          },
+        };
+      },
+      img(tagName, attribs) {
+        const src = String(attribs.src || "").trim();
+
+        if (!isSafeContentImageSrc(src)) {
+          return {
+            tagName: "span",
+            attribs: {},
+          };
+        }
+
+        const title = cleanAttributeText(attribs.title);
+        const width = normalizeContentImageDimension(attribs.width);
+        const height = normalizeContentImageDimension(attribs.height);
+
+        return {
+          tagName,
+          attribs: {
+            src,
+            alt: cleanAttributeText(attribs.alt),
+            ...(title ? {title} : {}),
+            ...(width ? {width: String(width)} : {}),
+            ...(height ? {height: String(height)} : {}),
+            loading: "lazy",
+            decoding: "async",
           },
         };
       },
@@ -209,14 +299,16 @@ function hasTranslationValue(translation) {
   return Boolean(
     cleanText(translation.title, 140) ||
       cleanText(translation.summary, 260) ||
-      cleanText(translation.contentHtml, 100000)
+      cleanText(translation.contentHtml, 100000) ||
+      hasContentImageMarkup(translation.contentHtml)
   );
 }
 
 function hasPublishableTranslation(translation) {
   return Boolean(
     cleanText(translation?.title, 140).length >= 2 &&
-      cleanText(translation?.contentHtml, 100000).length >= 10
+      (cleanText(translation?.contentHtml, 100000).length >= 10 ||
+        hasContentImageMarkup(translation?.contentHtml))
   );
 }
 
