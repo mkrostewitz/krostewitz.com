@@ -1382,6 +1382,42 @@
   text-decoration: none;
 }
 
+.postPreviewBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border: 1px solid var(--accent-ring);
+  border-radius: 8px;
+  margin-bottom: 28px;
+  padding: 12px 14px;
+  background: var(--accent-soft);
+}
+
+.postPreviewBanner div {
+  display: grid;
+  gap: 2px;
+}
+
+.postPreviewBanner strong {
+  color: var(--accent-text);
+  font-size: 0.95rem;
+}
+
+.postPreviewBanner span {
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.postPreviewBanner a {
+  flex: 0 0 auto;
+  color: var(--accent-text);
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .formGrid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(180px, 220px);
@@ -2296,6 +2332,121 @@
   opacity: 0.48;
 }
 
+.richTextUploadButton {
+  position: relative;
+  width: 38px;
+  min-width: 38px;
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  padding: 8px;
+  background: var(--surface);
+  color: var(--foreground);
+  cursor: pointer;
+  overflow: hidden;
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease,
+    color 0.16s ease;
+}
+
+.richTextUploadButton:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+
+.richTextUploadButton:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.richTextUploadButton input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.richTextImageMenu {
+  position: fixed;
+  z-index: 1000;
+  width: 240px;
+  display: grid;
+  gap: 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  padding: 6px;
+  background: var(--surface-elevated);
+  box-shadow: 0 18px 46px var(--panel-shadow-strong);
+}
+
+.richTextImageMenuSection {
+  display: grid;
+  gap: 2px;
+}
+
+.richTextImageMenuSection + .richTextImageMenuSection {
+  border-top: 1px solid var(--border);
+  padding-top: 6px;
+}
+
+.richTextImageMenuLabel {
+  padding: 4px 8px 3px;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.richTextImageMenuItem {
+  width: 100%;
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border: 0;
+  border-radius: 6px;
+  padding: 7px 8px;
+  background: transparent;
+  color: var(--foreground);
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.richTextImageMenuItem svg {
+  flex: 0 0 auto;
+}
+
+.richTextImageMenuItem:hover,
+.richTextImageMenuItem:focus-visible,
+.richTextImageMenuItemActive {
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+
+.richTextImageMenuItem:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.richTextImageMenuItemDanger {
+  color: var(--danger-text);
+}
+
+.richTextImageMenuItemDanger:hover,
+.richTextImageMenuItemDanger:focus-visible {
+  background: var(--danger-background);
+  color: var(--danger-text);
+}
+
 .richEditor {
   height: clamp(460px, 68vh, 720px);
   background: var(--surface);
@@ -2423,6 +2574,75 @@
 
 .richEditor :global(.ProseMirror.resize-cursor) {
   cursor: col-resize;
+}
+
+.richEditor :global(.ProseMirror figure[data-content-image]) {
+  --content-image-width: 620px;
+
+  clear: both;
+  display: flow-root;
+  margin: 1em 0;
+}
+
+.richEditor
+  :global(.ProseMirror figure[data-content-image][data-size="small"]) {
+  --content-image-width: 260px;
+}
+
+.richEditor
+  :global(.ProseMirror figure[data-content-image][data-size="medium"]) {
+  --content-image-width: 420px;
+}
+
+.richEditor
+  :global(.ProseMirror figure[data-content-image][data-align="block"]) {
+  width: min(100%, var(--content-image-width));
+  margin-inline: auto;
+}
+
+.richEditor
+  :global(.ProseMirror figure[data-content-image][data-align="full"]) {
+  width: 100%;
+  max-width: 100%;
+}
+
+.richEditor
+  :global(.ProseMirror figure[data-content-image][data-align="left"]) {
+  float: left;
+  clear: none;
+  width: min(42%, var(--content-image-width));
+  margin: 0.35em 1.2em 0.8em 0;
+}
+
+.richEditor
+  :global(.ProseMirror figure[data-content-image][data-align="right"]) {
+  float: right;
+  clear: none;
+  width: min(42%, var(--content-image-width));
+  margin: 0.35em 0 0.8em 1.2em;
+}
+
+.richEditor :global(.ProseMirror figure[data-content-image] img) {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface-muted);
+}
+
+.richEditor
+  :global(
+    .ProseMirror figure[data-content-image] img:not([width]):not([height])
+  ) {
+  aspect-ratio: auto 16 / 9;
+  object-fit: contain;
+}
+
+.richEditor
+  :global(.ProseMirror figure[data-content-image].ProseMirror-selectednode img) {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-focus);
 }
 
 .securityGrid {
@@ -2739,6 +2959,16 @@
 
   .richEditor {
     height: clamp(360px, 62vh, 560px);
+  }
+
+  .richEditor
+    :global(.ProseMirror figure[data-content-image][data-align="left"]),
+  .richEditor
+    :global(.ProseMirror figure[data-content-image][data-align="right"]) {
+    float: none;
+    clear: both;
+    width: min(100%, var(--content-image-width));
+    margin: 1em auto;
   }
 
   .methodGrid {

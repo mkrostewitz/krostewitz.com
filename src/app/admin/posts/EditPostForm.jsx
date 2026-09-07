@@ -2,7 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import {EditorContent, useEditor} from "@tiptap/react";
+import {EditorContent, mergeAttributes, Node, useEditor} from "@tiptap/react";
 import LinkExtension from "@tiptap/extension-link";
 import StarterKit from "@tiptap/starter-kit";
 import {
@@ -11,18 +11,26 @@ import {
   TableHeader,
   TableRow,
 } from "@tiptap/extension-table";
+import {NodeSelection} from "@tiptap/pm/state";
 import UnderlineExtension from "@tiptap/extension-underline";
 import {
   BetweenHorizontalEnd,
   BetweenHorizontalStart,
   BetweenVerticalEnd,
   BetweenVerticalStart,
+  AlignCenter,
+  AlignLeft,
+  AlignRight,
   Bold,
+  Captions,
   ChevronLeft,
   Eraser,
+  ExternalLink,
   Heading2,
   Heading3,
   Heading4,
+  Image as ImageIcon,
+  ImagePlus,
   IndentDecrease,
   IndentIncrease,
   Italic,
@@ -36,10 +44,13 @@ import {
   Quote,
   Redo2,
   Strikethrough,
+  StretchHorizontal,
   Table as TableIcon,
   TableCellsMerge,
   TableCellsSplit,
   TableProperties,
+  Maximize2,
+  Minimize2,
   Trash2,
   Sparkles,
   Underline,
@@ -105,6 +116,263 @@ const DEFAULT_AI_TARGET_FIELDS = {
   summary: true,
   contentHtml: true,
 };
+
+const CONTENT_IMAGE_ALIGNMENTS = new Set(["block", "left", "right", "full"]);
+const CONTENT_IMAGE_SIZES = new Set(["small", "medium", "large"]);
+const CONTENT_IMAGE_SELECTOR = "figure[data-content-image]";
+const CONTENT_IMAGE_MENU_WIDTH = 240;
+const CONTENT_IMAGE_MENU_HEIGHT = 344;
+
+function normalizeContentImageAlign(value) {
+  const align = String(value || "").toLowerCase();
+  return CONTENT_IMAGE_ALIGNMENTS.has(align) ? align : "block";
+}
+
+function normalizeContentImageSize(value) {
+  const size = String(value || "").toLowerCase();
+  return CONTENT_IMAGE_SIZES.has(size) ? size : "large";
+}
+
+function normalizeContentImageDimension(value) {
+  const dimension = Number.parseInt(String(value || ""), 10);
+
+  if (!Number.isFinite(dimension) || dimension <= 0) return null;
+
+  return Math.min(dimension, 20000);
+}
+
+function cleanContentImageText(value, maxLength = 160) {
+  return String(value || "")
+    .replace(/<[^>]*>/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, maxLength);
+}
+
+function isSafeContentImageSrc(value) {
+  const src = String(value || "").trim();
+
+  if (!src) return false;
+  if (src.startsWith("/")) return true;
+
+  try {
+    const url = new URL(src);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function normalizeContentImageAttrs(value = {}) {
+  const width = normalizeContentImageDimension(value.width);
+  const height = normalizeContentImageDimension(value.height);
+
+  return {
+    src: String(value.src || "").trim(),
+    alt: cleanContentImageText(value.alt),
+    title: cleanContentImageText(value.title),
+    align: normalizeContentImageAlign(value.align),
+    size: normalizeContentImageSize(value.size),
+    ...(width ? {width} : {}),
+    ...(height ? {height} : {}),
+  };
+}
+
+function isContentImageFile(file) {
+  const mimeType = String(file?.type || "").toLowerCase();
+  const fileName = String(file?.name || "");
+
+  return mimeType.startsWith("image/") || /\.(?:jpe?g|png|gif)$/i.test(fileName);
+}
+
+function getContentImageFigure(target) {
+  if (!target || typeof target.closest !== "function") return null;
+
+  return target.closest(CONTENT_IMAGE_SELECTOR);
+}
+
+function findContentImageNodeAtPosition(doc, position) {
+  if (!doc || !Number.isInteger(position)) return null;
+
+  const directNode = doc.nodeAt(position);
+
+  if (directNode?.type?.name === "contentImage") {
+    return {node: directNode, position};
+  }
+
+  let match = null;
+  doc.descendants((node, nodePosition) => {
+    if (match || node.type?.name !== "contentImage") return !match;
+
+    const nodeEnd = nodePosition + node.nodeSize;
+
+    if (position >= nodePosition && position <= nodeEnd) {
+      match = {node, position: nodePosition};
+      return false;
+    }
+
+    return true;
+  });
+
+  return match;
+}
+
+function getContentImageMenuPosition(clientX, clientY) {
+  const margin = 8;
+  const pointerX = Number.isFinite(clientX) ? clientX : margin;
+  const pointerY = Number.isFinite(clientY) ? clientY : margin;
+  const maxX = Math.max(
+    margin,
+    window.innerWidth - CONTENT_IMAGE_MENU_WIDTH - margin
+  );
+  const maxY = Math.max(
+    margin,
+    window.innerHeight - CONTENT_IMAGE_MENU_HEIGHT - margin
+  );
+
+  return {
+    x: Math.min(Math.max(pointerX, margin), maxX),
+    y: Math.min(Math.max(pointerY, margin), maxY),
+  };
+}
+
+function readImageFileDimensions(file) {
+  if (typeof window === "undefined" || !file) {
+    return Promise.resolve({});
+  }
+
+  return new Promise((resolve) => {
+    const objectUrl = window.URL.createObjectURL(file);
+    const image = new window.Image();
+
+    function cleanup(dimensions = {}) {
+      window.URL.revokeObjectURL(objectUrl);
+      resolve(dimensions);
+    }
+
+    image.onload = () => {
+      cleanup({
+        width: image.naturalWidth,
+        height: image.naturalHeight,
+      });
+    };
+    image.onerror = () => cleanup();
+    image.src = objectUrl;
+  });
+}
+
+const ContentImageExtension = Node.create({
+  name: "contentImage",
+  group: "block",
+  atom: true,
+  draggable: true,
+  selectable: true,
+
+  addAttributes() {
+    return {
+      src: {
+        default: "",
+      },
+      alt: {
+        default: "",
+      },
+      title: {
+        default: "",
+      },
+      width: {
+        default: null,
+      },
+      height: {
+        default: null,
+      },
+      align: {
+        default: "block",
+        parseHTML: (element) =>
+          normalizeContentImageAlign(element.getAttribute("data-align")),
+        renderHTML: (attributes) => ({
+          "data-align": normalizeContentImageAlign(attributes.align),
+        }),
+      },
+      size: {
+        default: "large",
+        parseHTML: (element) =>
+          normalizeContentImageSize(element.getAttribute("data-size")),
+        renderHTML: (attributes) => ({
+          "data-size": normalizeContentImageSize(attributes.size),
+        }),
+      },
+    };
+  },
+
+  parseHTML() {
+    return [
+      {
+        tag: "figure[data-content-image]",
+        getAttrs: (element) => {
+          const image = element.querySelector("img[src]");
+          const src = image?.getAttribute("src") || "";
+
+          return src
+            ? normalizeContentImageAttrs({
+                src,
+                alt: image.getAttribute("alt"),
+                title: image.getAttribute("title"),
+                width: image.getAttribute("width"),
+                height: image.getAttribute("height"),
+                align: element.getAttribute("data-align"),
+                size: element.getAttribute("data-size"),
+              })
+            : false;
+        },
+      },
+      {
+        tag: "img[src]",
+        getAttrs: (element) =>
+          normalizeContentImageAttrs({
+            src: element.getAttribute("src"),
+            alt: element.getAttribute("alt"),
+            title: element.getAttribute("title"),
+            width: element.getAttribute("width"),
+            height: element.getAttribute("height"),
+            align: element.getAttribute("data-align"),
+            size: element.getAttribute("data-size"),
+          }),
+      },
+    ];
+  },
+
+  renderHTML({node}) {
+    const attributes = normalizeContentImageAttrs(node.attrs);
+    const imageAttributes = {
+      src: attributes.src,
+      alt: attributes.alt,
+      loading: "lazy",
+      decoding: "async",
+    };
+
+    if (attributes.title) {
+      imageAttributes.title = attributes.title;
+    }
+
+    if (attributes.width) {
+      imageAttributes.width = attributes.width;
+    }
+
+    if (attributes.height) {
+      imageAttributes.height = attributes.height;
+    }
+
+    return [
+      "figure",
+      mergeAttributes({
+        "data-content-image": "true",
+        "data-align": attributes.align,
+        "data-size": attributes.size,
+      }),
+      ["img", imageAttributes],
+    ];
+  },
+});
 
 function createEmptyTranslation() {
   return {...EMPTY_TRANSLATION};
@@ -229,6 +497,12 @@ function normalizeTranslation(value = {}) {
   };
 }
 
+function hasContentImageMarkup(value) {
+  return /<(?:figure|img)\b[^>]*(?:data-content-image|src=)/i.test(
+    String(value || "")
+  );
+}
+
 function hasTranslationContent(translation) {
   return Boolean(
     String(translation?.title || "").trim() ||
@@ -236,7 +510,8 @@ function hasTranslationContent(translation) {
       String(translation?.contentHtml || "")
         .replace(/<[^>]*>/g, " ")
         .replace(/\s+/g, " ")
-        .trim()
+        .trim() ||
+      hasContentImageMarkup(translation?.contentHtml)
   );
 }
 
@@ -510,6 +785,32 @@ function ToolbarButton({
   );
 }
 
+function ContentImageMenuButton({
+  active = false,
+  children,
+  destructive = false,
+  icon: Icon,
+  onClick,
+}) {
+  return (
+    <button
+      className={[
+        styles.richTextImageMenuItem,
+        active ? styles.richTextImageMenuItemActive : "",
+        destructive ? styles.richTextImageMenuItemDanger : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+      role="menuitem"
+      type="button"
+      onClick={onClick}
+    >
+      {Icon && <Icon aria-hidden="true" size={16} strokeWidth={2.2} />}
+      <span>{children}</span>
+    </button>
+  );
+}
+
 export default function EditPostForm({
   backHref = "/admin/posts",
   post = null,
@@ -532,6 +833,7 @@ export default function EditPostForm({
     prompt: "",
     targetFields: DEFAULT_AI_TARGET_FIELDS,
   });
+  const [contentImageMenu, setContentImageMenu] = useState(null);
   useLoadingState({
     isLoading: isSaving,
     label: "Saving post...",
@@ -559,6 +861,7 @@ export default function EditPostForm({
       TableHeader,
       TableCell,
       UnderlineExtension,
+      ContentImageExtension,
       LinkExtension.configure({
         autolink: true,
         defaultProtocol: "https",
@@ -571,8 +874,20 @@ export default function EditPostForm({
     ],
     content: getFormTranslation(form, activeLanguage).contentHtml || "",
     editorProps: {
+      handleDOMEvents: {
+        contextmenu: (view, event) => openContentImageMenu(view, event),
+      },
       handlePaste: (view, event) => {
         const clipboard = event.clipboardData;
+        const clipboardFiles = Array.from(clipboard?.files || []);
+        const imageFiles = clipboardFiles.filter(isContentImageFile);
+
+        if (imageFiles.length > 0) {
+          event.preventDefault();
+          uploadContentImageFiles(imageFiles);
+          return true;
+        }
+
         const text = clipboard?.getData("text/plain");
         const html = clipboard?.getData("text/html");
         const editorIsEmpty = !editor?.getText().trim();
@@ -665,6 +980,44 @@ export default function EditPostForm({
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [isAiModalOpen]);
+
+  useEffect(() => {
+    if (!contentImageMenu) return;
+
+    function closeMenu() {
+      setContentImageMenu(null);
+    }
+
+    function handlePointerDown(event) {
+      if (
+        event.target &&
+        typeof event.target.closest === "function" &&
+        event.target.closest("[data-content-image-menu]")
+      ) {
+        return;
+      }
+
+      closeMenu();
+    }
+
+    function handleKeyDown(event) {
+      if (event.key === "Escape") {
+        closeMenu();
+      }
+    }
+
+    window.addEventListener("pointerdown", handlePointerDown, true);
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("resize", closeMenu);
+    window.addEventListener("scroll", closeMenu, true);
+
+    return () => {
+      window.removeEventListener("pointerdown", handlePointerDown, true);
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("resize", closeMenu);
+      window.removeEventListener("scroll", closeMenu, true);
+    };
+  }, [contentImageMenu]);
 
   useEffect(() => {
     setAiForm((current) => {
@@ -858,6 +1211,237 @@ export default function EditPostForm({
     editor.chain().focus().extendMarkRange("link").setLink({href: url}).run();
   }
 
+  function appendContentImageAssets(assets) {
+    const imageAssets = (Array.isArray(assets) ? assets : []).filter(
+      (asset) => asset?.type === "image" && asset.url
+    );
+
+    if (imageAssets.length === 0) return;
+
+    setForm((current) => ({
+      ...current,
+      mediaGallery: appendMediaGallery(current.mediaGallery, imageAssets),
+    }));
+  }
+
+  function insertContentImage(value = {}) {
+    if (!editor) return false;
+
+    const attributes = normalizeContentImageAttrs(value);
+
+    if (!isSafeContentImageSrc(attributes.src)) return false;
+
+    return editor
+      .chain()
+      .focus()
+      .insertContent([
+        {
+          type: "contentImage",
+          attrs: attributes,
+        },
+        {
+          type: "paragraph",
+        },
+      ])
+      .run();
+  }
+
+  function openContentImageMenu(view, event) {
+    const figure = getContentImageFigure(event.target);
+
+    if (!figure || !view.dom.contains(figure)) {
+      setContentImageMenu(null);
+      return false;
+    }
+
+    event.preventDefault();
+
+    try {
+      const position = view.posAtDOM(figure, 0);
+      const match = findContentImageNodeAtPosition(view.state.doc, position);
+
+      if (!match) {
+        setContentImageMenu(null);
+        return true;
+      }
+
+      const transaction = view.state.tr.setSelection(
+        NodeSelection.create(view.state.doc, match.position)
+      );
+
+      view.dispatch(transaction);
+      view.focus();
+      setContentImageMenu({
+        ...getContentImageMenuPosition(event.clientX, event.clientY),
+        attrs: normalizeContentImageAttrs(match.node.attrs),
+        position: match.position,
+      });
+
+      return true;
+    } catch {
+      setContentImageMenu(null);
+      return true;
+    }
+  }
+
+  function getContentImageAtPosition(position) {
+    if (!editor || !Number.isInteger(position)) return null;
+
+    const node = editor.state.doc.nodeAt(position);
+
+    return node?.type?.name === "contentImage" ? {node, position} : null;
+  }
+
+  function updateContentImageAtPosition(position, attrs) {
+    const match = getContentImageAtPosition(position);
+
+    if (!editor || !match) {
+      setContentImageMenu(null);
+      return;
+    }
+
+    const transaction = editor.state.tr.setNodeMarkup(match.position, undefined, {
+      ...match.node.attrs,
+      ...attrs,
+    });
+
+    transaction.setSelection(NodeSelection.create(transaction.doc, match.position));
+    editor.view.dispatch(transaction);
+    editor.view.focus();
+    setContentImageMenu(null);
+  }
+
+  function updateContentImageFromMenu(attrs) {
+    updateContentImageAtPosition(contentImageMenu?.position, attrs);
+  }
+
+  function editContentImageFromMenu() {
+    const match = getContentImageAtPosition(contentImageMenu?.position);
+
+    if (!match) {
+      setContentImageMenu(null);
+      return;
+    }
+
+    const attributes = normalizeContentImageAttrs(match.node.attrs);
+    const alt = window.prompt("Alt text", attributes.alt || "");
+
+    if (alt === null) return;
+
+    const title = window.prompt("Image title", attributes.title || "");
+
+    if (title === null) return;
+
+    updateContentImageAtPosition(match.position, {
+      alt: cleanContentImageText(alt),
+      title: cleanContentImageText(title),
+    });
+  }
+
+  function removeContentImageFromMenu() {
+    const match = getContentImageAtPosition(contentImageMenu?.position);
+
+    if (!editor || !match) {
+      setContentImageMenu(null);
+      return;
+    }
+
+    const transaction = editor.state.tr.delete(
+      match.position,
+      match.position + match.node.nodeSize
+    );
+
+    editor.view.dispatch(transaction);
+    editor.view.focus();
+    setContentImageMenu(null);
+  }
+
+  async function uploadContentImageFiles(files) {
+    const imageFiles = (Array.isArray(files) ? files : []).filter(
+      isContentImageFile
+    );
+
+    if (!editor || imageFiles.length === 0) return;
+
+    setIsUploading(true);
+    closeSnackbar();
+
+    try {
+      const uploadedAssets = [];
+      let uploadError = null;
+
+      for (const file of imageFiles) {
+        try {
+          const dimensions = await readImageFileDimensions(file);
+          const body = new FormData();
+          body.append("file", file);
+
+          const response = await fetch("/api/admin/uploads", {
+            method: "POST",
+            body,
+          });
+          const data = await response.json().catch(() => ({}));
+
+          if (!response.ok) {
+            throw new Error(data.error || "Unable to upload image.");
+          }
+
+          if (data.asset?.type !== "image" || !data.asset.url) {
+            throw new Error("Upload did not return an image asset.");
+          }
+
+          uploadedAssets.push(data.asset);
+          insertContentImage({
+            src: data.asset.url,
+            alt: "",
+            title: data.asset.fileName || "",
+            align: "block",
+            size: "large",
+            ...dimensions,
+          });
+        } catch (error) {
+          uploadError = error;
+          break;
+        }
+      }
+
+      appendContentImageAssets(uploadedAssets);
+
+      if (uploadError) {
+        throw new Error(
+          uploadedAssets.length > 0
+            ? `${uploadedAssets.length} image${
+                uploadedAssets.length === 1 ? "" : "s"
+              } inserted. ${uploadError.message}`
+            : uploadError.message
+        );
+      }
+
+      showSnackbar({
+        type: "success",
+        message:
+          uploadedAssets.length === 1
+            ? "Image inserted into content."
+            : `${uploadedAssets.length} images inserted into content.`,
+      });
+    } catch (error) {
+      showSnackbar({type: "error", message: error.message});
+    } finally {
+      setIsUploading(false);
+    }
+  }
+
+  async function uploadContentImages(event) {
+    const input = event.currentTarget;
+    const files = Array.from(input.files || []);
+
+    try {
+      await uploadContentImageFiles(files);
+    } finally {
+      input.value = "";
+    }
+  }
+
   async function uploadFiles(event) {
     const input = event.currentTarget;
     const files = Array.from(input.files || []);
@@ -990,52 +1574,56 @@ export default function EditPostForm({
     }
   }
 
-  async function savePost(event) {
-    event.preventDefault();
-    setIsSaving(true);
-    closeSnackbar();
+  function buildPostPayload() {
+    const contentHtml = readEditorContent();
+    const translations = {
+      ...createEmptyTranslations(),
+      ...(form.translations || {}),
+      [activeLanguage]: {
+        ...getFormTranslation(form, activeLanguage),
+        contentHtml,
+      },
+    };
+    const primaryTranslation = getPrimaryTranslation(translations);
 
-    try {
-      const contentHtml = readEditorContent();
-      const translations = {
-        ...createEmptyTranslations(),
-        ...(form.translations || {}),
-        [activeLanguage]: {
-          ...getFormTranslation(form, activeLanguage),
-          contentHtml,
-        },
-      };
-      const primaryTranslation = getPrimaryTranslation(translations);
-      const payload = {
-        title: primaryTranslation.title,
-        slug: form.slug,
-        status: form.status,
-        publishedAt: toIsoDateTimeValue(form.publishedAt),
-        summary: primaryTranslation.summary,
-        categories: form.categories,
-        contentHtml: primaryTranslation.contentHtml,
-        translations,
-        media: form.media,
-        mediaGallery: form.mediaGallery,
-      };
-      const response = await fetch(
-        form.id ? `/api/admin/posts/${form.id}` : "/api/admin/posts",
-        {
-          method: form.id ? "PUT" : "POST",
-          headers: {"Content-Type": "application/json"},
-          body: JSON.stringify(payload),
-        }
-      );
-      const data = await response.json().catch(() => ({}));
+    return {
+      title: primaryTranslation.title,
+      slug: form.slug,
+      status: form.status,
+      publishedAt: toIsoDateTimeValue(form.publishedAt),
+      summary: primaryTranslation.summary,
+      categories: form.categories,
+      contentHtml: primaryTranslation.contentHtml,
+      translations,
+      media: form.media,
+      mediaGallery: form.mediaGallery,
+    };
+  }
 
-      if (!response.ok) {
-        throw new Error(data.error || "Unable to save post.");
+  async function persistPost({showSuccess = true} = {}) {
+    const wasCreating = !form.id;
+    const response = await fetch(
+      form.id ? `/api/admin/posts/${form.id}` : "/api/admin/posts",
+      {
+        method: form.id ? "PUT" : "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(buildPostPayload()),
       }
+    );
+    const data = await response.json().catch(() => ({}));
 
-      const wasCreating = !form.id;
+    if (!response.ok) {
+      throw new Error(data.error || "Unable to save post.");
+    }
 
-      setFormFromPost(data.post);
-      onSaved?.(data.post);
+    setFormFromPost(data.post);
+    onSaved?.(data.post);
+
+    if (wasCreating && data.post?.id) {
+      router.replace(`/admin/posts/${data.post.id}`);
+    }
+
+    if (showSuccess) {
       showSnackbar({
         type: "success",
         title: "Post saved",
@@ -1043,12 +1631,61 @@ export default function EditPostForm({
           STATUS_LABELS[data.post.status]
         }.`,
       });
+    }
 
-      if (wasCreating && data.post?.id) {
-        router.replace(`/admin/posts/${data.post.id}`);
-        return;
-      }
+    return data.post;
+  }
+
+  async function savePost(event) {
+    event.preventDefault();
+    setIsSaving(true);
+    closeSnackbar();
+
+    try {
+      await persistPost();
     } catch (error) {
+      showSnackbar({type: "error", message: error.message});
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function previewPost() {
+    const previewWindow = window.open("about:blank", "_blank");
+
+    if (!previewWindow) {
+      showSnackbar({
+        type: "error",
+        message: "The preview tab was blocked by the browser.",
+      });
+      return;
+    }
+
+    previewWindow.opener = null;
+    previewWindow.document.title = "Preparing post preview";
+    previewWindow.document.body.style.fontFamily = "system-ui, sans-serif";
+    previewWindow.document.body.style.padding = "24px";
+    previewWindow.document.body.textContent = "Preparing preview...";
+
+    setIsSaving(true);
+    closeSnackbar();
+
+    try {
+      const savedPost = await persistPost({showSuccess: false});
+      const previewUrl = new URL(
+        `/admin/posts/${savedPost.id}/preview`,
+        window.location.origin
+      );
+      previewUrl.searchParams.set("lng", activeLanguage);
+
+      previewWindow.location.replace(previewUrl.toString());
+      showSnackbar({
+        type: "success",
+        title: "Preview opened",
+        message: "The latest draft was saved and opened in a new tab.",
+      });
+    } catch (error) {
+      previewWindow.close();
       showSnackbar({type: "error", message: error.message});
     } finally {
       setIsSaving(false);
@@ -1064,6 +1701,12 @@ export default function EditPostForm({
   );
   const isTranslateMode = aiForm.mode === "translate";
   const isTableActive = Boolean(editor?.isActive("table"));
+  const contentImageMenuAlign = contentImageMenu
+    ? normalizeContentImageAlign(contentImageMenu.attrs?.align)
+    : "";
+  const contentImageMenuSize = contentImageMenu
+    ? normalizeContentImageSize(contentImageMenu.attrs?.size)
+    : "";
   const hasSelectedAiTarget = Object.values(aiForm.targetFields).some(Boolean);
 
   return (
@@ -1092,11 +1735,21 @@ export default function EditPostForm({
         <div className={styles.buttonRow}>
           <button
             className={`${styles.secondaryButton} ${styles.aiAssistantButton} ${styles.iconTextButton}`}
+            disabled={isSaving}
             type="button"
             onClick={() => setIsAiModalOpen(true)}
           >
             <Sparkles aria-hidden="true" size={17} strokeWidth={2.3} />
             AI tools
+          </button>
+          <button
+            className={`${styles.secondaryButton} ${styles.iconTextButton}`}
+            disabled={isSaving || isUploading}
+            type="button"
+            onClick={previewPost}
+          >
+            <ExternalLink aria-hidden="true" size={17} strokeWidth={2.3} />
+            Preview
           </button>
           <Link
             className={`${styles.secondaryButton} ${styles.backButton}`}
@@ -1755,6 +2408,23 @@ export default function EditPostForm({
               </div>
 
               <div className={styles.richTextToolbarGroup}>
+                <label
+                  aria-disabled={!editor || isUploading}
+                  aria-label="Upload content image"
+                  className={styles.richTextUploadButton}
+                  title="Upload content image"
+                >
+                  <ImagePlus aria-hidden="true" size={18} strokeWidth={2.2} />
+                  <input
+                    accept="image/jpeg,image/png,image/gif"
+                    disabled={!editor || isUploading}
+                    type="file"
+                    onChange={uploadContentImages}
+                  />
+                </label>
+              </div>
+
+              <div className={styles.richTextToolbarGroup}>
                 <ToolbarButton
                   active={editor?.isActive("link")}
                   disabled={!editor}
@@ -1794,6 +2464,92 @@ export default function EditPostForm({
             editor={editor}
           />
         </div>
+
+        {contentImageMenu && (
+          <div
+            className={styles.richTextImageMenu}
+            data-content-image-menu
+            role="menu"
+            style={{
+              left: contentImageMenu.x,
+              top: contentImageMenu.y,
+            }}
+            onContextMenu={(event) => event.preventDefault()}
+          >
+            <div className={styles.richTextImageMenuSection}>
+              <div className={styles.richTextImageMenuLabel}>Alignment</div>
+              <ContentImageMenuButton
+                active={contentImageMenuAlign === "block"}
+                icon={AlignCenter}
+                onClick={() => updateContentImageFromMenu({align: "block"})}
+              >
+                Below text
+              </ContentImageMenuButton>
+              <ContentImageMenuButton
+                active={contentImageMenuAlign === "left"}
+                icon={AlignLeft}
+                onClick={() => updateContentImageFromMenu({align: "left"})}
+              >
+                Wrap left
+              </ContentImageMenuButton>
+              <ContentImageMenuButton
+                active={contentImageMenuAlign === "right"}
+                icon={AlignRight}
+                onClick={() => updateContentImageFromMenu({align: "right"})}
+              >
+                Wrap right
+              </ContentImageMenuButton>
+              <ContentImageMenuButton
+                active={contentImageMenuAlign === "full"}
+                icon={StretchHorizontal}
+                onClick={() => updateContentImageFromMenu({align: "full"})}
+              >
+                Full width
+              </ContentImageMenuButton>
+            </div>
+
+            <div className={styles.richTextImageMenuSection}>
+              <div className={styles.richTextImageMenuLabel}>Size</div>
+              <ContentImageMenuButton
+                active={contentImageMenuSize === "small"}
+                icon={Minimize2}
+                onClick={() => updateContentImageFromMenu({size: "small"})}
+              >
+                Small
+              </ContentImageMenuButton>
+              <ContentImageMenuButton
+                active={contentImageMenuSize === "medium"}
+                icon={ImageIcon}
+                onClick={() => updateContentImageFromMenu({size: "medium"})}
+              >
+                Medium
+              </ContentImageMenuButton>
+              <ContentImageMenuButton
+                active={contentImageMenuSize === "large"}
+                icon={Maximize2}
+                onClick={() => updateContentImageFromMenu({size: "large"})}
+              >
+                Large
+              </ContentImageMenuButton>
+            </div>
+
+            <div className={styles.richTextImageMenuSection}>
+              <ContentImageMenuButton
+                icon={Captions}
+                onClick={editContentImageFromMenu}
+              >
+                Edit alt text
+              </ContentImageMenuButton>
+              <ContentImageMenuButton
+                destructive
+                icon={Trash2}
+                onClick={removeContentImageFromMenu}
+              >
+                Remove image
+              </ContentImageMenuButton>
+            </div>
+          </div>
+        )}
       </section>
     </form>
   );
