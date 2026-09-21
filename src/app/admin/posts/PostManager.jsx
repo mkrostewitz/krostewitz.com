@@ -349,6 +349,55 @@ function getShareImageStatus(post) {
   return media.fileName || "Attached blog image";
 }
 
+function getShareHistoryText(entry) {
+  return String(entry?.shareText || entry?.commentary || "").trim();
+}
+
+function getShareHistoryMediaUrl(media) {
+  return String(media?.sourceUrl || media?.url || "").trim();
+}
+
+function getShareHistoryImage(entry, post) {
+  const savedUrl = getShareHistoryMediaUrl(entry?.media);
+
+  if (savedUrl) {
+    return {
+      ...entry.media,
+      url: savedUrl,
+      isCurrentPostFallback: false,
+    };
+  }
+
+  if (!entry?.includeImage) return null;
+
+  const currentMedia = getLinkedInImageMedia(post);
+
+  if (!currentMedia?.url) return null;
+
+  return {
+    altText: currentMedia.fileName || "LinkedIn share image",
+    fileName: currentMedia.fileName || "",
+    mimeType: currentMedia.mimeType || "",
+    sourceUrl: currentMedia.url,
+    url: currentMedia.url,
+    isCurrentPostFallback: true,
+  };
+}
+
+function getShareHistoryImageTitle(image) {
+  if (image?.isCurrentPostFallback) return "Current attached image";
+
+  return image?.fileName || "Shared image";
+}
+
+function getShareHistoryImageDetail(image) {
+  if (image?.isCurrentPostFallback) {
+    return "Older event without a saved image snapshot";
+  }
+
+  return image?.mimeType || image?.sourceUrl || "";
+}
+
 function hasLinkedInScope(linkedin, scope) {
   return (Array.isArray(linkedin?.scopes) ? linkedin.scopes : []).includes(scope);
 }
@@ -545,12 +594,14 @@ function getLinkedInShareHistory(post) {
       kind: "Scheduled share",
       language: schedule.language,
       linkedInPostUrl: schedule.linkedInPostUrl || linkedShare?.postUrl || "",
+      media: schedule.media || linkedShare?.media || null,
       organization: schedule.organization,
       processingStartedAt: schedule.processingStartedAt,
       publishedAt: schedule.publishedAt,
       canceledAt: schedule.canceledAt,
       scheduledAt: schedule.scheduledAt,
       scheduledTimeZone: schedule.scheduledTimeZone,
+      shareText: schedule.shareText || linkedShare?.commentary || "",
       status: schedule.status || "scheduled",
       target: schedule.target || "personal_profile",
     };
@@ -561,9 +612,11 @@ function getLinkedInShareHistory(post) {
       id: `share-${share.postUrn || share.sharedAt}`,
       account: share.account,
       commentary: share.commentary,
+      includeImage: Boolean(share.media),
       kind: "Immediate share",
       language: share.language,
       linkedInPostUrl: share.postUrl,
+      media: share.media || null,
       organization: share.organization,
       publishedAt: share.sharedAt,
       sharedAt: share.sharedAt,
@@ -580,6 +633,7 @@ function getLinkedInShareHistory(post) {
     includeImage: attempt.includeImage,
     kind: attempt.attemptType === "scheduled" ? "Scheduled share" : "Immediate share",
     language: attempt.language,
+    media: attempt.media || null,
     organization: attempt.organization,
     status: attempt.status || "failed",
     target: attempt.target || "personal_profile",
@@ -1840,6 +1894,15 @@ export default function PostManager({user}) {
                     const statusTime = getShareHistoryStatusTime(entry);
                     const statusLabel =
                       SHARE_HISTORY_STATUS_LABELS[status] || status;
+                    const shareText = getShareHistoryText(entry);
+                    const shareImage = getShareHistoryImage(
+                      entry,
+                      pendingSharePost
+                    );
+                    const missingShareImageText =
+                      entry.includeImage && !shareImage
+                        ? "Image was selected, but this older event has no saved image snapshot."
+                        : "";
 
                     return (
                       <article className={styles.shareHistoryItem} key={entry.id}>
@@ -1912,6 +1975,45 @@ export default function PostManager({user}) {
                           <p className={styles.shareHistoryFailure}>
                             {entry.failure}
                           </p>
+                        )}
+                        {(shareText || shareImage || missingShareImageText) && (
+                          <div className={styles.shareHistorySnapshot}>
+                            {shareText && (
+                              <div className={styles.shareHistoryText}>
+                                <span>Content</span>
+                                <p>{shareText}</p>
+                              </div>
+                            )}
+                            {shareImage ? (
+                              <div className={styles.shareHistoryMedia}>
+                                {/* eslint-disable-next-line @next/next/no-img-element -- Historical share images can reference arbitrary external URLs. */}
+                                <img
+                                  alt={
+                                    shareImage.altText ||
+                                    shareImage.fileName ||
+                                    "LinkedIn share image"
+                                  }
+                                  src={shareImage.url}
+                                />
+                                <div>
+                                  <strong>
+                                    {getShareHistoryImageTitle(shareImage)}
+                                  </strong>
+                                  {getShareHistoryImageDetail(shareImage) && (
+                                    <span>
+                                      {getShareHistoryImageDetail(shareImage)}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            ) : (
+                              missingShareImageText && (
+                                <p className={styles.shareHistoryMediaMissing}>
+                                  {missingShareImageText}
+                                </p>
+                              )
+                            )}
+                          </div>
                         )}
                         {entry.linkedInPostUrl && (
                           <Link
