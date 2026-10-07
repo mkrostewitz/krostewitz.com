@@ -2532,7 +2532,7 @@
   min-height: 100%;
   padding: 16px;
   direction: ltr;
-  line-height: 1.58;
+  line-height: 1.45;
   outline: none;
   text-align: left;
   unicode-bidi: plaintext;
@@ -2543,7 +2543,15 @@
 }
 
 .richEditor :global(.ProseMirror) > * + * {
-  margin-top: 0.55em;
+  margin-top: 0.3em;
+}
+
+.richEditor :global(.ProseMirror) :is(li, blockquote) > p {
+  margin-block: 0;
+}
+
+.richEditor :global(.ProseMirror) :is(li, blockquote) > p + p {
+  margin-top: 0.3em;
 }
 
 .richEditor :global(.ProseMirror) h2,

@@ -71,6 +71,8 @@ import {
   SITE_LANGUAGES,
 } from "@/lib/siteLanguages";
 
+import {plainTextToArticleHtml, shouldFormatClipboardText} from "@/lib/editorPaste";
+
 import styles from "../admin.module.css";
 
 const EMPTY_TRANSLATION = {
@@ -637,128 +639,6 @@ function getAiPromptPlaceholder(mode) {
   return "Describe what should change: make it sharper, shorter, more executive, more technical, more conversational, etc.";
 }
 
-function escapeHtml(value) {
-  return String(value || "").replace(/[&<>"']/g, (character) => {
-    const entities = {
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#39;",
-    };
-
-    return entities[character];
-  });
-}
-
-function getPlainTextGroups(value) {
-  const normalized = String(value || "")
-    .replace(/\r\n?/g, "\n")
-    .replace(/[ \t]+$/gm, "")
-    .trim();
-
-  if (!normalized) return [];
-
-  return normalized
-    .split(/\n{2,}/)
-    .map((group) =>
-      group
-        .split("\n")
-        .map((line) => line.trim())
-        .filter(Boolean)
-    )
-    .filter((group) => group.length > 0);
-}
-
-function isLikelyHeadingGroup(group) {
-  if (!Array.isArray(group) || group.length !== 1) return false;
-
-  const text = group[0];
-  return text.length <= 90 && /[a-z0-9]/i.test(text) && !/[.!?,:;]$/.test(text);
-}
-
-function isNumberedHeadingGroup(group) {
-  return (
-    Array.isArray(group) &&
-    group.length === 1 &&
-    group[0].length <= 110 &&
-    /^\d+[.)]\s+\S/.test(group[0])
-  );
-}
-
-function getUnorderedListItem(line) {
-  const match = String(line || "").match(/^([-*+]|\u2022)\s+(.+)$/);
-  return match ? match[2] : null;
-}
-
-function getOrderedListItem(line) {
-  const match = String(line || "").match(/^\d+[.)]\s+(.+)$/);
-  return match ? match[1] : null;
-}
-
-function renderList(tagName, items) {
-  return `<${tagName}>${items
-    .map((item) => `<li>${escapeHtml(item)}</li>`)
-    .join("")}</${tagName}>`;
-}
-
-function renderParagraph(lines) {
-  return `<p>${lines.map(escapeHtml).join("<br>")}</p>`;
-}
-
-function textGroupEndsWithColon(group) {
-  return String(group?.join(" ") || "").trim().endsWith(":");
-}
-
-function isImplicitListGroup(group, previousGroup) {
-  return (
-    Array.isArray(group) &&
-    group.length >= 2 &&
-    textGroupEndsWithColon(previousGroup) &&
-    group.every((line) => line.length <= 160)
-  );
-}
-
-function plainTextToArticleHtml(value, options = {}) {
-  const groups = getPlainTextGroups(value);
-  if (groups.length === 0) return {html: "", title: ""};
-
-  let startIndex = 0;
-  let title = "";
-
-  if (options.extractTitle && isLikelyHeadingGroup(groups[0])) {
-    title = groups[0][0];
-    startIndex = 1;
-  }
-
-  const blocks = [];
-  let previousGroup = null;
-
-  for (let index = startIndex; index < groups.length; index += 1) {
-    const group = groups[index];
-    const unorderedItems = group.map(getUnorderedListItem);
-    const orderedItems = group.map(getOrderedListItem);
-
-    if (unorderedItems.every(Boolean)) {
-      blocks.push(renderList("ul", unorderedItems));
-    } else if (group.length > 1 && orderedItems.every(Boolean)) {
-      blocks.push(renderList("ol", orderedItems));
-    } else if (isImplicitListGroup(group, previousGroup)) {
-      blocks.push(renderList("ul", group));
-    } else if (isNumberedHeadingGroup(group)) {
-      blocks.push(`<h3>${escapeHtml(group[0])}</h3>`);
-    } else if (isLikelyHeadingGroup(group)) {
-      blocks.push(`<h2>${escapeHtml(group[0])}</h2>`);
-    } else {
-      blocks.push(renderParagraph(group));
-    }
-
-    previousGroup = group;
-  }
-
-  return {html: blocks.join(""), title};
-}
-
 function ToolbarButton({
   active = false,
   children,
@@ -891,9 +771,7 @@ export default function EditPostForm({
         const text = clipboard?.getData("text/plain");
         const html = clipboard?.getData("text/html");
         const editorIsEmpty = !editor?.getText().trim();
-        const hasStructuredPlainText = getPlainTextGroups(text).length >= 3;
-        const shouldFormatPlainText =
-          !html || event.shiftKey || (editorIsEmpty && hasStructuredPlainText);
+        const shouldFormatPlainText = shouldFormatClipboardText({text, html});
 
         if (!text || clipboard?.files?.length > 0 || !shouldFormatPlainText) {
           return false;
@@ -917,7 +795,7 @@ export default function EditPostForm({
             return currentTranslation.title.trim()
               ? current
               : updateFormTranslation(current, activeLanguageRef.current, {
-                  title: parsed.title,
+                  title: new DOMParser().parseFromString(parsed.title, "text/html").body.textContent || "",
                 });
           });
         }
@@ -2196,7 +2074,7 @@ export default function EditPostForm({
         <div className={styles.editorTitleRow}>
           <div className={styles.titleBlock}>
             <h2>Content</h2>
-            <p className={styles.muted}>Write and format the post body.</p>
+            <p className={styles.muted}>Paste Markdown to format headings, bold text, quotes, and lists. Use Shift+Enter for a compact line break.</p>
           </div>
         </div>
 
