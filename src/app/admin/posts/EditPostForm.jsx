@@ -694,6 +694,7 @@ function ContentImageMenuButton({
 export default function EditPostForm({
   backHref = "/admin/posts",
   post = null,
+  availableCategories = [],
   onSaved,
 }) {
   const router = useRouter();
@@ -952,8 +953,10 @@ export default function EditPostForm({
   }
 
   function addCategory(value = categoryDraft) {
-    const label = cleanCategoryLabel(value);
-    const key = slugCategoryLabel(label) || label.toLowerCase();
+    const label = cleanCategoryLabel(value?.label || value);
+    const key = value?.slug || slugCategoryLabel(label) || label.toLowerCase();
+    const category = categorySuggestions.find((item) => getCategoryKey(item) === key)
+      || {label, slug: key};
 
     if (!label) return;
 
@@ -966,7 +969,7 @@ export default function EditPostForm({
 
       return {
         ...current,
-        categories: [...categories, {label, slug: ""}],
+        categories: [...categories, category],
       };
     });
     setCategoryDraft("");
@@ -1571,6 +1574,11 @@ export default function EditPostForm({
   }
 
   const formCategories = normalizeFormCategories(form.categories);
+  const categorySuggestions = normalizeFormCategories([
+    ...availableCategories,
+    ...formCategories,
+    ...SUGGESTED_CATEGORIES,
+  ]).sort((left, right) => left.label.localeCompare(right.label));
   const formGalleryMedia = normalizeFormMediaGallery(form.mediaGallery);
   const activeTranslation = getFormTranslation(form, activeLanguage);
   const activeLanguageLabel = getSiteLanguageLabel(activeLanguage);
@@ -1773,6 +1781,7 @@ export default function EditPostForm({
                 <div className={styles.categoryInputRow}>
                   <input
                     id="post-categories"
+                    list="post-category-options"
                     placeholder="Add a category, for example Market data"
                     value={categoryDraft}
                     onChange={(event) => setCategoryDraft(event.target.value)}
@@ -1787,25 +1796,33 @@ export default function EditPostForm({
                   </button>
                 </div>
 
+                <datalist id="post-category-options">
+                  {categorySuggestions.map((category) => (
+                    <option key={getCategoryKey(category)} value={category.label} />
+                  ))}
+                </datalist>
+                <p className={styles.muted}>
+                  New categories are saved for reuse when you save the post.
+                </p>
                 <div
                   className={styles.categorySuggestions}
                   aria-label="Suggested categories"
                 >
-                  {SUGGESTED_CATEGORIES.map((category) => {
+                  {categorySuggestions.map((category) => {
                     const isSelected = formCategories.some(
                       (item) =>
-                        getCategoryKey(item) === slugCategoryLabel(category)
+                        getCategoryKey(item) === getCategoryKey(category)
                     );
 
                     return (
                       <button
                         className={styles.categorySuggestion}
                         disabled={isSelected}
-                        key={category}
+                        key={getCategoryKey(category)}
                         type="button"
                         onClick={() => addCategory(category)}
                       >
-                        {category}
+                        {category.label}
                       </button>
                     );
                   })}

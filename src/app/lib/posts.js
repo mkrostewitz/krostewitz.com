@@ -10,6 +10,7 @@ import {
   SITE_LANGUAGE_CODES,
 } from "../../lib/siteLanguages";
 import {getDb} from "./mongo";
+import {POST_CATEGORIES_COLLECTION, registerPostCategories} from "./postCategories.mjs";
 import {
   PUBLIC_CACHE_REVALIDATE_SECONDS,
   PUBLIC_CACHE_TAGS,
@@ -59,6 +60,7 @@ const CONTENT_IMAGE_ALIGNMENTS = new Set(["block", "left", "right", "full"]);
 const CONTENT_IMAGE_SIZES = new Set(["small", "medium", "large"]);
 
 let indexPromise = null;
+let categoryImportPromise = null;
 
 export class PostValidationError extends Error {
   constructor(message, status = 400) {
@@ -485,6 +487,41 @@ function normalizeCategories(value) {
   return categories;
 }
 
+async function ensurePostCategories(db) {
+  if (!categoryImportPromise) {
+    categoryImportPromise = (async () => {
+      // Import categories from drafts, published posts, and archived posts.
+      const existing = await getPostsCollection(db).distinct("categories");
+      const bySlug = new Map();
+      for (const item of existing) {
+        for (const category of normalizeCategories([item])) {
+          if (!bySlug.has(category.slug)) bySlug.set(category.slug, category);
+        }
+      }
+      await registerPostCategories(db, [...bySlug.values()]);
+    })().catch((error) => {
+      categoryImportPromise = null;
+      throw error;
+    });
+  }
+  await categoryImportPromise;
+}
+
+export async function getAdminPostCategories() {
+  const db = await getDb();
+  await ensurePostCategories(db);
+  const categories = await db.collection(POST_CATEGORIES_COLLECTION)
+    .find({}, {projection: {_id: 0, label: 1, slug: 1}})
+    .sort({label: 1})
+    .toArray();
+  return categories;
+}
+
+async function savePostCategories(db, categories) {
+  await ensurePostCategories(db);
+  return registerPostCategories(db, categories);
+}
+
 function normalizePublishedAt(input = {}) {
   if (!hasOwnProperty(input, "publishedAt")) return undefined;
 
@@ -867,7 +904,7 @@ export async function createPost(input, user) {
     slug,
     status: normalized.status,
     summary: normalized.summary,
-    categories: normalized.categories,
+    categories: await savePostCategories(db, normalized.categories),
     contentHtml: normalized.contentHtml,
     translations: normalized.translations,
     media: normalized.media,
@@ -907,7 +944,7 @@ export async function updatePost(postId, input, user) {
     title: normalized.title,
     status: normalized.status,
     summary: normalized.summary,
-    categories: normalized.categories,
+    categories: await savePostCategories(db, normalized.categories),
     contentHtml: normalized.contentHtml,
     translations: normalized.translations,
     media: normalized.media,

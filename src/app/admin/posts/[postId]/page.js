@@ -1,7 +1,7 @@
 import {notFound, redirect} from "next/navigation";
 
 import {getCurrentAdminUser} from "../../../lib/adminAuth";
-import {getAdminPostById, PostValidationError} from "../../../lib/posts";
+import {getAdminPostById, getAdminPostCategories, PostValidationError} from "../../../lib/posts";
 import AdminHeader from "../../AdminHeader";
 import styles from "../../admin.module.css";
 import EditPostForm from "../EditPostForm";
@@ -30,6 +30,8 @@ export default async function EditPostPage({params}) {
     notFound();
   }
 
+  const categories = await getAdminPostCategories();
+
   return (
     <div className={styles.shell}>
       <AdminHeader active="posts" user={user} />
@@ -43,7 +45,7 @@ export default async function EditPostPage({params}) {
         </div>
 
         <div className={styles.postWorkspace}>
-          <EditPostForm post={post} />
+          <EditPostForm post={post} availableCategories={categories} />
         </div>
       </main>
     </div>
