@@ -1646,6 +1646,7 @@ export default function EditPostForm({
         <div className={styles.postStatusGrid}>
           <label className={styles.field}>
             <span className={styles.fieldLabel}>Status</span>
+            <small>First publication queues an email for confirmed newsletter subscribers. Later edits do not send another notification. Delivery requires the newsletter scheduler.</small>
             <select
               value={form.status}
               onChange={(event) => updateField("status", event.target.value)}

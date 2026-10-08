@@ -876,6 +876,7 @@ export async function createPost(input, user) {
     updatedBy: user?.email || null,
     createdAt: now,
     updatedAt: now,
+    newsletter: normalized.status === "published" ? {startedAt: now, availableAt: now} : {pending: true},
     publishedAt:
       normalized.status === "published" ? normalized.publishedAt || now : null,
   };
@@ -939,7 +940,28 @@ export async function updatePost(postId, input, user) {
 
   const result = await posts.findOneAndUpdate(
     {_id},
-    {$set: update},
+    [{$set: {
+      ...Object.fromEntries(Object.entries(update).map(([key, value]) => [key, {$literal: value}])),
+      // Initialize in the same atomic write as publication; concurrent saves cannot reset delivery.
+      newsletter: {$cond: [
+        {$and: [
+          {$eq: [{$literal: normalized.status}, "published"]},
+          {$or: [
+            {$eq: ["$newsletter.pending", true]},
+            {$and: [
+              {$eq: [{$ifNull: ["$newsletter", null]}, null]},
+              {$ne: ["$status", "published"]},
+              {$eq: [{$ifNull: ["$publishedAt", null]}, null]},
+            ]},
+          ]},
+        ]},
+        {startedAt: now, availableAt: now},
+        {$ifNull: ["$newsletter", {$cond: [
+          {$or: [{$eq: ["$status", "published"]}, {$ne: [{$ifNull: ["$publishedAt", null]}, null]}]},
+          {skipped: true}, {pending: true},
+        ]}]},
+      ]},
+    }}],
     {returnDocument: "after"}
   );
   const post = result?.value || result;

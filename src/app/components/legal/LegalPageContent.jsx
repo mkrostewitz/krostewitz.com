@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import {newsletterCopy} from "../newsletter/copy";
 import {useEffect} from "react";
 import {useTranslation} from "react-i18next";
 
@@ -124,7 +125,8 @@ export function ImpressumContent({legal}) {
 }
 
 export function PrivacyContent({legal}) {
-  const {t} = useTranslation();
+  const {t, i18n} = useTranslation();
+  const newsletter = newsletterCopy[(i18n.resolvedLanguage || i18n.language || "en").startsWith("de") ? "de" : "en"];
   const profileName = legal.ownerName || legal.siteName;
   const legalBases = t("legal.privacy.legalBases.items", {returnObjects: true});
 
@@ -172,6 +174,11 @@ export function PrivacyContent({legal}) {
           <Paragraphs
             items={t("legal.privacy.contact.paragraphs", {returnObjects: true})}
           />
+        </section>
+
+        <section className={styles.section}>
+          <h2>{newsletter.privacyTitle}</h2>
+          <p>{newsletter.privacyBody}</p>
         </section>
 
         <section className={styles.section}>

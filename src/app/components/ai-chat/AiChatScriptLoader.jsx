@@ -125,7 +125,7 @@ export default function AiChatScriptLoader({enabled, scriptTag}) {
   const pathname = usePathname();
   const {i18n} = useTranslation();
   const {allowExternalServices, hasDecision} = useCookieConsent();
-  const isAdminPath = pathname?.startsWith("/admin") || false;
+  const isPrivatePath = pathname?.startsWith("/admin") || pathname === "/newsletter";
   const language = getCurrentSiteLanguage(i18n, scriptTag);
 
   useEffect(() => {
@@ -136,7 +136,7 @@ export default function AiChatScriptLoader({enabled, scriptTag}) {
     if (
       !enabled ||
       !scriptTag ||
-      isAdminPath ||
+      isPrivatePath ||
       !hasDecision ||
       !allowExternalServices
     ) {
@@ -162,7 +162,7 @@ export default function AiChatScriptLoader({enabled, scriptTag}) {
     allowExternalServices,
     enabled,
     hasDecision,
-    isAdminPath,
+    isPrivatePath,
     language,
     scriptTag,
   ]);

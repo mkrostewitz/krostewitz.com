@@ -1,3 +1,4 @@
+import NewsletterSignup from "../../components/newsletter/NewsletterSignup";
 import {cookies} from "next/headers";
 import Link from "next/link";
 import {notFound} from "next/navigation";
@@ -231,6 +232,8 @@ export default async function BlogPostPage({params, searchParams}) {
             className={styles.content}
             dangerouslySetInnerHTML={{__html: post.contentHtml}}
           />
+
+          <NewsletterSignup language={language} />
 
           <ShareButtons
             summary={post.summary}

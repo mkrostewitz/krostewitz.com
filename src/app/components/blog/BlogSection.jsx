@@ -3,6 +3,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import Link from "next/link";
+import NewsletterSignup from "../newsletter/NewsletterSignup";
 import {useEffect, useMemo, useState} from "react";
 import {useTranslation} from "react-i18next";
 
@@ -278,6 +279,7 @@ export default function BlogSection() {
           {posts.length > 0 ? t("blog.emptyFiltered") : t("blog.empty")}
         </p>
       ) : null}
+      {!isLoading && <NewsletterSignup />}
     </section>
   );
 }

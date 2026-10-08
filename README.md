@@ -167,3 +167,26 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Article newsletter
+
+Visitors can subscribe from the homepage blog section or an article page, in English or German. An explicit checkbox and a confirmation email are required; confirmation links expire after 24 hours. Opening an email link does not change a subscription until the visitor presses the confirmation or unsubscribe button, so email link scanners do not activate subscriptions or unsubscribe readers.
+
+Setup before enabling this in production:
+
+1. Configure and test SMTP in `/admin/mail-calendar` (the existing environment SMTP settings also work).
+2. Set `NEXT_PUBLIC_SITE_URL` to your canonical origin, e.g. `https://krostewitz.com`. `AUTH_BASE_URL` or Netlify's `URL` is used as a fallback. Email links always use configuration, not a visitor-supplied host header.
+3. Set `NEWSLETTER_SCHEDULER_SECRET` to a long random secret in the deployment environment and redeploy. The included Netlify `newsletter-scheduler` runs every minute and calls the authenticated `/api/admin/newsletter/scheduled` endpoint. For other hosts, schedule a POST to that endpoint with `Authorization: Bearer <secret>` once per minute. Never expose this secret to client code.
+
+The first publication atomically queues notifications in the post's `newsletter` field. Saving edits, changing the publication date, or archiving and republishing does not create a new campaign. Previously published articles are not backfilled. Only subscribers confirmed before that first publication receive the announcement. A custom publication date remains display metadata, as in the existing editor; it does not schedule publication. Hidden blogs and unpublished posts pause delivery.
+
+Each scheduler call sends to one subscriber, individually, using the saved language and existing post translation fallback. This conservative rate (up to 60 messages/hour) is intended for a small personal newsletter. Failed deliveries retry after five minutes, up to five attempts, then record a failure and continue. Disabled or unconfigured SMTP pauses processing. MongoDB stores progress and a five-minute worker lease to prevent overlapping runs. SMTP cannot guarantee exactly-once delivery: a process crash after SMTP accepts a message but before progress is saved can cause a duplicate on retry.
+
+Operational records:
+
+- `newsletter_subscribers`: email, language, consent version, confirmation dates, hashed confirmation token, and unsubscribe token. Unconfirmed subscriptions expire after 24 hours; unsubscribed records after 30 days, using MongoDB TTL indexes.
+- `newsletter_rate_limits`: hashed network identifiers and hourly request counts, automatically expiring after two hours. Netlify's trusted connection IP header is preferred; deployments behind other proxies should provide a trusted `x-real-ip` header. Requests without either share a fallback limit.
+- `posts.newsletter`: campaign cursor, sent count, retry count, next available time, and completion date.
+- `newsletter_failures`: post/subscriber IDs for recipients skipped after five failed attempts; inspect these and the Netlify function logs to investigate delivery failures. SMTP acceptance does not guarantee inbox placement; bounce processing is not included.
+
+For local testing, use a separate MongoDB database and an SMTP test inbox. Subscribe, confirm, publish a draft, and call the scheduler endpoint with the configured secret. Verify a second call does not repeat delivery, ordinary post edits do not restart a campaign, and unsubscribed addresses receive no subsequent announcements. Automated delivery checks: `node --test src/app/lib/newsletterCore.test.mjs`.
