@@ -59,3 +59,37 @@
 
 .importRows { display: grid; gap: 1rem; margin: 1rem 0; }
 .importRow { min-width: 0; border: 1px solid var(--border-muted); border-radius: 8px; padding: 1rem; display: grid; gap: .75rem; }
+
+.activityModal.importModal { width: min(720px, calc(100vw - 32px)); }
+.importModal[open] { display: grid; gap: 20px; }
+.importHeader { display: flex; align-items: flex-start; gap: 16px; justify-content: space-between; }
+.importHeader > div { display: grid; gap: 8px; }
+.importHeader h2 { font-size: 1.4rem; line-height: 1.3; }
+.importHeader p, .importHint { color: var(--text-muted); font-size: .875rem; line-height: 1.6; }
+.importHeader > button { flex-shrink: 0; }
+.importUpload { display: grid; gap: 16px; min-width: 0; padding: 20px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-subtle); }
+.importUploadHeading { display: flex; align-items: center; gap: 12px; }
+.importUploadHeading > svg { color: var(--accent); flex-shrink: 0; }
+.importUploadHeading label { font-size: .95rem; font-weight: 700; }
+.importUploadHeading p { margin-top: 4px; color: var(--text-muted); font-size: .8rem; }
+.importFilePicker { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; min-width: 0; }
+.importFileControl { position: relative; max-width: 100%; }
+.importFile { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.importFile::file-selector-button { cursor: pointer; }
+.importFileButton { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 42px; box-sizing: border-box; padding: 10px 14px; border: 1px solid var(--border-strong); border-radius: 7px; background: var(--surface); color: var(--foreground); font-size: .875rem; font-weight: 600; transition: background .16s ease, border-color .16s ease; }
+.importFileButton svg { flex-shrink: 0; }
+.importFile:not(:disabled):hover + .importFileButton { border-color: var(--accent); background: var(--accent-soft); }
+.importFile:focus-visible + .importFileButton { outline: 2px solid var(--accent); outline-offset: 3px; }
+.importFile:disabled + .importFileButton { opacity: .58; }
+.importFile:disabled, .importFile:disabled::file-selector-button { cursor: not-allowed; }
+.importFileName { flex: 1 1 160px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-muted); font-size: .8rem; }
+.importTemplate { display: grid; justify-items: start; gap: 10px; padding-top: 16px; border-top: 1px solid var(--border); }
+.importMessage { padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-muted); font-size: .875rem; line-height: 1.6; overflow-wrap: anywhere; }
+.importModal .importRows { margin: 0; }
+.importActions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 10px; border-top: 1px solid var(--border); padding-top: 20px; }
+
+@media (max-width: 480px) {
+  .activityModal.importModal { padding: 20px 16px; }
+  .importUpload { padding: 16px; }
+  .importActions > button { flex: 1 1 auto; }
+}
