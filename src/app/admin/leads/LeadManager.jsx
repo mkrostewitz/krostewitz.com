@@ -10,6 +10,7 @@ import styles from "../admin.module.css";
 import OutreachForm from "./OutreachForm";
 import LeadMap from "./LeadMap";
 import DeleteLeadModal from "./DeleteLeadModal";
+import ImportLeadModal from "./ImportLeadModal";
 import CreateLeadModal from "./CreateLeadModal";
 import outreach from "./outreach.module.css";
 import {ACTIVITY_TYPES, CHANNELS, followUpState, localDay, matchesLeadFilters} from "../../lib/leadOutreach.mjs";
@@ -109,6 +110,7 @@ export default function LeadManager({user}) {
   const [sourceFilter, setSourceFilter] = useState("");
   const [footerTarget, setFooterTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [isImporting, setIsImporting] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [isMapOpen, setIsMapOpen] = useState(false);
   const [today, setToday] = useState(localDay);
@@ -373,9 +375,14 @@ export default function LeadManager({user}) {
         </div>
 
         <div className={styles.buttonRow}>
+          <button className={styles.secondaryButton} type="button" onClick={() => setIsImporting(true)}>Import Excel</button>
           <button className={styles.button} type="button" disabled={isCreating} onClick={() => setIsCreating(true)}>Add new lead</button>
           <button className={styles.secondaryButton} type="button" aria-pressed={followUpFilter === "due"} onClick={() => {setFollowUpFilter("due"); setStatusFilter(""); setSourceFilter(""); setSearch("");}}>{dueCount} follow-ups due</button>
         </div>
+        {isImporting && <ImportLeadModal onClose={() => setIsImporting(false)} onImported={(imported) => {
+          setLeads(current => [...imported, ...current]);
+          setStatusFilter(''); setSearch(''); setSourceFilter(''); setFollowUpFilter('');
+        }} />}
         {isCreating && <CreateLeadModal saving={savingLeadId === "new"}
           onSave={createLead} onClose={() => setIsCreating(false)} />}
         <div className={outreach.filters}>
