@@ -5,12 +5,14 @@ import {useId, useState} from "react";
 import {useTranslation} from "react-i18next";
 import "../../../lib/i18n";
 import {newsletterCopy} from "./copy";
+import {useSnackbar} from "../snackbar/SnackbarProvider";
 import styles from "./newsletter.module.css";
 
 export default function NewsletterSignup({language: initialLanguage}) {
   const {i18n} = useTranslation();
   const language = (initialLanguage || i18n.resolvedLanguage || i18n.language || "en").startsWith("de") ? "de" : "en";
   const copy = newsletterCopy[language];
+  const {showSnackbar} = useSnackbar();
   const id = useId();
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
@@ -25,9 +27,24 @@ export default function NewsletterSignup({language: initialLanguage}) {
       const response = await fetch("/api/newsletter", {method: "POST", headers: {"Content-Type": "application/json"},
         body: JSON.stringify({email: data.get("email"), website: data.get("website"), consent: data.get("consent") === "on", language})});
       const result = await response.json();
-      if (!response.ok) setStatus(["invalid", "rateLimit"].includes(result.error) ? result.error : "unavailable");
-      else { setStatus("success"); form.reset(); }
-    } catch { setStatus("unavailable"); }
+      if (!response.ok) {
+        const error = ["invalid", "rateLimit"].includes(result.error) ? result.error : "unavailable";
+        setStatus(error);
+        showSnackbar({type: "error", message: copy[error], duration: 8000});
+      } else {
+        setStatus("success");
+        showSnackbar({
+          type: "success",
+          title: copy.checkInbox,
+          message: copy.confirmationSent.replace("{email}", String(data.get("email") || "").trim()),
+          duration: 12000,
+        });
+        form.reset();
+      }
+    } catch {
+      setStatus("unavailable");
+      showSnackbar({type: "error", message: copy.unavailable, duration: 8000});
+    }
     finally { setBusy(false); }
   }
   return (
