@@ -375,7 +375,7 @@ export default function LeadManager({user}) {
         </div>
 
         <div className={styles.buttonRow}>
-          <button className={styles.secondaryButton} type="button" onClick={() => setIsImporting(true)}>Import Excel</button>
+          <button className={styles.secondaryButton} type="button" onClick={() => setIsImporting(true)}>Import leads</button>
           <button className={styles.button} type="button" disabled={isCreating} onClick={() => setIsCreating(true)}>Add new lead</button>
           <button className={styles.secondaryButton} type="button" aria-pressed={followUpFilter === "due"} onClick={() => {setFollowUpFilter("due"); setStatusFilter(""); setSourceFilter(""); setSearch("");}}>{dueCount} follow-ups due</button>
         </div>

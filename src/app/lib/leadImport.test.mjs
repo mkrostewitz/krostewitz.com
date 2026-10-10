@@ -1,8 +1,27 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {spreadsheetLeads, normalizeImportEntry, importDay, importIdentity} from './leadImport.mjs';
+import {readFileSync} from 'node:fs';
+import {csvRows, spreadsheetLeads, normalizeImportEntry, importDay, importIdentity} from './leadImport.mjs';
 const header = [null,'Firma','Ansprechpartner','Status','Datum','Tool','Nachverfolgung'];
 const row = [null,'Example Co','Herr Ada Lovelace','Kontaktanfrage geschickt',46303,'LinkedIn',46308];
+test('downloadable CSV template imports valid contacts and activities', () => {
+  const source = readFileSync(new URL('../../../public/templates/leads-template.csv', import.meta.url), 'utf8');
+  const entries = spreadsheetLeads(csvRows(source));
+  assert.equal(entries.length, 2);
+  assert.ok(entries.every(entry => !entry.error));
+  assert.equal(entries[0].contact.firstName, 'Anna');
+  assert.equal(normalizeImportEntry(entries[0]).action.type, 'connection_requested');
+  assert.equal(entries[1].followUpOn, '2026-10-17');
+});
+test('CSV handles BOM, quoted delimiters, escaped quotes, multiline cells and CRLF', () => {
+  assert.deepEqual(csvRows('\uFEFFFirma,Status\r\n"Example, Inc.","Said ""Hello""\nThen followed up"\r\n'), [
+    ['Firma', 'Status'], ['Example, Inc.', 'Said "Hello"\nThen followed up'],
+  ]);
+  assert.deepEqual(csvRows('Firma;Ansprechpartner\r\nExample;Anna Beispiel'), [['Firma', 'Ansprechpartner'], ['Example', 'Anna Beispiel']]);
+  assert.deepEqual(csvRows('a,b,\n'), [['a', 'b', '']]);
+  assert.throws(() => csvRows('a,"unfinished'), /unclosed quote/);
+  assert.throws(() => csvRows('a,"closed"unexpected'), /Invalid CSV quoting/);
+});
 test('finds German headers below title rows and ignores template rows', () => {
   const entries = spreadsheetLeads([[null,46303],[],header,row,[null,null,null,'Status',null,'Tool']]);
   assert.equal(entries.length,1);

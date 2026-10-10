@@ -1,6 +1,34 @@
 import {normalizeContact, normalizeActivity, normalizeDay, addDays} from './leadOutreach.mjs';
 
 const text = value => String(value ?? '').trim();
+export function csvRows(source) {
+  const input = source.replace(/^\uFEFF/, '');
+  const rows = [];
+  let row = [], field = '', quoted = false, afterQuote = false;
+  // Excel may use semicolons in locales that use a decimal comma.
+  const firstLine = input.split(/\r?\n/, 1)[0];
+  const delimiter = firstLine.includes(';') && !firstLine.includes(',') ? ';' : ',';
+  const cell = () => {row.push(field); field = ''; afterQuote = false;};
+  for (let index = 0; index < input.length; index++) {
+    const char = input[index];
+    if (quoted) {
+      if (char !== '"') field += char;
+      else if (input[index + 1] === '"') {field += '"'; index++;}
+      else {quoted = false; afterQuote = true;}
+    } else if (char === delimiter) cell();
+    else if (char === '\n' || char === '\r') {
+      cell(); rows.push(row); row = [];
+      if (char === '\r' && input[index + 1] === '\n') index++;
+    } else if (char === '"' && !field && !afterQuote) quoted = true;
+    else {
+      if (afterQuote || char === '"') throw new Error('Invalid CSV quoting. Save the file as CSV and try again.');
+      field += char;
+    }
+  }
+  if (quoted) throw new Error('An unclosed quote was found in the CSV file.');
+  if (field || row.length || afterQuote) {cell(); rows.push(row);}
+  return rows;
+}
 export const importIdentity = contact => [contact.name, contact.company].map(value => text(value).normalize('NFKC').toLowerCase().replace(/\s+/g, ' ')).join('|');
 export function importDay(value) {
   if (value == null || value === '') return null;
