@@ -1,0 +1,58 @@
+.form { display: grid; gap: 1rem; }
+.fieldset { display: grid; gap: 1rem; min-width: 0; margin: 0; padding: 0; border: 0; }
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.wide { grid-column: 1 / -1; }
+.contactDetails summary { cursor: pointer; font-weight: 600; padding: .5rem 0 1rem; }
+.followUp { display: grid; gap: 1rem; border-top: 1px solid var(--border-color, #8884); padding-top: 1rem; }
+.followUp h3 { margin: 0; }
+.filters { display: flex; flex-wrap: wrap; gap: .75rem; padding: 1rem 0; align-items: end; }
+.filters label { flex: 1 1 180px; }
+
+.activityModal.createModal { width: min(800px, calc(100vw - 32px)); }
+.mapToggle { margin-bottom: 1rem; }
+.mapToggle summary { cursor: pointer; padding: 1rem; }
+@media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }
+
+.activityModal { margin: auto; width: min(560px, calc(100vw - 32px)); max-height: calc(100dvh - 48px); overflow-y: auto; box-sizing: border-box; border: 1px solid var(--border); border-radius: 12px; padding: 24px; background: var(--surface); color: var(--foreground); }
+.activityModal::backdrop { background: #0008; }
+.activityModal h2, .activityModal p, .contactMap h3 { margin: 0; }
+.contactMap { display: grid; gap: 12px; }
+
+.addressBlock { display: grid; gap: 12px; border-top: 1px solid var(--border); padding-top: 1rem; }
+.addressBlock h3, .addressBlock p { margin: 0; }
+.addressAutocomplete { position: relative; }
+.addressResults { position: absolute; z-index: 10; top: calc(100% + 4px); left: 0; right: 0; max-height: 240px; overflow-y: auto; overscroll-behavior: contain; list-style: none; margin: 0; padding: 4px; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--surface); color: var(--foreground); box-shadow: 0 8px 24px #0003; }
+.addressResults [role="option"] { cursor: pointer; padding: 10px 12px; border-radius: 4px; overflow-wrap: anywhere; }
+.addressResults [aria-selected="true"] { background: var(--accent-soft); color: var(--foreground); outline: 1px solid var(--accent); outline-offset: -1px; }
+
+.followUpCell { display: grid; justify-items: start; gap: 6px; }
+.followUpChip { display: inline-flex; align-items: center; border: 1px solid; border-radius: 999px; padding: 4px 9px; font-size: .78rem; font-weight: 700; line-height: 1.3; white-space: nowrap; }
+.overdue { color: #9f2525; background: #fff0f0; border-color: #e7a3a3; }
+.today { color: #805000; background: #fff7df; border-color: #d5ad50; }
+.followUpFilter { cursor: pointer; font-size: .88rem; }
+.followUpFilter:hover { filter: brightness(.95); }
+.followUpFilter[aria-pressed="true"] { outline: 2px solid currentColor; outline-offset: 2px; }
+.followUpFilter:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+:global(:root[data-theme="dark"]) .overdue { color: #ffb4b4; background: #44272d; border-color: #99545e; }
+:global(:root[data-theme="dark"]) .today { color: #ffdc89; background: #3e3420; border-color: #92783c; }
+
+.dialogActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.dialogActions > button:first-child {
+  margin-right: auto;
+}
+
+.formSection { display: grid; gap: 1rem; padding-bottom: 1.25rem; border-bottom: 1px solid var(--border-muted); min-width: 0; }
+.formSection h3, .formSection p { margin: 0; }
+.sectionHeader { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; }
+.addressDetails { min-width: 0; }
+.addressDetails > summary { cursor: pointer; font-weight: 600; padding: .5rem 0; }
+.addressPreview { color: var(--text-muted); overflow-wrap: anywhere; margin: .5rem 0; }
+.addressContent { display: grid; gap: 1.25rem; padding-top: 1rem; }
+.addressContent .addressBlock { border-top: 0; padding-top: 0; }

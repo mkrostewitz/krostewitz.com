@@ -868,6 +868,35 @@ async function uploadPostImageToLinkedIn({connection, language, ownerUrn, post})
   };
 }
 
+function createPostImageSnapshot(post, language) {
+  const media = getLinkedInImageMedia(post);
+
+  if (!media || !hasShareableLinkedInImage(post)) return null;
+
+  return {
+    altText: getImageAltText(post, language),
+    fileName: cleanText(media.fileName, 260),
+    imageUrn: "",
+    mimeType:
+      getSupportedImageContentType(media) ||
+      normalizeImageContentType(media.mimeType) ||
+      getImageContentTypeFromUrl(media.url),
+    sourceUrl: media.url,
+  };
+}
+
+function mergeLinkedInImageSnapshot(image, fallback = null) {
+  if (!image && !fallback) return null;
+
+  return {
+    altText: image?.altText || fallback?.altText || "",
+    fileName: image?.fileName || fallback?.fileName || "",
+    imageUrn: image?.imageUrn || fallback?.imageUrn || "",
+    mimeType: image?.mimeType || fallback?.mimeType || "",
+    sourceUrl: image?.sourceUrl || fallback?.sourceUrl || "",
+  };
+}
+
 async function createLinkedInPost({authorUrn, commentary, connection, image}) {
   const payload = {
     author: authorUrn,
@@ -945,6 +974,10 @@ export async function publishPostToLinkedIn({
     language: normalizedLanguage,
   });
   const attemptedAt = new Date();
+  const selectedImageSnapshot =
+    includeImage && hasShareableLinkedInImage(post)
+      ? createPostImageSnapshot(post, normalizedLanguage)
+      : null;
   let connection = null;
   let linkedInImage = null;
   let linkedInPostUrn;
@@ -989,6 +1022,10 @@ export async function publishPostToLinkedIn({
             language: normalizedLanguage,
             commentary: finalCommentary,
             includeImage: includeImage && hasShareableLinkedInImage(post),
+            media: mergeLinkedInImageSnapshot(
+              linkedInImage,
+              selectedImageSnapshot,
+            ),
             status: "failed",
             attemptedAt,
             failedAt: new Date(),
@@ -1031,13 +1068,7 @@ export async function publishPostToLinkedIn({
     postUrl: buildLinkedInPostUrl(linkedInPostUrn),
     sharedPostUrl: postUrl,
     commentary: finalCommentary,
-    media: linkedInImage
-      ? {
-          imageUrn: linkedInImage.imageUrn,
-          mimeType: linkedInImage.mimeType,
-          sourceUrl: linkedInImage.sourceUrl,
-        }
-      : null,
+    media: mergeLinkedInImageSnapshot(linkedInImage, selectedImageSnapshot),
     account: connection.profile,
     organization: shareTarget?.organization || null,
     sharedAt,
@@ -1143,6 +1174,10 @@ export async function schedulePostToLinkedIn({
     language: normalizedLanguage,
   });
   const now = new Date();
+  const normalizedIncludeImage = includeImage && hasShareableLinkedInImage(post);
+  const mediaSnapshot = normalizedIncludeImage
+    ? createPostImageSnapshot(post, normalizedLanguage)
+    : null;
   const job = {
     _id: crypto.randomUUID(),
     provider: "linkedin",
@@ -1152,7 +1187,8 @@ export async function schedulePostToLinkedIn({
     language: normalizedLanguage,
     commentary: finalCommentary,
     customCommentary,
-    includeImage: includeImage && hasShareableLinkedInImage(post),
+    includeImage: normalizedIncludeImage,
+    media: mediaSnapshot,
     origin: publicOrigin,
     account: connection.profile,
     organization: shareTarget.organization,
@@ -1174,7 +1210,9 @@ export async function schedulePostToLinkedIn({
       target: normalizedTarget,
       language: normalizedLanguage,
       commentary: customCommentary,
-      includeImage: includeImage && hasShareableLinkedInImage(post),
+      shareText: finalCommentary,
+      includeImage: normalizedIncludeImage,
+      media: mediaSnapshot,
       account: connection.profile,
       organization: shareTarget.organization,
       scheduledAt: scheduleDate,
@@ -1194,7 +1232,8 @@ export async function schedulePostToLinkedIn({
       scheduledTimeZone: normalizedTimeZone,
       commentary: finalCommentary,
       customCommentary,
-      includeImage: includeImage && hasShareableLinkedInImage(post),
+      includeImage: normalizedIncludeImage,
+      media: mediaSnapshot,
       organization: shareTarget.organization,
     },
   };
@@ -1274,12 +1313,16 @@ export async function updateScheduledPostToLinkedIn({
   });
   const now = new Date();
   const normalizedIncludeImage = includeImage && hasShareableLinkedInImage(post);
+  const mediaSnapshot = normalizedIncludeImage
+    ? createPostImageSnapshot(post, normalizedLanguage)
+    : null;
   const jobPatch = {
     target: normalizedTarget,
     language: normalizedLanguage,
     commentary: finalCommentary,
     customCommentary,
     includeImage: normalizedIncludeImage,
+    media: mediaSnapshot,
     origin: publicOrigin,
     account: connection.profile,
     organization: shareTarget.organization,
@@ -1306,7 +1349,9 @@ export async function updateScheduledPostToLinkedIn({
     target: normalizedTarget,
     language: normalizedLanguage,
     commentary: customCommentary,
+    shareText: finalCommentary,
     includeImage: normalizedIncludeImage,
+    media: mediaSnapshot,
     account: connection.profile,
     organization: shareTarget.organization,
     scheduledAt: scheduleDate,
@@ -1331,6 +1376,7 @@ export async function updateScheduledPostToLinkedIn({
       commentary: finalCommentary,
       customCommentary,
       includeImage: normalizedIncludeImage,
+      media: mediaSnapshot,
       organization: shareTarget.organization,
     },
   };
@@ -1493,6 +1539,8 @@ export async function publishDueLinkedInShares({limit = 5, source = "manual"} = 
         status: "processing",
         processingStartedAt: claimedJob.processingStartedAt || new Date(),
         failure: "",
+        shareText: claimedJob.commentary || claimedJob.customCommentary || "",
+        media: claimedJob.media || null,
         updatedAt: claimedJob.processingStartedAt || new Date(),
       });
 
@@ -1527,6 +1575,8 @@ export async function publishDueLinkedInShares({limit = 5, source = "manual"} = 
         publishedAt: now,
         linkedInPostUrn: result.linkedin.postUrn,
         linkedInPostUrl: result.linkedin.postUrl,
+        shareText: result.linkedin.commentary || claimedJob.commentary || "",
+        media: result.linkedin.media || claimedJob.media || null,
         failure: "",
         updatedAt: now,
       });
@@ -1551,6 +1601,8 @@ export async function publishDueLinkedInShares({limit = 5, source = "manual"} = 
         processingStartedAt: claimedJob.processingStartedAt || now,
         failedAt: now,
         failure,
+        shareText: claimedJob.commentary || claimedJob.customCommentary || "",
+        media: claimedJob.media || null,
         updatedAt: now,
       });
       results.push({jobId: claimedJob._id, status: "failed", error: failure});

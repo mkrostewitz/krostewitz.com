@@ -10,6 +10,7 @@ import {
   SITE_LANGUAGE_CODES,
 } from "../../lib/siteLanguages";
 import {getDb} from "./mongo";
+import {POST_CATEGORIES_COLLECTION, registerPostCategories} from "./postCategories.mjs";
 import {
   PUBLIC_CACHE_REVALIDATE_SECONDS,
   PUBLIC_CACHE_TAGS,
@@ -59,6 +60,7 @@ const CONTENT_IMAGE_ALIGNMENTS = new Set(["block", "left", "right", "full"]);
 const CONTENT_IMAGE_SIZES = new Set(["small", "medium", "large"]);
 
 let indexPromise = null;
+let categoryImportPromise = null;
 
 export class PostValidationError extends Error {
   constructor(message, status = 400) {
@@ -485,6 +487,41 @@ function normalizeCategories(value) {
   return categories;
 }
 
+async function ensurePostCategories(db) {
+  if (!categoryImportPromise) {
+    categoryImportPromise = (async () => {
+      // Import categories from drafts, published posts, and archived posts.
+      const existing = await getPostsCollection(db).distinct("categories");
+      const bySlug = new Map();
+      for (const item of existing) {
+        for (const category of normalizeCategories([item])) {
+          if (!bySlug.has(category.slug)) bySlug.set(category.slug, category);
+        }
+      }
+      await registerPostCategories(db, [...bySlug.values()]);
+    })().catch((error) => {
+      categoryImportPromise = null;
+      throw error;
+    });
+  }
+  await categoryImportPromise;
+}
+
+export async function getAdminPostCategories() {
+  const db = await getDb();
+  await ensurePostCategories(db);
+  const categories = await db.collection(POST_CATEGORIES_COLLECTION)
+    .find({}, {projection: {_id: 0, label: 1, slug: 1}})
+    .sort({label: 1})
+    .toArray();
+  return categories;
+}
+
+async function savePostCategories(db, categories) {
+  await ensurePostCategories(db);
+  return registerPostCategories(db, categories);
+}
+
 function normalizePublishedAt(input = {}) {
   if (!hasOwnProperty(input, "publishedAt")) return undefined;
 
@@ -603,6 +640,28 @@ function serializeLinkedInOrganization(value) {
   };
 }
 
+function serializeLinkedInShareMedia(value) {
+  if (!value || typeof value !== "object") return null;
+
+  const imageUrn = String(value.imageUrn || "").trim();
+  const mimeType = String(value.mimeType || "").trim();
+  const sourceUrl = String(value.sourceUrl || value.url || "").trim();
+  const fileName = String(value.fileName || "").trim();
+  const altText = String(value.altText || "").trim();
+
+  if (!imageUrn && !mimeType && !sourceUrl && !fileName && !altText) {
+    return null;
+  }
+
+  return {
+    imageUrn,
+    mimeType,
+    sourceUrl,
+    fileName,
+    altText,
+  };
+}
+
 function serializeLinkedInShares(value) {
   return (Array.isArray(value) ? value : [])
     .filter((share) => share && typeof share === "object")
@@ -615,13 +674,7 @@ function serializeLinkedInShares(value) {
       postUrl: share.postUrl || "",
       sharedPostUrl: share.sharedPostUrl || "",
       commentary: share.commentary || "",
-      media: share.media
-        ? {
-            imageUrn: share.media.imageUrn || "",
-            mimeType: share.media.mimeType || "",
-            sourceUrl: share.media.sourceUrl || "",
-          }
-        : null,
+      media: serializeLinkedInShareMedia(share.media),
       account: share.account
         ? {
             sub: share.account.sub || "",
@@ -650,7 +703,9 @@ function serializeLinkedInShareSchedules(value) {
       target: schedule.target || "personal_profile",
       language: schedule.language || null,
       commentary: schedule.commentary || "",
+      shareText: schedule.shareText || "",
       includeImage: schedule.includeImage === true,
+      media: serializeLinkedInShareMedia(schedule.media),
       status: schedule.status || "scheduled",
       scheduledAt: toIsoDate(schedule.scheduledAt),
       scheduledTimeZone: schedule.scheduledTimeZone || "",
@@ -695,6 +750,7 @@ function serializeLinkedInShareAttempts(value) {
       language: attempt.language || null,
       commentary: attempt.commentary || "",
       includeImage: attempt.includeImage === true,
+      media: serializeLinkedInShareMedia(attempt.media),
       status: attempt.status || "failed",
       scheduledJobId: attempt.scheduledJobId || "",
       attemptedAt: toIsoDate(attempt.attemptedAt),
@@ -848,7 +904,7 @@ export async function createPost(input, user) {
     slug,
     status: normalized.status,
     summary: normalized.summary,
-    categories: normalized.categories,
+    categories: await savePostCategories(db, normalized.categories),
     contentHtml: normalized.contentHtml,
     translations: normalized.translations,
     media: normalized.media,
@@ -857,6 +913,7 @@ export async function createPost(input, user) {
     updatedBy: user?.email || null,
     createdAt: now,
     updatedAt: now,
+    newsletter: normalized.status === "published" ? {startedAt: now, availableAt: now} : {pending: true},
     publishedAt:
       normalized.status === "published" ? normalized.publishedAt || now : null,
   };
@@ -887,7 +944,7 @@ export async function updatePost(postId, input, user) {
     title: normalized.title,
     status: normalized.status,
     summary: normalized.summary,
-    categories: normalized.categories,
+    categories: await savePostCategories(db, normalized.categories),
     contentHtml: normalized.contentHtml,
     translations: normalized.translations,
     media: normalized.media,
@@ -920,7 +977,28 @@ export async function updatePost(postId, input, user) {
 
   const result = await posts.findOneAndUpdate(
     {_id},
-    {$set: update},
+    [{$set: {
+      ...Object.fromEntries(Object.entries(update).map(([key, value]) => [key, {$literal: value}])),
+      // Initialize in the same atomic write as publication; concurrent saves cannot reset delivery.
+      newsletter: {$cond: [
+        {$and: [
+          {$eq: [{$literal: normalized.status}, "published"]},
+          {$or: [
+            {$eq: ["$newsletter.pending", true]},
+            {$and: [
+              {$eq: [{$ifNull: ["$newsletter", null]}, null]},
+              {$ne: ["$status", "published"]},
+              {$eq: [{$ifNull: ["$publishedAt", null]}, null]},
+            ]},
+          ]},
+        ]},
+        {startedAt: now, availableAt: now},
+        {$ifNull: ["$newsletter", {$cond: [
+          {$or: [{$eq: ["$status", "published"]}, {$ne: [{$ifNull: ["$publishedAt", null]}, null]}]},
+          {skipped: true}, {pending: true},
+        ]}]},
+      ]},
+    }}],
     {returnDocument: "after"}
   );
   const post = result?.value || result;
@@ -945,13 +1023,7 @@ export async function recordPostLinkedInShare(postId, share = {}, user) {
     postUrl: String(share.postUrl || ""),
     sharedPostUrl: String(share.sharedPostUrl || ""),
     commentary: String(share.commentary || "").slice(0, 3000),
-    media: share.media
-      ? {
-          imageUrn: String(share.media.imageUrn || ""),
-          mimeType: String(share.media.mimeType || ""),
-          sourceUrl: String(share.media.sourceUrl || ""),
-        }
-      : null,
+    media: serializeLinkedInShareMedia(share.media),
     account: share.account
       ? {
           sub: String(share.account.sub || ""),
@@ -1005,7 +1077,9 @@ export async function recordPostLinkedInShareSchedule(postId, schedule = {}, use
     target: String(schedule.target || "personal_profile"),
     language: schedule.language ? String(schedule.language) : null,
     commentary: String(schedule.commentary || ""),
+    shareText: String(schedule.shareText || ""),
     includeImage: schedule.includeImage === true,
+    media: serializeLinkedInShareMedia(schedule.media),
     status: "scheduled",
     scheduledAt:
       schedule.scheduledAt instanceof Date ? schedule.scheduledAt : now,
@@ -1066,6 +1140,7 @@ export async function recordPostLinkedInShareAttempt(postId, attempt = {}, user)
     language: attempt.language ? String(attempt.language) : null,
     commentary: String(attempt.commentary || ""),
     includeImage: attempt.includeImage === true,
+    media: serializeLinkedInShareMedia(attempt.media),
     status: String(attempt.status || "failed"),
     scheduledJobId: attempt.scheduledJobId
       ? String(attempt.scheduledJobId)

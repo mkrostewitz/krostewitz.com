@@ -9,6 +9,7 @@ import {
   LANGUAGE_COOKIE_NAME,
 } from "../../lib/siteLanguages";
 import {getDb} from "./mongo";
+import {contactNames, normalizeContact, normalizeActivity, normalizeDay, CLOSED_STATUSES} from "./leadOutreach.mjs";
 import {normalizeCvLanguage} from "./cvFiles";
 import {
   getClientIp,
@@ -62,6 +63,8 @@ async function ensureLeadIndexes(db) {
     const leads = getLeadsCollection(db);
     indexPromise = Promise.all([
       leads.createIndex({createdAt: -1}),
+      leads.createIndex({status: 1, followUpOn: 1}),
+      leads.createIndex({"contact.linkedinUrl": 1}, {sparse: true}),
       leads.createIndex({status: 1, createdAt: -1}),
       leads.createIndex({"source.type": 1, createdAt: -1}),
       leads.createIndex({"contact.email": 1, createdAt: -1}),
@@ -527,6 +530,8 @@ function serializeLeadAction(action, index, fallbackId) {
     id: cleanText(action?.id, 100) || `${fallbackId}:${index}`,
     type: cleanText(action?.type, 40) || "note",
     text,
+    channel: action?.channel || "other",
+    occurredOn: action?.occurredOn || null,
     createdAt: toIsoDate(action?.createdAt),
     createdBy: action?.createdBy || null,
   };
@@ -552,9 +557,9 @@ function serializeLeadActions(document) {
   }
 
   return actions.sort((first, second) => {
-    const firstTime = first.createdAt ? new Date(first.createdAt).getTime() : 0;
-    const secondTime = second.createdAt ? new Date(second.createdAt).getTime() : 0;
-    return secondTime - firstTime;
+    const firstTime = new Date(first.occurredOn || first.createdAt || 0).getTime();
+    const secondTime = new Date(second.occurredOn || second.createdAt || 0).getTime();
+    return secondTime - firstTime || new Date(second.createdAt || 0) - new Date(first.createdAt || 0);
   });
 }
 
@@ -569,9 +574,20 @@ export function serializeLead(document) {
   return {
     id: String(document._id),
     status: normalizeLeadStatus(document.status),
-    name: contact.name || document.name || "",
+    ...contactNames({...contact, name: contact.name || document.name || ""}),
+    nameNeedsReview: !Object.hasOwn(contact, "firstName") && !Object.hasOwn(contact, "lastName") && Boolean(contact.name || document.name),
     email: contact.email || document.email || "",
     phone: contact.phone || document.phone || "",
+    company: contact.company || "",
+    location: contact.location || "",
+    address: contact.address || null,
+    role: contact.role || "",
+    linkedinUrl: contact.linkedinUrl || "",
+    website: contact.website || "",
+    detailsSource: contact.detailsSource || "",
+    preferredChannel: document.preferredChannel || (source.type === "manual" ? "linkedin" : "email"),
+    followUpOn: document.followUpOn || null,
+    followUpTask: document.followUpTask || "",
     language:
       getSupportedSiteLanguage(
         document.language ||
@@ -744,14 +760,17 @@ export async function getAdminLeads(filters = {}) {
         ? {$in: ["pending", "new", "contacted", "qualified"]}
         : filters.status;
   }
-  if (filters.sourceType && LEAD_SOURCE_TYPES.includes(filters.sourceType)) {
+  if (filters.sourceType && [...LEAD_SOURCE_TYPES, "manual"].includes(filters.sourceType)) {
     query["source.type"] = filters.sourceType;
   }
 
-  const limit = Math.min(Math.max(Number(filters.limit) || 150, 1), 300);
+  const limit = Math.min(Math.max(Math.trunc(Number(filters.limit)) || 150, 1), 300);
+  const offset = Number(filters.offset) || 0;
+  if (!Number.isSafeInteger(offset) || offset < 0) throw new LeadValidationError("Invalid page offset.");
   const leads = await getLeadsCollection(db)
     .find(query)
-    .sort({createdAt: -1})
+    .sort({createdAt: -1, _id: -1})
+    .skip(offset)
     .limit(limit)
     .toArray();
 
@@ -896,6 +915,64 @@ export async function geolocateStoredLeadIps(input = {}, user) {
   };
 }
 
+function outreachFields(input) {
+  const fields = {};
+  if (Object.hasOwn(input, "contact")) {
+    for (const [key, value] of Object.entries(normalizeContact(input.contact))) {
+      fields[`contact.${key}`] = value;
+    }
+  }
+  if (Object.hasOwn(input, "preferredChannel")) {
+    if (!["linkedin", "email", "phone", "other"].includes(input.preferredChannel)) {
+      throw new LeadValidationError("Invalid preferred channel.");
+    }
+    fields.preferredChannel = input.preferredChannel;
+  }
+  if (Object.hasOwn(input, "followUpOn")) fields.followUpOn = normalizeDay(input.followUpOn, "Follow-up date");
+  if (Object.hasOwn(input, "followUpTask")) fields.followUpTask = cleanText(input.followUpTask, 500);
+  if (CLOSED_STATUSES.includes(input.status)) {
+    fields.followUpOn = null;
+    fields.followUpTask = "";
+  }
+  return fields;
+}
+
+export async function createAdminLead(input = {}, user) {
+  const contact = normalizeContact(input.contact);
+  const fields = outreachFields({
+    preferredChannel: input.preferredChannel || "linkedin",
+    followUpOn: input.followUpOn || null,
+    followUpTask: input.followUpTask || "",
+  });
+  const now = new Date();
+  const action = input.action ? {
+    ...normalizeActivity(input.action, now),
+    id: crypto.randomUUID(), createdAt: now, createdBy: user?.email || null,
+  } : null;
+  const db = await getDb();
+  await ensureLeadIndexes(db);
+  const leads = getLeadsCollection(db);
+  const identities = [];
+  if (contact.email) identities.push({"contact.email": contact.email});
+  if (contact.linkedinUrl) identities.push({"contact.linkedinUrl": contact.linkedinUrl});
+  if (identities.length && await leads.findOne({$or: identities})) {
+    throw new LeadValidationError("A lead with this email or LinkedIn profile already exists. Open that lead to add activity.", 409);
+  }
+  const document = {
+    contact,
+    status: "pending",
+    source: {type: "manual", label: "Personal outreach", context: {}},
+    request: {type: "general", message: ""},
+    preferredChannel: fields.preferredChannel || "linkedin",
+    followUpOn: fields.followUpOn || null,
+    followUpTask: fields.followUpTask || "",
+    actions: action ? [action] : [],
+    createdAt: now, updatedAt: now, updatedBy: user?.email || null,
+  };
+  const result = await leads.insertOne(document);
+  return serializeLead({...document, _id: result.insertedId});
+}
+
 export async function updateAdminLead(leadId, input = {}, user) {
   const db = await getDb();
   await ensureLeadIndexes(db);
@@ -905,6 +982,7 @@ export async function updateAdminLead(leadId, input = {}, user) {
   const setUpdate = {
     updatedAt: now,
     updatedBy: user?.email || null,
+    ...outreachFields(input),
   };
   const pushUpdate = {};
 
@@ -916,20 +994,16 @@ export async function updateAdminLead(leadId, input = {}, user) {
     setUpdate.status = status;
   }
 
-  const actionText = cleanText(
-    Object.prototype.hasOwnProperty.call(input, "actionText")
-      ? input.actionText
-      : input.action?.text,
-    4000
-  );
-
-  if (actionText) {
+  if (input.action) {
     pushUpdate.actions = {
-      id: crypto.randomUUID(),
-      type: cleanText(input.actionType || input.action?.type, 40) || "note",
-      text: actionText,
-      createdAt: now,
-      createdBy: user?.email || null,
+      ...normalizeActivity(input.action, now),
+      id: crypto.randomUUID(), createdAt: now, createdBy: user?.email || null,
+    };
+  } else if (cleanText(input.actionText, 4000)) {
+    // Preserve compatibility with existing clients that add free-text notes.
+    pushUpdate.actions = {
+      id: crypto.randomUUID(), type: "note", text: cleanText(input.actionText, 4000),
+      createdAt: now, createdBy: user?.email || null,
     };
   }
 
@@ -952,4 +1026,11 @@ export async function updateAdminLead(leadId, input = {}, user) {
   }
 
   return serializeLead(lead);
+}
+
+export async function deleteAdminLead(leadId) {
+  const _id = toObjectId(leadId);
+  const db = await getDb();
+  const result = await getLeadsCollection(db).deleteOne({_id});
+  if (!result.deletedCount) throw new LeadValidationError("Lead not found.", 404);
 }

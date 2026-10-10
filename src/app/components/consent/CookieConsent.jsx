@@ -234,6 +234,7 @@ export function CookieConsentProvider({children, gaMeasurementId = ""}) {
   const pathname = usePathname();
   const analyticsAvailable = Boolean(String(gaMeasurementId || "").trim());
   const isAdminPath = pathname?.startsWith("/admin");
+  const isNewsletterPath = pathname === "/newsletter";
   const [isReady, setIsReady] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [hasDecision, setHasDecision] = useState(false);
@@ -306,6 +307,12 @@ export function CookieConsentProvider({children, gaMeasurementId = ""}) {
   useEffect(() => {
     if (!isReady || isAdminPath) return;
 
+    // Subscription links contain private tokens; keep them out of analytics.
+    if (isNewsletterPath) {
+      if (analyticsAvailable) disableGoogleAnalytics(gaMeasurementId);
+      return;
+    }
+
     if (analyticsAvailable && consent.analytics) {
       loadGoogleAnalytics(gaMeasurementId);
     } else if (analyticsAvailable) {
@@ -315,6 +322,7 @@ export function CookieConsentProvider({children, gaMeasurementId = ""}) {
     analyticsAvailable,
     consent.analytics,
     gaMeasurementId,
+    isNewsletterPath,
     isAdminPath,
     isReady,
   ]);

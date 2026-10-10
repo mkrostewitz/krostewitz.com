@@ -284,6 +284,23 @@ function renderCtas(ctas = []) {
   `;
 }
 
+function renderFallbackLink(href) {
+  if (!href) return "";
+
+  const safeHref = escapeHtml(href);
+
+  return `
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:22px;table-layout:fixed;border-collapse:separate;">
+      <tr>
+        <td style="padding:16px 18px;border:1px solid ${THEME.border};border-radius:8px;background:${THEME.surfaceMuted};">
+          <p style="margin:0 0 8px;color:${THEME.textMuted};font-size:12px;line-height:1.5;">If the button doesn't work, copy and paste this link into your browser:</p>
+          <a href="${safeHref}" style="display:block;color:${THEME.accent};font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;line-height:1.7;text-decoration:underline;word-break:break-all;overflow-wrap:anywhere;">${safeHref}</a>
+        </td>
+      </tr>
+    </table>
+  `;
+}
+
 function renderDetails(details = []) {
   const rows = details
     .filter((item) => cleanText(item?.value))
@@ -344,6 +361,7 @@ export async function renderBrandedEmail({
   codeLabel = "Verification code",
   cta = null,
   ctas = [],
+  fallbackLink = "",
   details = [],
   sections = [],
   footer = "",
@@ -409,6 +427,7 @@ export async function renderBrandedEmail({
                 ${renderParagraphs(paragraphs)}
                 ${renderCode(code, codeLabel)}
                 ${renderCtas(ctas.length ? ctas : cta ? [cta] : [])}
+                ${renderFallbackLink(fallbackLink)}
                 ${renderDetails(details)}
                 ${renderSections(sections)}
               </td>
@@ -836,7 +855,7 @@ export async function renderAdminMagicLinkEmail({
           "This link expires in 15 minutes and can only be used once.",
         ],
     cta: {href: link, label: isPasswordReset ? "Reset password" : "Sign in"},
-    details: [{label: "Fallback link", value: link}],
+    fallbackLink: link,
     footer: isPasswordReset
       ? "If you did not request this link, review admin access and ignore this email."
       : "If you did not request this link, change your password immediately and review admin access.",

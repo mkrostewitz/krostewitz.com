@@ -138,6 +138,14 @@ The public CV button creates a verified lead before serving a PDF. Public CV met
 - `DO_SPACES_CV_PREFIX` controls the Spaces key prefix for CV files. It defaults to `cv`.
 - `CV_UPLOAD_MAX_BYTES` controls the PDF upload limit. It defaults to 10 MB.
 - Contact and CV requests are stored together in the MongoDB `leads` collection and managed from `/admin/leads`.
+- **Add new lead** creates a personal outreach lead with just a name; company, role, LinkedIn profile, email, phone, website, and a contact-details source URL are optional.
+- Open a lead to find them on LinkedIn, open their saved profile, research contact details, or compose an email. Use **Add activity** to record phone calls, LinkedIn messages or connection requests, emails, meetings, and notes in a separate modal with the actual date. Opening a link does not record or send outreach.
+- Follow-up suggestions use five calendar days after the latest activity, including when backdating an entry. Change or clear that date and record the next step. The lead list shows due/overdue counts, follow-up filters, and earliest follow-ups first. Won/lost leads have their reminders cleared. These are in-app reminders; no reminder emails or automated LinkedIn actions are sent.
+- The optional address block stores street, building number, address line 2, postal code, city, region, country, and country code separately. Address suggestions appear automatically after typing at least three characters, using the existing `NEXT_PUBLIC_MAPBOX_TOKEN`. Choose a dropdown result with the mouse or arrow keys and Enter, then review and save. Requests are debounced and outdated searches cancelled. Manual entry and partial addresses are supported. Search uses [Mapbox permanent geocoding](https://docs.mapbox.com/api/search/geocoding/#storing-geocoding-results) so selected results and coordinates can be stored; the account must support permanent geocoding. Changing address fields drops previous coordinates and automatically geocodes the new address. Search selections update the map immediately; manual edits update it after a short pause. Saving waits for the lookup and stores resolved coordinates; clearing removes the saved address. Older free-text locations remain available until replaced.
+- **Inbound lead details** appears at the top of inbound lead forms. A contact map uses the saved contact address/city or the approximate inbound request location; the map previews address edits before saving.
+- Lead details scroll above a persistent footer with **Save changes**, **Cancel**, and **Delete lead**. Deleting requires confirmation and permanently removes the lead, its activities, and its follow-up reminder.
+- Existing notes and inbound verification/download details remain available. Contacts and activity are saved in the existing `leads` collection; there is no spreadsheet import or automatic contact enrichment.
+- Run outreach validation tests with `node --test src/app/lib/leadOutreach.test.mjs src/app/lib/leadAddress.test.mjs`.
 
 Secret helpers:
 
@@ -167,3 +175,26 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Article newsletter
+
+Visitors can subscribe from the homepage blog section or an article page, in English or German. An explicit checkbox and a confirmation email are required; confirmation links expire after 24 hours. Opening an email link does not change a subscription until the visitor presses the confirmation or unsubscribe button, so email link scanners do not activate subscriptions or unsubscribe readers.
+
+Setup before enabling this in production:
+
+1. Configure and test SMTP in `/admin/mail-calendar` (the existing environment SMTP settings also work).
+2. Set `NEXT_PUBLIC_SITE_URL` to your canonical origin, e.g. `https://krostewitz.com`. `AUTH_BASE_URL` or Netlify's `URL` is used as a fallback. Email links always use configuration, not a visitor-supplied host header.
+3. Set `NEWSLETTER_SCHEDULER_SECRET` to a long random secret in the deployment environment and redeploy. The included Netlify `newsletter-scheduler` runs every minute and calls the authenticated `/api/admin/newsletter/scheduled` endpoint. For other hosts, schedule a POST to that endpoint with `Authorization: Bearer <secret>` once per minute. Never expose this secret to client code.
+
+The first publication atomically queues notifications in the post's `newsletter` field. Saving edits, changing the publication date, or archiving and republishing does not create a new campaign. Previously published articles are not backfilled. Only subscribers confirmed before that first publication receive the announcement. A custom publication date remains display metadata, as in the existing editor; it does not schedule publication. Hidden blogs and unpublished posts pause delivery.
+
+Each scheduler call sends to one subscriber, individually, using the saved language and existing post translation fallback. This conservative rate (up to 60 messages/hour) is intended for a small personal newsletter. Failed deliveries retry after five minutes, up to five attempts, then record a failure and continue. Disabled or unconfigured SMTP pauses processing. MongoDB stores progress and a five-minute worker lease to prevent overlapping runs. SMTP cannot guarantee exactly-once delivery: a process crash after SMTP accepts a message but before progress is saved can cause a duplicate on retry.
+
+Operational records:
+
+- `newsletter_subscribers`: email, language, consent version, confirmation dates, hashed confirmation token, and unsubscribe token. Unconfirmed subscriptions expire after 24 hours; unsubscribed records after 30 days, using MongoDB TTL indexes.
+- `newsletter_rate_limits`: hashed network identifiers and hourly request counts, automatically expiring after two hours. Netlify's trusted connection IP header is preferred; deployments behind other proxies should provide a trusted `x-real-ip` header. Requests without either share a fallback limit.
+- `posts.newsletter`: campaign cursor, sent count, retry count, next available time, and completion date.
+- `newsletter_failures`: post/subscriber IDs for recipients skipped after five failed attempts; inspect these and the Netlify function logs to investigate delivery failures. SMTP acceptance does not guarantee inbox placement; bounce processing is not included.
+
+For local testing, use a separate MongoDB database and an SMTP test inbox. Subscribe, confirm, publish a draft, and call the scheduler endpoint with the configured secret. Verify a second call does not repeat delivery, ordinary post edits do not restart a campaign, and unsubscribed addresses receive no subsequent announcements. Automated delivery checks: `node --test src/app/lib/newsletterCore.test.mjs`.

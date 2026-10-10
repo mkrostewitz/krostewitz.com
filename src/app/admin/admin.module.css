@@ -935,6 +935,79 @@
   overflow-wrap: anywhere;
 }
 
+.shareHistorySnapshot {
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px;
+  background: var(--surface-subtle);
+}
+
+.shareHistoryText {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.shareHistoryText > span {
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.shareHistoryText p,
+.shareHistoryMediaMissing {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.86rem;
+  font-weight: 700;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.shareHistoryMedia {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+}
+
+.shareHistoryMedia img {
+  display: block;
+  width: 92px;
+  aspect-ratio: 1;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--surface-muted);
+  object-fit: cover;
+}
+
+.shareHistoryMedia div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.shareHistoryMedia strong,
+.shareHistoryMedia span {
+  overflow-wrap: anywhere;
+}
+
+.shareHistoryMedia strong {
+  font-size: 0.86rem;
+}
+
+.shareHistoryMedia span {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
 .shareHistoryHeaderActions {
   display: flex;
   flex-wrap: wrap;
@@ -1011,7 +1084,7 @@
   background: var(--map-background);
 }
 
-.leadMapCanvas {
+.leadMap .leadMapCanvas {
   position: absolute;
   inset: 0;
 }
@@ -1058,8 +1131,8 @@
 
 .leadMapMarker:hover,
 .leadMapMarkerActive {
-  background: var(--danger-text);
-  transform: scale(1.12);
+  background: var(--accent-hover);
+  box-shadow: 0 0 0 4px var(--accent-ring), 0 6px 14px var(--panel-shadow);
 }
 
 .leadList {
@@ -1179,7 +1252,7 @@
   width: min(100%, 860px);
   max-height: min(820px, calc(100vh - 40px));
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
   overflow: hidden;
   border: 1px solid var(--border-muted);
   border-radius: 8px;
@@ -2459,7 +2532,7 @@
   min-height: 100%;
   padding: 16px;
   direction: ltr;
-  line-height: 1.58;
+  line-height: 1.45;
   outline: none;
   text-align: left;
   unicode-bidi: plaintext;
@@ -2470,7 +2543,15 @@
 }
 
 .richEditor :global(.ProseMirror) > * + * {
-  margin-top: 0.55em;
+  margin-top: 0.3em;
+}
+
+.richEditor :global(.ProseMirror) :is(li, blockquote) > p {
+  margin-block: 0;
+}
+
+.richEditor :global(.ProseMirror) :is(li, blockquote) > p + p {
+  margin-top: 0.3em;
 }
 
 .richEditor :global(.ProseMirror) h2,
@@ -3064,6 +3145,14 @@
     text-align: left;
   }
 
+  .shareHistoryMedia {
+    grid-template-columns: 72px minmax(0, 1fr);
+  }
+
+  .shareHistoryMedia img {
+    width: 72px;
+  }
+
   .qrBox {
     width: min(100%, 260px);
   }
@@ -3075,4 +3164,10 @@
   .uploadButton {
     width: 100%;
   }
+}
+
+.leadDialogFooter {
+  padding: 14px 18px;
+  border-top: 1px solid var(--border-muted);
+  background: var(--surface);
 }

@@ -1,6 +1,7 @@
 import {redirect} from "next/navigation";
 
 import {getCurrentAdminUser} from "../../../lib/adminAuth";
+import {getAdminPostCategories} from "../../../lib/posts";
 import AdminHeader from "../../AdminHeader";
 import styles from "../../admin.module.css";
 import EditPostForm from "../EditPostForm";
@@ -11,6 +12,8 @@ export default async function NewPostPage() {
   if (!user) {
     redirect("/admin/login");
   }
+
+  const categories = await getAdminPostCategories();
 
   return (
     <div className={styles.shell}>
@@ -27,7 +30,7 @@ export default async function NewPostPage() {
         </div>
 
         <div className={styles.postWorkspace}>
-          <EditPostForm />
+          <EditPostForm availableCategories={categories} />
         </div>
       </main>
     </div>
