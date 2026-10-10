@@ -18,7 +18,7 @@ export const newsletterCopy = {
     manageError: "We couldn’t update your subscription. Please try again.",
     back: "Back to the website",
     privacyTitle: "Article newsletter",
-    privacyBody: "If you subscribe, we store your email address, chosen language, and signup and confirmation dates to send notifications about new articles through our configured email provider. Delivery starts only after you confirm your email. Each notification contains an unsubscribe link. Unconfirmed signups expire after 24 hours; unsubscribed records are deleted after 30 days. A temporary hashed network identifier is used to limit signup abuse and expires after two hours.",
+    privacyBody: "If you subscribe, we store your email address, chosen language, and signup and confirmation dates to send notifications about new articles through our configured email provider. Delivery starts only after you confirm your email. Each notification contains an unsubscribe link. Unconfirmed signups expire after 24 hours; unsubscribed records are deleted after 30 days. At signup, or confirmation if the location is missing, our IP geolocation provider receives your IP address to estimate your city, region, and country. We store the approximate location and coordinates to display subscriber distribution; we do not store your raw IP address in your subscriber record. A temporary hashed network identifier is used to limit signup abuse and expires after two hours.",
   },
   de: {
     title: "Neue Artikel direkt in dein Postfach",
@@ -39,6 +39,6 @@ export const newsletterCopy = {
     manageError: "Deine Anmeldung konnte nicht aktualisiert werden. Bitte versuche es erneut.",
     back: "Zurück zur Website",
     privacyTitle: "Artikel-Newsletter",
-    privacyBody: "Wenn du dich anmeldest, speichern wir deine E-Mail-Adresse, gewählte Sprache sowie den Zeitpunkt der Anmeldung und Bestätigung, um dich über unseren konfigurierten E-Mail-Anbieter über neue Artikel zu informieren. Der Versand beginnt erst nach Bestätigung deiner E-Mail-Adresse. Jede Benachrichtigung enthält einen Abmeldelink. Unbestätigte Anmeldungen verfallen nach 24 Stunden; abgemeldete Datensätze werden nach 30 Tagen gelöscht. Eine temporäre gehashte Netzwerkkennung begrenzt missbräuchliche Anmeldungen und verfällt nach zwei Stunden.",
+    privacyBody: "Wenn du dich anmeldest, speichern wir deine E-Mail-Adresse, gewählte Sprache sowie den Zeitpunkt der Anmeldung und Bestätigung, um dich über unseren konfigurierten E-Mail-Anbieter über neue Artikel zu informieren. Der Versand beginnt erst nach Bestätigung deiner E-Mail-Adresse. Jede Benachrichtigung enthält einen Abmeldelink. Unbestätigte Anmeldungen verfallen nach 24 Stunden; abgemeldete Datensätze werden nach 30 Tagen gelöscht. Bei der Anmeldung oder bei fehlendem Standort bei der Bestätigung erhält unser IP-Geolokalisierungsanbieter deine IP-Adresse, um Stadt, Region und Land näherungsweise zu bestimmen. Wir speichern den ungefähren Standort und die Koordinaten zur Darstellung der Abonnentenverteilung; deine vollständige IP-Adresse wird nicht im Abonnentendatensatz gespeichert. Eine temporäre gehashte Netzwerkkennung begrenzt missbräuchliche Anmeldungen und verfällt nach zwei Stunden.",
   },
 };

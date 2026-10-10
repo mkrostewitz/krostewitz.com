@@ -1034,3 +1034,51 @@ export async function deleteAdminLead(leadId) {
   const result = await getLeadsCollection(db).deleteOne({_id});
   if (!result.deletedCount) throw new LeadValidationError("Lead not found.", 404);
 }
+
+// Spreadsheet imports only add new contacts; existing records are never merged implicitly.
+export async function importAdminLeads(entries, user, dryRun = true) {
+  const {normalizeImportEntry, importIdentity} = await import('./leadImport.mjs');
+  if (!Array.isArray(entries) || !entries.length || entries.length > 500) throw new LeadValidationError('Choose between 1 and 500 contacts.');
+  const db = await getDb();
+  const collection = getLeadsCollection(db);
+  await ensureLeadIndexes(db);
+  await collection.createIndex({importKey: 1}, {unique: true, partialFilterExpression: {importKey: {$type: 'string'}}});
+  const existing = await collection.find({}, {projection: {contact: 1}}).toArray();
+  const identities = new Set(existing.map(row => importIdentity(row.contact || {})));
+  const emails = new Set(existing.map(row => String(row.contact?.email || '').toLowerCase()).filter(Boolean));
+  const profiles = new Set(existing.map(row => row.contact?.linkedinUrl).filter(Boolean));
+  const results = [];
+  const leads = [];
+  for (const entry of entries) {
+    try {
+      const input = normalizeImportEntry(entry);
+      const identity = importIdentity(input.contact);
+      if (identities.has(identity) || (input.contact.email && emails.has(input.contact.email)) || (input.contact.linkedinUrl && profiles.has(input.contact.linkedinUrl))) {
+        results.push({row: entry.row, status: 'duplicate', message: 'Existing or repeated contact — skipped.'});
+        continue;
+      }
+      if (!dryRun) {
+        const now = new Date();
+        const document = {
+          contact: input.contact, status: 'pending',
+          source: {type: 'manual', label: 'Personal outreach', context: {importedFrom: 'Excel', row: entry.row}},
+          request: {type: 'general', message: ''},
+          preferredChannel: input.preferredChannel, followUpOn: input.followUpOn, followUpTask: '',
+          actions: input.action ? [{...input.action, id: crypto.randomUUID(), createdAt: now, createdBy: user?.email || null}] : [],
+          importKey: crypto.createHash('sha256').update(identity).digest('hex'),
+          createdAt: now, updatedAt: now, updatedBy: user?.email || null,
+        };
+        const inserted = await collection.insertOne(document);
+        leads.push(serializeLead({...document, _id: inserted.insertedId}));
+      }
+      identities.add(identity);
+      if (input.contact.email) emails.add(input.contact.email);
+      if (input.contact.linkedinUrl) profiles.add(input.contact.linkedinUrl);
+      results.push({row: entry.row, status: dryRun ? 'ready' : 'imported', message: dryRun ? 'Ready to import' : 'Imported'});
+    } catch (error) {
+      if (error.code === 11000) results.push({row: entry?.row, status: 'duplicate', message: 'Already imported — skipped.'});
+      else results.push({row: entry?.row, status: 'error', message: error instanceof Error && (error instanceof LeadValidationError || error.name === 'OutreachValidationError' || error.message === 'An activity date is required for this status.') ? error.message : 'Unable to import this row.'});
+    }
+  }
+  return {results, leads};
+}

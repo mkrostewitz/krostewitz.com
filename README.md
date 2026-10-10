@@ -144,8 +144,9 @@ The public CV button creates a verified lead before serving a PDF. Public CV met
 - The optional address block stores street, building number, address line 2, postal code, city, region, country, and country code separately. Address suggestions appear automatically after typing at least three characters, using the existing `NEXT_PUBLIC_MAPBOX_TOKEN`. Choose a dropdown result with the mouse or arrow keys and Enter, then review and save. Requests are debounced and outdated searches cancelled. Manual entry and partial addresses are supported. Search uses [Mapbox permanent geocoding](https://docs.mapbox.com/api/search/geocoding/#storing-geocoding-results) so selected results and coordinates can be stored; the account must support permanent geocoding. Changing address fields drops previous coordinates and automatically geocodes the new address. Search selections update the map immediately; manual edits update it after a short pause. Saving waits for the lookup and stores resolved coordinates; clearing removes the saved address. Older free-text locations remain available until replaced.
 - **Inbound lead details** appears at the top of inbound lead forms. A contact map uses the saved contact address/city or the approximate inbound request location; the map previews address edits before saving.
 - Lead details scroll above a persistent footer with **Save changes**, **Cancel**, and **Delete lead**. Deleting requires confirmation and permanently removes the lead, its activities, and its follow-up reminder.
-- Existing notes and inbound verification/download details remain available. Contacts and activity are saved in the existing `leads` collection; there is no spreadsheet import or automatic contact enrichment.
-- Run outreach validation tests with `node --test src/app/lib/leadOutreach.test.mjs src/app/lib/leadAddress.test.mjs`.
+- Existing notes and inbound verification/download details remain available. Contacts and activity are saved in the existing `leads` collection; automatic contact enrichment is not enabled.
+- **Import Excel** accepts `.xlsx` files using the Leads.xlsx columns (Firma, Ansprechpartner, Status, Datum, Tool, Nachverfolgung) on the first worksheet. Review the automatically split names, select contacts, and check duplicates before importing. Exact normalized name/company, email, or LinkedIn matches are skipped without changing existing records. Dated statuses become activities, and missing follow-up dates suggest five days after the activity. Files are limited to 5 MB and 500 contacts per import.
+- Run outreach validation tests with `node --test src/app/lib/leadOutreach.test.mjs src/app/lib/leadAddress.test.mjs src/app/lib/leadImport.test.mjs`.
 
 Secret helpers:
 
@@ -178,12 +179,16 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 
 ## Article newsletter
 
+Confirmation and article emails use the shared branded email template. The confirmation page uses the public navigation and footer.
+
+Admin → Subscribers includes a searchable list and a map of approximate signup locations. Configure `IPGEOLOCATION_API_KEY` for server-side signup lookups and `NEXT_PUBLIC_MAPBOX_TOKEN` for the admin map. Lookups run after signup validation and throttling; provider failures do not block confirmation emails. Subscriber records store city, region, country, and coordinates, but no raw IP address. Confirmation retries the location lookup if signup did not capture coordinates. Already confirmed subscribers without location data remain unknown because raw IPs are not retained. Localhost and private IP requests cannot be geolocated. The map follows the list filters across all pages, capped at the newest 2,000 located subscribers.
+
 Visitors can subscribe from the homepage blog section or an article page, in English or German. An explicit checkbox and a confirmation email are required; confirmation links expire after 24 hours. Opening an email link does not change a subscription until the visitor presses the confirmation or unsubscribe button, so email link scanners do not activate subscriptions or unsubscribe readers.
 
 Setup before enabling this in production:
 
 1. Configure and test SMTP in `/admin/mail-calendar` (the existing environment SMTP settings also work).
-2. Set `NEXT_PUBLIC_SITE_URL` to your canonical origin, e.g. `https://krostewitz.com`. `AUTH_BASE_URL` or Netlify's `URL` is used as a fallback. Email links always use configuration, not a visitor-supplied host header.
+2. Newsletter links use the current request origin, including the protocol and port, just like login, contact, and CV emails. A signup on `http://localhost:3001` receives confirmation links on that host. Article and unsubscribe links use the origin of the authenticated scheduler request. The Netlify scheduler prefers `DEPLOY_PRIME_URL`, then `URL` and `DEPLOY_URL`, before configured site URLs. Set `NEXT_PUBLIC_SITE_URL` (or `AUTH_BASE_URL`) as a fallback for calls without a request origin. Relative email logo URLs use the same origin as the email links.
 3. Set `NEWSLETTER_SCHEDULER_SECRET` to a long random secret in the deployment environment and redeploy. The included Netlify `newsletter-scheduler` runs every minute and calls the authenticated `/api/admin/newsletter/scheduled` endpoint. For other hosts, schedule a POST to that endpoint with `Authorization: Bearer <secret>` once per minute. Never expose this secret to client code.
 
 The first publication atomically queues notifications in the post's `newsletter` field. Saving edits, changing the publication date, or archiving and republishing does not create a new campaign. Previously published articles are not backfilled. Only subscribers confirmed before that first publication receive the announcement. A custom publication date remains display metadata, as in the existing editor; it does not schedule publication. Hidden blogs and unpublished posts pause delivery.

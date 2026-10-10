@@ -180,3 +180,87 @@ test("confirmation mail failures can be retried and signup abuse is limited", as
   for (let i = 0; i < 8; i++) await requestSubscription(request);
   assert.equal((await requestSubscription(request)).status, 429);
 });
+
+test("accepted signups store location and use the injected email renderer only once", async () => {
+  const {args, rows, sent} = fixture({subscribers: []});
+  let lookups = 0;
+  const location = {city: "Berlin", country: "Germany", latitude: 52.52, longitude: 13.4};
+  const input = {email: "reader@example.com", consent: true, language: "de"};
+  const options = {...args, input, ip: "203.0.113.1",
+    locate: async () => { lookups++; return location; },
+    renderMessage: async (message) => ({...newsletterMessage(message), html: "<p>Branded confirmation</p>"}),
+  };
+  assert.equal((await requestSubscription(options)).status, 200);
+  assert.deepEqual(rows.newsletter_subscribers[0].location, location);
+  assert.equal(rows.newsletter_subscribers[0].ip, undefined);
+  assert.equal(sent[0].html, "<p>Branded confirmation</p>");
+  await requestSubscription(options);
+  assert.equal(lookups, 1, "throttled resends must not perform another lookup");
+  assert.equal(sent.length, 1);
+});
+
+test("location provider failures do not block confirmation emails", async () => {
+  const {args, rows, sent} = fixture({subscribers: []});
+  const result = await requestSubscription({...args, input: {email: "reader@example.com", consent: true},
+    ip: "unknown", locate: async () => { throw new Error("Unavailable"); }});
+  assert.equal(result.status, 200);
+  assert.equal(sent.length, 1);
+  assert.equal(rows.newsletter_subscribers[0].location, undefined);
+});
+
+test("article delivery uses the injected branded renderer with an unsubscribe link", async () => {
+  const {args, sent} = fixture();
+  const result = await deliverNextNewsletter({...args, renderMessage: async (options) => {
+    assert.ok(options.unsubscribeUrl.includes("action=unsubscribe"));
+    return {...newsletterMessage(options), html: "<p>Branded article</p>"};
+  }});
+  assert.equal(result.sent, true);
+  assert.equal(sent[0].html, "<p>Branded article</p>");
+});
+
+test("confirmation fills missing signup location and never geolocates reused tokens", async () => {
+  const token = newToken();
+  const {args, rows} = fixture({subscribers: [{_id: "a", status: "pending", confirmationHash: hashToken(token), expiresAt: new Date(+now + 1000)}]});
+  let lookups = 0;
+  const location = {city: "Berlin", latitude: 52.52, longitude: 13.4};
+  const options = {...args, action: "confirm", token, ip: "203.0.113.1", locate: async (ip) => {
+    assert.equal(ip, "203.0.113.1"); lookups++; return location;
+  }};
+  assert.equal(await changeSubscription(options), true);
+  assert.deepEqual(rows.newsletter_subscribers[0].location, location);
+  assert.equal(await changeSubscription(options), false);
+  assert.equal(lookups, 1);
+});
+
+test("confirmation preserves signup coordinates and succeeds during lookup outages", async () => {
+  for (const location of [undefined, {city: "Berlin", latitude: 52.52, longitude: 13.4}]) {
+    const token = newToken();
+    const {args, rows} = fixture({subscribers: [{_id: "a", status: "pending", location, confirmationHash: hashToken(token), expiresAt: new Date(+now + 1000)}]});
+    let lookups = 0;
+    assert.equal(await changeSubscription({...args, action: "confirm", token, locate: async () => {
+      lookups++; throw new Error("Provider unavailable");
+    }}), true);
+    assert.equal(rows.newsletter_subscribers[0].status, "active");
+    assert.deepEqual(rows.newsletter_subscribers[0].location, location);
+    assert.equal(lookups, location ? 0 : 1);
+  }
+});
+
+test("confirmation and article links keep the supplied host, protocol, and port", async () => {
+  for (const origin of ["http://localhost:3001", "https://preview.example.net"]) {
+    const signup = fixture({subscribers: []});
+    await requestSubscription({...signup.args, origin, input: {email: "reader@example.com", consent: true}, ip: "unknown"});
+    const confirmation = signup.sent[0].text.match(/https?:\/\/\S+/)[0];
+    assert.equal(new URL(confirmation).origin, origin);
+    assert.equal(new URL(confirmation).pathname, "/newsletter");
+    assert.equal(new URL(confirmation).searchParams.get("action"), "confirm");
+
+    const delivery = fixture();
+    await deliverNextNewsletter({...delivery.args, origin});
+    const links = delivery.sent[0].text.match(/https?:\/\/\S+/g);
+    assert.equal(links.length, 2);
+    for (const link of links) assert.equal(new URL(link).origin, origin);
+    assert.equal(new URL(links[0]).pathname, "/blog/hello");
+    assert.equal(new URL(links[1]).searchParams.get("action"), "unsubscribe");
+  }
+});

@@ -1735,6 +1735,10 @@
   gap: 16px;
 }
 
+.mailCalendarGrid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .profileGrid {
   display: grid;
   grid-template-columns: minmax(320px, 560px) minmax(280px, 1fr);

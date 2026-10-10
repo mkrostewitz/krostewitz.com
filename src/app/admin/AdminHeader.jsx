@@ -21,6 +21,7 @@ const ADMIN_NAV_ITEMS = [
     label: "Mail & Calendar",
   },
   {active: "posts", href: "/admin/posts", label: "Blog"},
+  {active: "subscribers", href: "/admin/subscribers", label: "Subscribers"},
   {active: "skills", href: "/admin/skills", label: "Skills"},
   {
     active: "githubPortfolio",

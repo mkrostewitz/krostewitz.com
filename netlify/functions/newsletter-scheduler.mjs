@@ -1,6 +1,6 @@
 export default async function handler() {
   const secret = process.env.NEWSLETTER_SCHEDULER_SECRET;
-  const origin = process.env.NEXT_PUBLIC_SITE_URL || process.env.AUTH_BASE_URL || process.env.URL;
+  const origin = process.env.DEPLOY_PRIME_URL || process.env.URL || process.env.DEPLOY_URL || process.env.NEXT_PUBLIC_SITE_URL || process.env.AUTH_BASE_URL;
   if (!secret || !origin) return new Response(null, {status: 204});
   try {
     const response = await fetch(new URL("/api/admin/newsletter/scheduled", origin), {

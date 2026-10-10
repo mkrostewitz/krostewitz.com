@@ -436,7 +436,7 @@ export default function MailCalendarSettings({user}) {
           </div>
         </div>
 
-        <div className={styles.settingsGrid}>
+        <div className={`${styles.settingsGrid} ${styles.mailCalendarGrid}`}>
           <section className={styles.portfolioPanel}>
             <div className={styles.panelHeader}>
               <div className={styles.titleBlock}>
