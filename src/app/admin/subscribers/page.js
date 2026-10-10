@@ -6,6 +6,8 @@ import {getDb} from "../../lib/mongo";
 import AdminHeader from "../AdminHeader";
 import styles from "../admin.module.css";
 import listStyles from "./subscribers.module.css";
+import SubscriberMap from "./SubscriberMap";
+import {normalizeSubscriberLocation, subscriberLocationLabel} from "../../lib/subscriberLocation.mjs";
 
 const PAGE_SIZE = 50;
 const STATUSES = {active: "Active", pending: "Pending confirmation", unsubscribed: "Unsubscribed"};
@@ -37,6 +39,8 @@ export default async function AdminSubscribersPage({searchParams}) {
   let page = 1;
   let pageCount = 1;
   let failed = false;
+  let mappedSubscribers = [];
+  let mapTruncated = false;
   try {
     const db = await getDb();
     const collection = db.collection("newsletter_subscribers");
@@ -44,8 +48,18 @@ export default async function AdminSubscribersPage({searchParams}) {
     pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
     page = Math.min(requestedPage, pageCount);
     subscribers = await collection.find(query, {
-      projection: {email: 1, status: 1, language: 1, createdAt: 1, confirmedAt: 1, unsubscribedAt: 1},
+      projection: {email: 1, status: 1, language: 1, createdAt: 1, confirmedAt: 1, unsubscribedAt: 1, location: 1},
     }).sort({createdAt: -1, _id: -1}).skip((page - 1) * PAGE_SIZE).limit(PAGE_SIZE).toArray();
+    const mapRows = await collection.find({...query,
+      "location.latitude": {$type: "number", $gte: -90, $lte: 90},
+      "location.longitude": {$type: "number", $gte: -180, $lte: 180},
+    }, {projection: {email: 1, status: 1, location: 1}})
+      .sort({createdAt: -1, _id: -1}).limit(2001).toArray();
+    mapTruncated = mapRows.length > 2000;
+    mappedSubscribers = mapRows.slice(0, 2000).map((subscriber) => ({
+      id: String(subscriber._id), email: subscriber.email, status: subscriber.status,
+      tracking: normalizeSubscriberLocation(subscriber.location),
+    }));
   } catch {
     failed = true;
   }
@@ -89,12 +103,14 @@ export default async function AdminSubscribersPage({searchParams}) {
           <p role="alert" className={styles.error}>Unable to load subscribers. Please refresh the page to try again.</p>
         ) : (
           <>
+            <SubscriberMap subscribers={mappedSubscribers} truncated={mapTruncated} />
             <p className={styles.muted}>{total} {total === 1 ? "subscriber" : "subscribers"}{search || status ? " matching your filters" : " total"}</p>
             <div className={listStyles.tableWrapper} role="region" aria-label="Subscriber list" tabIndex={0}>
               <table className={listStyles.table}>
                 <caption>Newsletter subscribers · newest signups first · dates in Europe/Berlin</caption>
                 <thead><tr>
                   <th scope="col">Email</th><th scope="col">Status</th><th scope="col">Language</th>
+                  <th scope="col">Location (approx.)</th>
                   <th scope="col">Signed up</th><th scope="col">Confirmed</th><th scope="col">Unsubscribed</th>
                 </tr></thead>
                 <tbody>
@@ -105,12 +121,13 @@ export default async function AdminSubscribersPage({searchParams}) {
                         {STATUSES[subscriber.status] || "Unknown"}
                       </span></td>
                       <td>{({de: "German", en: "English"})[subscriber.language] || "—"}</td>
+                      <td>{subscriberLocationLabel(subscriber.location)}</td>
                       <td>{displayDate(subscriber.createdAt)}</td>
                       <td>{displayDate(subscriber.confirmedAt)}</td>
                       <td>{displayDate(subscriber.unsubscribedAt)}</td>
                     </tr>
                   ))}
-                  {subscribers.length === 0 && <tr><td colSpan={6} className={listStyles.empty}>
+                  {subscribers.length === 0 && <tr><td colSpan={7} className={listStyles.empty}>
                     {search || status ? "No subscribers match your filters." : "No newsletter subscribers yet."}
                   </td></tr>}
                 </tbody>

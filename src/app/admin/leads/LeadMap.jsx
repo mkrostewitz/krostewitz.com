@@ -43,7 +43,7 @@ function getLeadLocationQuery(lead) {
   );
 }
 
-export default function LeadMap({activeLeadId, leads, onSelectLead = () => {}, geocode = true, emptyMessage}) {
+export default function LeadMap({activeLeadId, leads, onSelectLead = () => {}, geocode = true, emptyMessage, mapLabel = "Lead locations"}) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const markersRef = useRef([]);
@@ -264,7 +264,7 @@ export default function LeadMap({activeLeadId, leads, onSelectLead = () => {}, g
   }
 
   return (
-    <div className={styles.leadMap} aria-label="Lead locations">
+    <div className={styles.leadMap} aria-label={mapLabel}>
       <div className={styles.leadMapCanvas} ref={containerRef} />
     </div>
   );

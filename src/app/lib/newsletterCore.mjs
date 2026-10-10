@@ -9,12 +9,16 @@ export function normalizeEmail(value) {
   return email.length <= 254 && /^[^\s@<>;,]+@[^\s@<>;,]+\.[^\s@<>;,]+$/.test(email) ? email : "";
 }
 const escapeHtml = (value) => String(value || "").replace(/[&<>"']/g, (char) => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[char]));
-export function newsletterMessage({language, title, summary, url, unsubscribeUrl}) {
+export function newsletterContent({language, title, summary, url, unsubscribeUrl}) {
   const de = language === "de";
   const heading = unsubscribeUrl ? (de ? "Neuer Artikel" : "New article") : (de ? "Newsletter-Anmeldung bestätigen" : "Confirm your newsletter subscription");
   const body = unsubscribeUrl ? summary : (de ? "Bitte bestätige deine Anmeldung. Der Link ist 24 Stunden gültig. Falls du dich nicht angemeldet hast, ignoriere diese E-Mail." : "Please confirm your subscription. This link expires in 24 hours. If you did not sign up, ignore this email.");
   const action = unsubscribeUrl ? (de ? "Artikel lesen" : "Read article") : (de ? "Anmeldung bestätigen" : "Confirm subscription");
   const unsubscribe = de ? "Newsletter abbestellen" : "Unsubscribe";
+  return {heading, body, action, unsubscribe, title, url, unsubscribeUrl};
+}
+export function newsletterMessage(options) {
+  const {heading, body, action, unsubscribe, title, url, unsubscribeUrl} = newsletterContent(options);
   return {
     subject: title ? `${heading}: ${title.replace(/[\r\n]/g, " ")}` : heading,
     text: `${heading}\n\n${title || ""}\n${body || ""}\n\n${action}: ${url}${unsubscribeUrl ? `\n\n${unsubscribe}: ${unsubscribeUrl}` : ""}`,
@@ -23,7 +27,7 @@ export function newsletterMessage({language, title, summary, url, unsubscribeUrl
 }
 
 // Kept injectable so delivery behavior can be tested without real subscribers or SMTP.
-export async function deliverNextNewsletter({db, send, origin, localize, now = new Date()}) {
+export async function deliverNextNewsletter({db, send, origin, localize, renderMessage = newsletterMessage, now = new Date()}) {
   const posts = db.collection("posts");
   const lock = newToken();
   const post = await posts.findOneAndUpdate({
@@ -61,7 +65,7 @@ export async function deliverNextNewsletter({db, send, origin, localize, now = n
     }
     if (active) {
       unsubscribeUrl.searchParams.set("token", active.unsubscribeToken);
-      const result = await send({to: subscriber.email, ...newsletterMessage({language: subscriber.language, title: article.title, summary: article.summary, url: url.href, unsubscribeUrl: unsubscribeUrl.href})});
+      const result = await send({to: subscriber.email, ...await renderMessage({language: subscriber.language, title: article.title, summary: article.summary, url: url.href, unsubscribeUrl: unsubscribeUrl.href})});
       if (!result.ok || result.rejected?.length) throw new Error("Newsletter delivery failed");
     }
     await posts.updateOne(guard, {$set: {"newsletter.cursor": subscriber._id, "newsletter.availableAt": now, "newsletter.attempts": 0}, $inc: {"newsletter.sent": active ? 1 : 0}, $unset: {"newsletter.lock": ""}});
@@ -82,7 +86,7 @@ export async function deliverNextNewsletter({db, send, origin, localize, now = n
   }
 }
 
-export async function requestSubscription({db, send, origin, input, ip, now = new Date()}) {
+export async function requestSubscription({db, send, origin, input, ip, locate = async () => null, renderMessage = newsletterMessage, now = new Date()}) {
   const email = normalizeEmail(input.email);
   if (!email || input.consent !== true) return {status: 400, error: "invalid"};
 
@@ -107,12 +111,18 @@ export async function requestSubscription({db, send, origin, input, ip, now = ne
     consentVersion: "newsletter-v1", expiresAt: new Date(+now + 86400000), unsubscribeToken: newToken()}},
   {returnDocument: "after", includeResultMetadata: false});
   if (!claimed) return {status: 200};
+  // Resolve only accepted signups, after rate limiting and the resend guard.
+  // Location lookup failure must never prevent subscription delivery.
+  try {
+    const location = await locate(ip);
+    if (location) await subscribers.updateOne({_id, confirmationHash: hashToken(token)}, {$set: {location}});
+  } catch { /* Location is optional. */ }
   const url = new URL("/newsletter", origin);
   url.searchParams.set("action", "confirm");
   url.searchParams.set("token", token);
   url.searchParams.set("lng", language);
   try {
-    const result = await send({to: email, ...newsletterMessage({language, url: url.href})});
+    const result = await send({to: email, ...await renderMessage({language, url: url.href})});
     if (!result.ok || result.rejected?.length) throw new Error("Confirmation delivery failed");
   } catch {
     await subscribers.updateOne({_id, confirmationHash: hashToken(token)}, {$unset: {requestedAt: "", confirmationHash: ""}});
@@ -120,13 +130,22 @@ export async function requestSubscription({db, send, origin, input, ip, now = ne
   }
   return {status: 200};
 }
-export async function changeSubscription({db, action, token, now = new Date()}) {
+export async function changeSubscription({db, action, token, ip, locate = async () => null, now = new Date()}) {
   if (!validToken(token)) return false;
   const subscribers = db.collection("newsletter_subscribers");
   if (action === "confirm") {
-    const result = await subscribers.updateOne({confirmationHash: hashToken(token), status: "pending", expiresAt: {$gt: now}},
-      {$set: {status: "active", confirmedAt: now}, $unset: {confirmationHash: "", expiresAt: ""}});
-    return result.modifiedCount === 1;
+    const subscriber = await subscribers.findOneAndUpdate({confirmationHash: hashToken(token), status: "pending", expiresAt: {$gt: now}},
+      {$set: {status: "active", confirmedAt: now}, $unset: {confirmationHash: "", expiresAt: ""}},
+      {returnDocument: "after", includeResultMetadata: false});
+    if (!subscriber) return false;
+    // Consume the valid confirmation first. Invalid or reused links never trigger a lookup.
+    if (subscriber.location?.latitude == null || subscriber.location?.longitude == null) {
+      try {
+        const location = await locate(ip);
+        if (location) await subscribers.updateOne({_id: subscriber._id, status: "active", confirmedAt: now}, {$set: {location}});
+      } catch { /* A geolocation outage must not invalidate a successful confirmation. */ }
+    }
+    return true;
   }
   if (action === "unsubscribe") {
     const result = await subscribers.updateOne({unsubscribeToken: token},

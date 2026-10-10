@@ -179,12 +179,16 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 
 ## Article newsletter
 
+Confirmation and article emails use the shared branded email template. The confirmation page uses the public navigation and footer.
+
+Admin → Subscribers includes a searchable list and a map of approximate signup locations. Configure `IPGEOLOCATION_API_KEY` for server-side signup lookups and `NEXT_PUBLIC_MAPBOX_TOKEN` for the admin map. Lookups run after signup validation and throttling; provider failures do not block confirmation emails. Subscriber records store city, region, country, and coordinates, but no raw IP address. Confirmation retries the location lookup if signup did not capture coordinates. Already confirmed subscribers without location data remain unknown because raw IPs are not retained. Localhost and private IP requests cannot be geolocated. The map follows the list filters across all pages, capped at the newest 2,000 located subscribers.
+
 Visitors can subscribe from the homepage blog section or an article page, in English or German. An explicit checkbox and a confirmation email are required; confirmation links expire after 24 hours. Opening an email link does not change a subscription until the visitor presses the confirmation or unsubscribe button, so email link scanners do not activate subscriptions or unsubscribe readers.
 
 Setup before enabling this in production:
 
 1. Configure and test SMTP in `/admin/mail-calendar` (the existing environment SMTP settings also work).
-2. Set `NEXT_PUBLIC_SITE_URL` to your canonical origin, e.g. `https://krostewitz.com`. `AUTH_BASE_URL` or Netlify's `URL` is used as a fallback. Email links always use configuration, not a visitor-supplied host header.
+2. Newsletter links use the current request origin, including the protocol and port, just like login, contact, and CV emails. A signup on `http://localhost:3001` receives confirmation links on that host. Article and unsubscribe links use the origin of the authenticated scheduler request. The Netlify scheduler prefers `DEPLOY_PRIME_URL`, then `URL` and `DEPLOY_URL`, before configured site URLs. Set `NEXT_PUBLIC_SITE_URL` (or `AUTH_BASE_URL`) as a fallback for calls without a request origin. Relative email logo URLs use the same origin as the email links.
 3. Set `NEWSLETTER_SCHEDULER_SECRET` to a long random secret in the deployment environment and redeploy. The included Netlify `newsletter-scheduler` runs every minute and calls the authenticated `/api/admin/newsletter/scheduled` endpoint. For other hosts, schedule a POST to that endpoint with `Authorization: Bearer <secret>` once per minute. Never expose this secret to client code.
 
 The first publication atomically queues notifications in the post's `newsletter` field. Saving edits, changing the publication date, or archiving and republishing does not create a new campaign. Previously published articles are not backfilled. Only subscribers confirmed before that first publication receive the announcement. A custom publication date remains display metadata, as in the existing editor; it does not schedule publication. Hidden blogs and unpublished posts pause delivery.

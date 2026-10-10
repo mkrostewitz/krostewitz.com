@@ -28,7 +28,7 @@ export default function ImportLeadModal({onClose, onImported}) {
     setBusy(true);
     try {
       if (!file.name.toLowerCase().endsWith('.xlsx') || file.size > 5_000_000) throw new Error('Choose an .xlsx file smaller than 5 MB.');
-      const {readSheet} = await import('read-excel-file');
+      const {readSheet} = await import('read-excel-file/browser');
       const parsed = spreadsheetLeads(await readSheet(file));
       setEntries(parsed);
       setSelected(parsed.filter(entry => !entry.error).map(entry => entry.row));

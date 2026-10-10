@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import {NextResponse} from "next/server";
 import {processNewsletter} from "../../../../lib/newsletter";
+import {getRequestOrigin} from "../../../../lib/requestOrigin";
 
 export const runtime = "nodejs";
 export async function POST(request) {
@@ -11,7 +12,7 @@ export async function POST(request) {
     return NextResponse.json({error: "Unauthorized"}, {status: 401});
   }
   try {
-    return NextResponse.json(await processNewsletter());
+    return NextResponse.json(await processNewsletter(getRequestOrigin(request)));
   } catch {
     console.error("Newsletter scheduler failed; check MongoDB, SMTP and site URL configuration.");
     return NextResponse.json({error: "Newsletter processing failed"}, {status: 503});
