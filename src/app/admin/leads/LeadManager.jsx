@@ -1,13 +1,18 @@
 "use client";
 
 import {LocateFixed, X} from "lucide-react";
-import mapboxgl from "mapbox-gl";
-import {useEffect, useMemo, useRef, useState} from "react";
+import {useEffect, useMemo, useState} from "react";
 
 import {useLoadingState} from "../../components/loading/LoadingProvider";
 import {useSnackbar} from "../../components/snackbar/SnackbarProvider";
 import AdminHeader from "../AdminHeader";
 import styles from "../admin.module.css";
+import OutreachForm from "./OutreachForm";
+import LeadMap from "./LeadMap";
+import DeleteLeadModal from "./DeleteLeadModal";
+import CreateLeadModal from "./CreateLeadModal";
+import outreach from "./outreach.module.css";
+import {ACTIVITY_TYPES, CHANNELS, followUpState, localDay, matchesLeadFilters} from "../../lib/leadOutreach.mjs";
 
 const STATUS_OPTIONS = [
   {value: "", label: "All statuses"},
@@ -17,16 +22,11 @@ const STATUS_OPTIONS = [
   {value: "pending_verification", label: "Pending verification"},
 ];
 
-const OUTCOME_STATUSES = ["pending", "won", "lost"];
-
-const OUTCOME_STATUS_OPTIONS = STATUS_OPTIONS.filter((option) =>
-  OUTCOME_STATUSES.includes(option.value)
-);
-
 const SOURCE_OPTIONS = [
   {value: "", label: "All sources"},
   {value: "contact_form", label: "Contact form"},
   {value: "cv_download", label: "CV download"},
+  {value: "manual", label: "Personal outreach"},
 ];
 
 const REQUEST_TYPE_LABELS = {
@@ -88,16 +88,7 @@ function actionTextPreview(value) {
 
 function actionsPreview(lead) {
   const latestAction = leadActions(lead)[0];
-  return latestAction ? actionTextPreview(latestAction.text) : "No actions";
-}
-
-function actionsCountLabel(lead) {
-  const count = leadActions(lead).length;
-  return `${count} action${count === 1 ? "" : "s"}`;
-}
-
-function outcomeStatus(value) {
-  return OUTCOME_STATUSES.includes(value) ? value : "pending";
+  return latestAction ? `${ACTIVITY_TYPES[latestAction.type] || "Note"}: ${actionTextPreview(latestAction.text)}` : "No activities";
 }
 
 function compactLocation(tracking = {}) {
@@ -108,262 +99,23 @@ function compactLocation(tracking = {}) {
   );
 }
 
-function getLeadCoordinates(lead) {
-  const longitude = Number(lead?.tracking?.longitude);
-  const latitude = Number(lead?.tracking?.latitude);
-
-  if (
-    !Number.isFinite(longitude) ||
-    !Number.isFinite(latitude) ||
-    longitude < -180 ||
-    longitude > 180 ||
-    latitude < -90 ||
-    latitude > 90
-  ) {
-    return null;
-  }
-
-  return [longitude, latitude];
-}
-
-function getLeadLocationQuery(lead) {
-  const tracking = lead?.tracking || {};
-
-  return (
-    tracking.address ||
-    [tracking.city, tracking.state, tracking.country].filter(Boolean).join(", ") ||
-    [tracking.state, tracking.country].filter(Boolean).join(", ") ||
-    tracking.country ||
-    ""
-  );
-}
-
-function LeadMap({activeLeadId, leads, onSelectLead}) {
-  const containerRef = useRef(null);
-  const mapRef = useRef(null);
-  const markersRef = useRef([]);
-  const [resolvedCoordinates, setResolvedCoordinates] = useState({});
-  const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "";
-  const mappedLeads = useMemo(
-    () =>
-      leads
-        .map((lead) => {
-          const directCoordinates = getLeadCoordinates(lead);
-          const query = getLeadLocationQuery(lead);
-          const resolved = resolvedCoordinates[lead.id];
-          const fallbackCoordinates =
-            resolved?.query === query ? resolved.coordinates : null;
-
-          return {
-            lead,
-            coordinates: directCoordinates || fallbackCoordinates,
-          };
-        })
-        .filter((item) => item.coordinates),
-    [leads, resolvedCoordinates]
-  );
-  const geocodeTargets = useMemo(
-    () =>
-      leads
-        .map((lead) => ({
-          lead,
-          coordinates: getLeadCoordinates(lead),
-          query: getLeadLocationQuery(lead),
-          resolved: resolvedCoordinates[lead.id],
-        }))
-        .filter(
-          (item) =>
-            !item.coordinates &&
-            item.query &&
-            item.resolved?.query !== item.query
-        ),
-    [leads, resolvedCoordinates]
-  );
-  const coordinatesKey = mappedLeads
-    .map((item) => `${item.lead.id}:${item.coordinates.join(",")}`)
-    .join("|");
-
-  useEffect(() => {
-    if (!token || geocodeTargets.length === 0) return undefined;
-
-    const controller = new AbortController();
-
-    async function resolveLocations() {
-      const results = await Promise.all(
-        geocodeTargets.map(async ({lead, query}) => {
-          try {
-            const response = await fetch(
-              `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
-                query
-              )}.json?access_token=${encodeURIComponent(token)}&limit=1`,
-              {signal: controller.signal}
-            );
-            const data = await response.json().catch(() => ({}));
-            const center = data.features?.[0]?.center;
-            const coordinates =
-              response.ok &&
-              Array.isArray(center) &&
-              center.length >= 2 &&
-              Number.isFinite(Number(center[0])) &&
-              Number.isFinite(Number(center[1]))
-                ? [Number(center[0]), Number(center[1])]
-                : null;
-
-            return {leadId: lead.id, query, coordinates};
-          } catch (error) {
-            if (error?.name === "AbortError") return null;
-            return {leadId: lead.id, query, coordinates: null};
-          }
-        })
-      );
-
-      if (controller.signal.aborted) return;
-
-      setResolvedCoordinates((current) => {
-        const next = {...current};
-
-        for (const result of results) {
-          if (!result) continue;
-          next[result.leadId] = {
-            query: result.query,
-            coordinates: result.coordinates,
-          };
-        }
-
-        return next;
-      });
-    }
-
-    void resolveLocations();
-
-    return () => {
-      controller.abort();
-    };
-  }, [geocodeTargets, token]);
-
-  useEffect(() => {
-    if (!token || !containerRef.current || mapRef.current || mappedLeads.length === 0) {
-      return undefined;
-    }
-
-    mapboxgl.accessToken = token;
-
-    const map = new mapboxgl.Map({
-      attributionControl: false,
-      center: mappedLeads[0].coordinates,
-      container: containerRef.current,
-      pitch: 0,
-      style: "mapbox://styles/mapbox/light-v11",
-      zoom: mappedLeads.length === 1 ? 6 : 2,
-    });
-
-    map.addControl(
-      new mapboxgl.AttributionControl({compact: true}),
-      "bottom-right"
-    );
-    map.addControl(
-      new mapboxgl.NavigationControl({showCompass: false}),
-      "top-right"
-    );
-
-    mapRef.current = map;
-
-    map.on("load", () => {
-      map.resize();
-    });
-    map.on("error", () => {
-      console.warn("Unable to render lead map.");
-    });
-
-    return () => {
-      markersRef.current.forEach((marker) => marker.remove());
-      markersRef.current = [];
-      map.remove();
-      mapRef.current = null;
-    };
-  }, [mappedLeads, token]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map) return undefined;
-
-    markersRef.current.forEach((marker) => marker.remove());
-    markersRef.current = mappedLeads.map(({lead, coordinates}) => {
-      const markerElement = document.createElement("button");
-      markerElement.type = "button";
-      markerElement.className = `${styles.leadMapMarker} ${
-        lead.id === activeLeadId ? styles.leadMapMarkerActive : ""
-      }`;
-      markerElement.title = leadTitle(lead);
-      markerElement.setAttribute("aria-label", `Select ${leadTitle(lead)}`);
-      markerElement.addEventListener("click", () => onSelectLead(lead.id));
-
-      return new mapboxgl.Marker({anchor: "bottom", element: markerElement})
-        .setLngLat(coordinates)
-        .addTo(map);
-    });
-
-    if (mappedLeads.length === 1) {
-      map.easeTo({center: mappedLeads[0].coordinates, zoom: 6, duration: 0});
-    } else if (mappedLeads.length > 1) {
-      const bounds = mappedLeads.reduce(
-        (nextBounds, item) => nextBounds.extend(item.coordinates),
-        new mapboxgl.LngLatBounds(mappedLeads[0].coordinates, mappedLeads[0].coordinates)
-      );
-      map.fitBounds(bounds, {duration: 0, maxZoom: 8, padding: 54});
-    }
-
-    return () => {
-      markersRef.current.forEach((marker) => marker.remove());
-      markersRef.current = [];
-    };
-  }, [activeLeadId, coordinatesKey, mappedLeads, onSelectLead]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    const activeItem = mappedLeads.find((item) => item.lead.id === activeLeadId);
-
-    if (!map || !activeItem) return;
-
-    map.easeTo({
-      center: activeItem.coordinates,
-      duration: 350,
-      zoom: Math.max(map.getZoom(), 5),
-    });
-  }, [activeLeadId, mappedLeads]);
-
-  if (!token) {
-    return (
-      <div className={styles.leadMapPlaceholder}>
-        Map unavailable. Configure `NEXT_PUBLIC_MAPBOX_TOKEN`.
-      </div>
-    );
-  }
-
-  if (mappedLeads.length === 0) {
-    return (
-      <div className={styles.leadMapPlaceholder}>
-        {geocodeTargets.length > 0
-          ? "Resolving lead locations..."
-          : "No location data is available for the current leads."}
-      </div>
-    );
-  }
-
-  return (
-    <div className={styles.leadMap} aria-label="Lead locations">
-      <div className={styles.leadMapCanvas} ref={containerRef} />
-    </div>
-  );
-}
-
 export default function LeadManager({user}) {
   const {closeSnackbar, showSnackbar} = useSnackbar();
   const [leads, setLeads] = useState([]);
   const [activeLeadId, setActiveLeadId] = useState("");
   const [statusFilter, setStatusFilter] = useState("pending");
-  const [actionDraft, setActionDraft] = useState("");
-  const [statusDraft, setStatusDraft] = useState("pending");
+  const [search, setSearch] = useState("");
+  const [followUpFilter, setFollowUpFilter] = useState("");
+  const [sourceFilter, setSourceFilter] = useState("");
+  const [footerTarget, setFooterTarget] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [isCreating, setIsCreating] = useState(false);
+  const [isMapOpen, setIsMapOpen] = useState(false);
+  const [today, setToday] = useState(localDay);
+  useEffect(() => {
+    const timer = setInterval(() => setToday(localDay()), 60000);
+    return () => clearInterval(timer);
+  }, []);
   const [isLoading, setIsLoading] = useState(true);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isGeolocating, setIsGeolocating] = useState(false);
@@ -390,18 +142,20 @@ export default function LeadManager({user}) {
     [activeLeadId, leads]
   );
 
-  const visibleLeads = useMemo(
-    () =>
-      statusFilter
-        ? leads.filter((lead) => lead.status === statusFilter)
-        : leads,
-    [leads, statusFilter]
-  );
+  const visibleLeads = useMemo(() => {
+    return leads.filter((lead) => matchesLeadFilters(lead, {
+      status: statusFilter, source: sourceFilter, search, followUp: followUpFilter, today,
+    })
+    ).sort((a, b) => {
+      const aDate = followUpState(a, today) === "closed" ? "9999" : a.followUpOn || "9999";
+      const bDate = followUpState(b, today) === "closed" ? "9999" : b.followUpOn || "9999";
+      return aDate.localeCompare(bDate) || (b.createdAt || "").localeCompare(a.createdAt || "");
+    });
+  }, [leads, statusFilter, sourceFilter, search, followUpFilter, today]);
 
-  const activeLeadStatus = outcomeStatus(activeLead?.status);
-  const hasLeadDraftChanges = Boolean(
-    activeLead && (actionDraft.trim() || statusDraft !== activeLeadStatus)
-  );
+  const overdueCount = leads.filter((lead) => followUpState(lead, today) === "overdue").length;
+  const todayCount = leads.filter((lead) => followUpState(lead, today) === "today").length;
+  const dueCount = overdueCount + todayCount;
 
   const counts = useMemo(
     () =>
@@ -423,18 +177,18 @@ export default function LeadManager({user}) {
       setIsLoading(true);
 
       try {
-        const response = await fetch("/api/admin/leads", {
-          cache: "no-store",
-        });
-        const data = await response.json().catch(() => ({}));
-
-        if (!response.ok) {
-          throw new Error(data.error || "Unable to load leads.");
+        const nextLeads = [];
+        // Read every page so older overdue leads cannot disappear behind a limit.
+        for (let offset = 0; !cancelled; offset += 300) {
+          const response = await fetch(`/api/admin/leads?limit=300&offset=${offset}`, {cache: "no-store"});
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(data.error || "Unable to load leads.");
+          const page = data.leads || [];
+          nextLeads.push(...page);
+          if (page.length < 300) break;
         }
-
         if (!cancelled) {
-          const nextLeads = data.leads || [];
-          setLeads(nextLeads);
+          setLeads([...new Map(nextLeads.map((lead) => [lead.id, lead])).values()]);
           closeSnackbar();
         }
       } catch (error) {
@@ -464,11 +218,6 @@ export default function LeadManager({user}) {
   }, [visibleLeads]);
 
   useEffect(() => {
-    setActionDraft("");
-    setStatusDraft(outcomeStatus(activeLead?.status));
-  }, [activeLead?.id, activeLead?.status]);
-
-  useEffect(() => {
     if (isDetailsOpen && !activeLead) {
       setIsDetailsOpen(false);
     }
@@ -478,7 +227,7 @@ export default function LeadManager({user}) {
     if (!isDetailsOpen) return undefined;
 
     function handleKeyDown(event) {
-      if (event.key === "Escape") {
+      if (event.key === "Escape" && !event.defaultPrevented && !document.querySelector("dialog[open]")) {
         setIsDetailsOpen(false);
       }
     }
@@ -494,8 +243,7 @@ export default function LeadManager({user}) {
   }, [isDetailsOpen]);
 
   function leadMatchesCurrentFilters(lead) {
-    if (statusFilter && lead.status !== statusFilter) return false;
-    return true;
+    return matchesLeadFilters(lead, {status: statusFilter, source: sourceFilter, search, followUp: followUpFilter, today});
   }
 
   function openLeadDetails(leadId) {
@@ -526,9 +274,6 @@ export default function LeadManager({user}) {
       if (!leadMatchesCurrentFilters(data.lead)) {
         setActiveLeadId((current) => (current === leadId ? "" : current));
         setIsDetailsOpen(false);
-      } else if (data.lead.id === activeLeadId) {
-        setActionDraft("");
-        setStatusDraft(outcomeStatus(data.lead.status));
       }
 
       showSnackbar({type: "success", message: successMessage});
@@ -592,22 +337,25 @@ export default function LeadManager({user}) {
     }
   }
 
-  function saveLeadDraft(lead) {
-    const patch = {};
-    const actionText = actionDraft.trim();
-
-    if (actionText) {
-      patch.actionText = actionDraft;
+  async function createLead(patch) {
+    setSavingLeadId("new");
+    try {
+      const response = await fetch("/api/admin/leads", {
+        method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(patch),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Unable to create lead.");
+      setLeads((current) => [data.lead, ...current]);
+      setStatusFilter("pending"); setSourceFilter(""); setSearch(""); setFollowUpFilter("");
+      setIsCreating(false);
+      openLeadDetails(data.lead.id);
+      showSnackbar({type: "success", message: "Lead created."});
+    } catch (error) {
+      showSnackbar({type: "error", message: error.message});
+      return {error: error.message};
+    } finally {
+      setSavingLeadId("");
     }
-
-    if (
-      OUTCOME_STATUSES.includes(lead.status) ||
-      statusDraft !== outcomeStatus(lead.status)
-    ) {
-      patch.status = statusDraft;
-    }
-
-    return updateLead(lead.id, patch, "Lead updated.");
   }
 
   return (
@@ -619,11 +367,24 @@ export default function LeadManager({user}) {
           <div className={styles.titleBlock}>
             <h1>Leads</h1>
             <p className={styles.muted}>
-              Review contact messages and verified CV download requests.
+              Track personal outreach, contact requests, and the next follow-up.
             </p>
           </div>
         </div>
 
+        <div className={styles.buttonRow}>
+          <button className={styles.button} type="button" disabled={isCreating} onClick={() => setIsCreating(true)}>Add new lead</button>
+          <button className={styles.secondaryButton} type="button" aria-pressed={followUpFilter === "due"} onClick={() => {setFollowUpFilter("due"); setStatusFilter(""); setSourceFilter(""); setSearch("");}}>{dueCount} follow-ups due</button>
+        </div>
+        {isCreating && <CreateLeadModal saving={savingLeadId === "new"}
+          onSave={createLead} onClose={() => setIsCreating(false)} />}
+        <div className={outreach.filters}>
+          <label className={styles.field}>Search contacts<input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Name, company, email, phone…" /></label>
+          <label className={styles.field}>Follow-up<select aria-label="Follow-up" value={followUpFilter} onChange={(event) => setFollowUpFilter(event.target.value)}>
+            <option value="">All follow-ups</option><option value="due">Due today & overdue</option><option value="overdue">Overdue</option><option value="today">Today</option><option value="upcoming">Upcoming</option><option value="unscheduled">No follow-up scheduled</option>
+          </select></label>
+          <label className={styles.field}>Source<select aria-label="Source" value={sourceFilter} onChange={(event) => setSourceFilter(event.target.value)}>{SOURCE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
+        </div>
         <div className={styles.leadStats} aria-label="Lead status filters">
           {[
             {value: "", label: "total", count: counts.total},
@@ -635,18 +396,32 @@ export default function LeadManager({user}) {
               key={chip.value || "total"}
               type="button"
               className={`${styles.leadStatChip} ${
-                statusFilter === chip.value ? styles.leadStatChipActive : ""
+                statusFilter === chip.value && !followUpFilter ? styles.leadStatChipActive : ""
               }`}
-              aria-pressed={statusFilter === chip.value}
-              onClick={() => setStatusFilter(chip.value)}
+              aria-pressed={statusFilter === chip.value && !followUpFilter}
+              onClick={() => {setStatusFilter(chip.value); setFollowUpFilter("");}}
             >
               {chip.count} {chip.label}
             </button>
           ))}
+          {[
+            {value: "overdue", label: "Overdue", count: overdueCount},
+            {value: "today", label: "Due today", count: todayCount},
+          ].map((chip) => <button
+            key={chip.value} type="button"
+            className={`${outreach.followUpChip} ${outreach[chip.value]} ${outreach.followUpFilter}`}
+            aria-pressed={followUpFilter === chip.value}
+            onClick={() => {
+              setFollowUpFilter(followUpFilter === chip.value ? "" : chip.value);
+              setStatusFilter(""); setSourceFilter(""); setSearch("");
+            }}
+          >{chip.count} {chip.label}</button>)}
         </div>
 
         <div className={styles.leadWorkspace}>
           <section className={styles.postListPanel}>
+            <details className={outreach.mapToggle} onToggle={(event) => setIsMapOpen(event.currentTarget.open)}>
+              <summary>Lead locations</summary>
             <div className={styles.panelHeader}>
               <div className={styles.titleBlock}>
                 <h2>Lead map</h2>
@@ -668,20 +443,22 @@ export default function LeadManager({user}) {
               </div>
             </div>
 
-            <LeadMap
+            {isMapOpen && <LeadMap
               activeLeadId={activeLead?.id || ""}
               leads={visibleLeads}
               onSelectLead={openLeadDetails}
-            />
+            />}
 
+            </details>
+            <p className={styles.muted}>{visibleLeads.length} contact{visibleLeads.length === 1 ? "" : "s"} · earliest follow-up first</p>
             <div className={styles.leadList} aria-label="Leads">
               <div className={styles.leadListHeader} aria-hidden="true">
                 <span>Lead</span>
                 <span>Source</span>
-                <span>Type</span>
+                <span>Channel</span>
                 <span>Status</span>
-                <span>Actions</span>
-                <span>Created</span>
+                <span>Latest activity</span>
+                <span>Next follow-up</span>
               </div>
 
               {visibleLeads.map((lead) => (
@@ -695,21 +472,27 @@ export default function LeadManager({user}) {
                 >
                   <span className={styles.leadIdentity}>
                     <strong>{leadTitle(lead)}</strong>
-                    <small>{lead.email}</small>
+                    <small>{[lead.company, lead.role].filter(Boolean).join(" · ") || lead.email}</small>
                   </span>
                   <span className={styles.sourceBadge}>{sourceLabel(lead)}</span>
-                  <span>{requestTypeLabel(lead.requestType)}</span>
+                  <span>{CHANNELS[lead.preferredChannel] || "LinkedIn"}</span>
                   <span className={styles.statusBadge}>
                     {STATUS_LABELS[lead.status] || lead.status}
                   </span>
                   <span
                     className={`${styles.postListCellSecondary} ${styles.leadActionPreview}`}
                   >
-                    <strong>{actionsCountLabel(lead)}</strong>
+                    <strong>{leadActions(lead)[0]?.occurredOn || (leadActions(lead)[0]?.createdAt ? formatDateTime(leadActions(lead)[0].createdAt) : "No activity yet")}</strong>
                     <small>{actionsPreview(lead)}</small>
                   </span>
-                  <span className={styles.postListCellSecondary}>
-                    {formatDateTime(lead.createdAt)}
+                  <span className={`${styles.postListCellSecondary} ${outreach.followUpCell}`}>
+                    <strong>{lead.followUpOn || "Not scheduled"}</strong>
+                    {["overdue", "today"].includes(followUpState(lead, today))
+                      ? <span className={`${outreach.followUpChip} ${outreach[followUpState(lead, today)]}`}>
+                          {followUpState(lead, today) === "overdue" ? "Overdue" : "Due today"}
+                        </span>
+                      : lead.followUpOn && <small>{followUpState(lead, today) === "closed" ? "Closed" : "Upcoming"}</small>}
+                    {lead.followUpTask && <small> — {lead.followUpTask}</small>}
                   </span>
                 </button>
               ))}
@@ -739,7 +522,7 @@ export default function LeadManager({user}) {
               <div className={styles.leadModalHeader}>
                 <div className={styles.titleBlock}>
                   <h2 id="lead-details-title">{leadTitle(activeLead)}</h2>
-                  <p className={styles.muted}>{sourceLabel(activeLead)}</p>
+                  <p className={styles.muted}>{[activeLead.company, activeLead.role, sourceLabel(activeLead)].filter(Boolean).join(" · ")}</p>
                 </div>
                 <div className={styles.leadModalHeaderActions}>
                   <span className={styles.statusBadge}>
@@ -758,6 +541,8 @@ export default function LeadManager({user}) {
               </div>
 
               <div className={styles.leadModalBody}>
+                {activeLead.source?.type !== "manual" && <details>
+                  <summary>Inbound lead details</summary>
                 <div className={styles.leadDetailGrid}>
                   <div>
                     <span>Email</span>
@@ -823,49 +608,19 @@ export default function LeadManager({user}) {
                   </div>
                 </div>
 
-                <div className={styles.leadManageGrid}>
-                  <label className={styles.field}>
-                    <span className={styles.fieldLabel}>Lead status</span>
-                    <select
-                      value={statusDraft}
-                      disabled={savingLeadId === activeLead.id}
-                      onChange={(event) => setStatusDraft(event.target.value)}
-                    >
-                      {OUTCOME_STATUS_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                </details>}
 
-                  <label className={styles.field}>
-                    <span className={styles.fieldLabel}>New action</span>
-                    <textarea
-                      value={actionDraft}
-                      onChange={(event) => setActionDraft(event.target.value)}
-                      placeholder="Log a follow-up, call, email, or next step."
-                    />
-                  </label>
-                </div>
-
-                <div className={styles.leadModalActions}>
-                  <button
-                    type="button"
-                    className={styles.button}
-                    disabled={savingLeadId === activeLead.id || !hasLeadDraftChanges}
-                    onClick={() => void saveLeadDraft(activeLead)}
-                  >
-                    {savingLeadId === activeLead.id ? "Saving..." : "Save changes"}
-                  </button>
-                </div>
+                <OutreachForm
+                  key={`${activeLead.id}:${activeLead.updatedAt}`}
+                  lead={activeLead}
+                  footerTarget={footerTarget}
+                  onCancel={() => setIsDetailsOpen(false)}
+                  onDelete={() => setDeleteTarget(activeLead)}
+                  saving={savingLeadId === activeLead.id}
+                  onSave={(patch) => updateLead(activeLead.id, patch, "Lead updated.")}
+                >
 
                 <div className={styles.leadActionSection}>
-                  <div className={styles.leadActionHeader}>
-                    <h3>Actions</h3>
-                    <span>{actionsCountLabel(activeLead)}</span>
-                  </div>
-
                   {leadActions(activeLead).length > 0 ? (
                     <div className={styles.leadActionList}>
                       {leadActions(activeLead).map((action) => (
@@ -874,11 +629,12 @@ export default function LeadManager({user}) {
                             <strong>
                               {action.legacy
                                 ? "Legacy note"
-                                : action.createdBy || "Admin action"}
+                                : `${ACTIVITY_TYPES[action.type] || "Note"} · ${CHANNELS[action.channel] || "Other"}`}
                             </strong>
-                            <span>{formatDateTime(action.createdAt)}</span>
+                            <span>{action.occurredOn || formatDateTime(action.createdAt)}</span>
                           </div>
                           <p>{action.text}</p>
+                          <small className={styles.muted}>Logged {formatDateTime(action.createdAt)}{action.createdBy ? ` by ${action.createdBy}` : ""}</small>
                         </article>
                       ))}
                     </div>
@@ -888,10 +644,20 @@ export default function LeadManager({user}) {
                     </p>
                   )}
                 </div>
+                </OutreachForm>
               </div>
+              <div ref={setFooterTarget} className={styles.leadDialogFooter} />
             </section>
           </div>
         )}
+        {deleteTarget && <DeleteLeadModal lead={deleteTarget}
+          onClose={() => setDeleteTarget(null)}
+          onDeleted={() => {
+            setLeads((current) => current.filter((lead) => lead.id !== deleteTarget.id));
+            setDeleteTarget(null);
+            setIsDetailsOpen(false);
+            showSnackbar({type: "success", message: "Lead deleted."});
+          }} />}
       </main>
     </div>
   );

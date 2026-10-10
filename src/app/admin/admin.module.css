@@ -1084,7 +1084,7 @@
   background: var(--map-background);
 }
 
-.leadMapCanvas {
+.leadMap .leadMapCanvas {
   position: absolute;
   inset: 0;
 }
@@ -1131,8 +1131,8 @@
 
 .leadMapMarker:hover,
 .leadMapMarkerActive {
-  background: var(--danger-text);
-  transform: scale(1.12);
+  background: var(--accent-hover);
+  box-shadow: 0 0 0 4px var(--accent-ring), 0 6px 14px var(--panel-shadow);
 }
 
 .leadList {
@@ -1252,7 +1252,7 @@
   width: min(100%, 860px);
   max-height: min(820px, calc(100vh - 40px));
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
   overflow: hidden;
   border: 1px solid var(--border-muted);
   border-radius: 8px;
@@ -3164,4 +3164,10 @@
   .uploadButton {
     width: 100%;
   }
+}
+
+.leadDialogFooter {
+  padding: 14px 18px;
+  border-top: 1px solid var(--border-muted);
+  background: var(--surface);
 }
