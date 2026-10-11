@@ -1,5 +1,6 @@
 "use client";
 
+import SnackbarError from "../../components/snackbar/SnackbarError";
 import Link from "next/link";
 import {useRouter} from "next/navigation";
 import {useState} from "react";
@@ -121,9 +122,7 @@ export default function ResetPasswordForm({challenge, token}) {
         </form>
       ) : (
         <>
-          <p className={styles.error}>
-            This password reset link is missing required information.
-          </p>
+          <SnackbarError message="This password reset link is missing required information." />
           <Link className={styles.button} href="/admin/login">
             Back to sign in
           </Link>

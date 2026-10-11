@@ -4,7 +4,9 @@ import {LEAD_STATUS_OPTIONS, CLOSED_STATUSES} from "../../lib/leadStatuses.mjs";
 import {useId, useMemo, useState} from "react";
 import {createPortal} from "react-dom";
 import {CHANNELS, CONTACT_FIELDS, addDays, localDay, suggestedFollowUp} from "../../lib/leadOutreach.mjs";
+import {useSnackbar} from "../../components/snackbar/SnackbarProvider";
 import styles from "../admin.module.css";
+import DisclosureSummary from "./DisclosureSummary";
 import outreach from "./outreach.module.css";
 import ActivityModal from "./ActivityModal";
 import LeadMap from "./LeadMap";
@@ -14,8 +16,10 @@ import {formatAddress, normalizeAddress} from "../../lib/leadAddress.mjs";
 
 const LABELS = {firstName: "First name", lastName: "Last name", company: "Company", role: "Role / job title", location: "Contact address / city", email: "Email", phone: "Phone", linkedinUrl: "LinkedIn profile URL", website: "Company website", detailsSource: "Contact details source URL"};
 
-export default function OutreachForm({lead, saving, onSave, onCancel, onDelete, footerTarget, children}) {
+export default function OutreachForm({lead, saving, onSave, onCancel, onDelete, footerTarget, children, companyNames = []}) {
+  const {showSnackbar} = useSnackbar();
   const formId = useId();
+  const companiesId = useId();
   const [contact, setContact] = useState(() => ({...Object.fromEntries(CONTACT_FIELDS.map((key) => [key, lead?.[key] || ""])), ...(lead?.address ? {address: normalizeAddress(lead.address)} : {})}));
   const {message: geocodeMessage, prepareContact, retry, needsGeocoding} = useContactGeocoding(contact, setContact);
   const [preparing, setPreparing] = useState(false);
@@ -32,7 +36,10 @@ export default function OutreachForm({lead, saving, onSave, onCancel, onDelete, 
   async function savePatch(patch) {
     setPreparing(true);
     try { return await onSave({...patch, contact: await prepareContact(contact)}); }
-    catch (error) { if (error.name !== "AbortError") throw error; return null; }
+    catch (error) {
+      if (error.name !== "AbortError") showSnackbar({type: "error", message: error.message || "Unable to save lead."});
+      return null;
+    }
     finally { setPreparing(false); }
   }
 
@@ -63,12 +70,13 @@ export default function OutreachForm({lead, saving, onSave, onCancel, onDelete, 
         <section aria-label="Contact details and research" className={outreach.formSection}>
         <h3>Contact</h3>
         <details open={!lead} className={outreach.contactDetails}>
-          <summary>Contact details {lead ? "— edit" : ""}</summary>
+          <DisclosureSummary>Contact details {lead ? "— edit" : ""}</DisclosureSummary>
           <div className={outreach.grid}>
             {CONTACT_FIELDS.filter((key) => key !== "location").map((key) => (
               <label className={styles.field} key={key}>
                 {LABELS[key]}
                 <input
+                  list={key === "company" ? companiesId : undefined}
                   required={key === "firstName" && !contact.lastName.trim()}
                   autoComplete={key === "firstName" ? "given-name" : key === "lastName" ? "family-name" : undefined}
                   type={key === "email" ? "email" : key === "phone" ? "tel" : ["linkedinUrl", "website", "detailsSource"].includes(key) ? "url" : "text"}
@@ -80,12 +88,15 @@ export default function OutreachForm({lead, saving, onSave, onCancel, onDelete, 
               </label>
             ))}
           </div>
+          <datalist id={companiesId}>
+            {companyNames.map((company) => <option key={company} value={company} />)}
+          </datalist>
           {lead?.nameNeedsReview && <p className={styles.muted}>The existing name was split automatically. Check the first and last name before saving.</p>}
           <p className={styles.muted}>Start with a first or last name; email and phone are optional. Save a source link when adding researched contact details.</p>
         </details>
 
         <details className={outreach.addressDetails}>
-          <summary>Address &amp; location <small className={styles.muted}>(optional)</small></summary>
+          <DisclosureSummary>Address &amp; location <small className={styles.muted}>(optional)</small></DisclosureSummary>
           <p className={outreach.addressPreview}>{formatAddress(contact.address || {}) || contact.location || "No address added"}</p>
           <div className={outreach.addressContent}>
         <AddressFields address={contact.address || normalizeAddress()}

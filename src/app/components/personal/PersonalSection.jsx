@@ -1,5 +1,6 @@
 "use client";
 
+import SnackbarError from "../snackbar/SnackbarError";
 import Image from "next/image";
 import {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {useTranslation} from "react-i18next";
@@ -1288,7 +1289,7 @@ const PersonalSection = () => {
             {externalDataStatus === "blocked" &&
               tConsent("externalServicesBlockedShort")}
             {externalDataStatus === "loading" && t("sailing.loading")}
-            {externalDataStatus === "error" && t("sailing.error")}
+            {externalDataStatus === "error" && <SnackbarError message={t("sailing.error")} />}
             {externalDataStatus !== "blocked" &&
               externalDataStatus !== "loading" &&
               externalDataStatus !== "error" &&
@@ -1444,14 +1445,10 @@ const PersonalSection = () => {
                   </div>
                 )}
                 {allowExternalServices && !mapboxToken && (
-                  <div className={styles.consentNotice}>
-                    <p>{t("sailing.missingMapboxToken")}</p>
-                  </div>
+                  <SnackbarError message={t("sailing.missingMapboxToken")} />
                 )}
                 {allowExternalServices && mapboxToken && windMapError && (
-                  <div className={styles.consentNotice}>
-                    <p>{t("sailing.mapboxUnavailable")}</p>
-                  </div>
+                  <SnackbarError message={t("sailing.mapboxUnavailable")} />
                 )}
                 {windMapHover && (
                   <div

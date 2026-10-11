@@ -1,6 +1,6 @@
 .snackbarViewport {
   position: fixed;
-  z-index: 200;
+  z-index: 2147483647;
   left: 50%;
   bottom: clamp(16px, 3vw, 28px);
   width: min(420px, calc(100vw - 32px));
@@ -20,6 +20,8 @@
   color: var(--foreground);
   box-shadow: 0 18px 48px var(--panel-shadow);
   pointer-events: auto;
+  max-height: min(60dvh, 480px);
+  overflow-y: auto;
   animation: snackbar-in 0.18s ease-out;
 }
 
@@ -61,6 +63,7 @@
 
 .content span {
   overflow-wrap: anywhere;
+  white-space: pre-line;
 }
 
 .closeButton {

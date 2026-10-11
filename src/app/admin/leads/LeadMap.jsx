@@ -1,5 +1,7 @@
 "use client";
 
+import {useSnackbar} from "../../components/snackbar/SnackbarProvider";
+import SnackbarError from "../../components/snackbar/SnackbarError";
 import mapboxgl from "mapbox-gl";
 import {useEffect, useMemo, useRef, useState} from "react";
 import styles from "../admin.module.css";
@@ -44,6 +46,7 @@ function getLeadLocationQuery(lead) {
 }
 
 export default function LeadMap({activeLeadId, leads, onSelectLead = () => {}, geocode = true, emptyMessage, mapLabel = "Lead locations"}) {
+  const {showSnackbar} = useSnackbar();
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const markersRef = useRef([]);
@@ -182,8 +185,10 @@ export default function LeadMap({activeLeadId, leads, onSelectLead = () => {}, g
     map.on("load", () => {
       map.resize();
     });
+    let reportedMapError = false;
     map.on("error", () => {
-      console.warn("Unable to render lead map.");
+      if (!reportedMapError) showSnackbar({type: "error", message: "Unable to render lead map. Please try again."});
+      reportedMapError = true;
     });
 
     return () => {
@@ -193,7 +198,7 @@ export default function LeadMap({activeLeadId, leads, onSelectLead = () => {}, g
       map.remove();
       mapRef.current = null;
     };
-  }, [hasMappedLeads, centerLongitude, centerLatitude, token]);
+  }, [hasMappedLeads, centerLongitude, centerLatitude, token, showSnackbar]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -247,9 +252,7 @@ export default function LeadMap({activeLeadId, leads, onSelectLead = () => {}, g
 
   if (!token) {
     return (
-      <div className={styles.leadMapPlaceholder}>
-        Map unavailable. Configure `NEXT_PUBLIC_MAPBOX_TOKEN`.
-      </div>
+      <SnackbarError message="Map unavailable. Configure NEXT_PUBLIC_MAPBOX_TOKEN." />
     );
   }
 

@@ -11,6 +11,8 @@ import {
   useState,
 } from "react";
 
+import {createPortal} from "react-dom";
+
 import styles from "./snackbar.module.css";
 
 const SnackbarContext = createContext(null);
@@ -25,6 +27,21 @@ const ICONS = {
 export function SnackbarProvider({children}) {
   const [snackbar, setSnackbar] = useState(null);
   const timeoutRef = useRef(null);
+  const [host, setHost] = useState(null);
+
+  useEffect(() => {
+    // Native modal dialogs make the rest of the document inert. Keep the global
+    // notification inside the active dialog so it remains visible and dismissible.
+    function updateHost() {
+      const dialogs = [...document.querySelectorAll("dialog:modal")];
+      const focusedDialog = document.activeElement?.closest("dialog:modal");
+      setHost(focusedDialog || dialogs.at(-1) || document.body);
+    }
+    updateHost();
+    const observer = new MutationObserver(updateHost);
+    observer.observe(document.body, {subtree: true, childList: true, attributes: true, attributeFilter: ["open"]});
+    return () => observer.disconnect();
+  }, []);
 
   const closeSnackbar = useCallback(() => {
     if (timeoutRef.current) {
@@ -52,9 +69,31 @@ export function SnackbarProvider({children}) {
       message,
       title: next.title ? String(next.title) : "",
       type: next.type || "info",
-      duration: next.duration ?? DEFAULT_DURATION,
+      duration: Object.hasOwn(next, "duration") ? next.duration : next.type === "error" ? null : DEFAULT_DURATION,
     });
   }, []);
+
+  useEffect(() => {
+    let invalidFields = [];
+    function reportInvalid(event) {
+      event.preventDefault();
+      const input = event.target;
+      invalidFields.push(input);
+      if (invalidFields.length > 1) return;
+      queueMicrotask(() => {
+        const fields = invalidFields;
+        invalidFields = [];
+        const messages = fields.map((field) => {
+          const label = field.getAttribute("aria-label") || field.labels?.[0]?.textContent?.trim() || field.name;
+          return `${label ? `${label}: ` : ""}${field.validationMessage}`;
+        });
+        showSnackbar({type: "error", message: messages.join("\n")});
+        fields[0]?.focus();
+      });
+    }
+    document.addEventListener("invalid", reportInvalid, true);
+    return () => document.removeEventListener("invalid", reportInvalid, true);
+  }, [showSnackbar]);
 
   useEffect(() => {
     if (!snackbar || snackbar.duration === null) return undefined;
@@ -86,7 +125,7 @@ export function SnackbarProvider({children}) {
   return (
     <SnackbarContext.Provider value={value}>
       {children}
-      <div className={styles.snackbarViewport} aria-live="polite">
+      {host && createPortal(<div className={styles.snackbarViewport}>
         {snackbar && (
           <section
             className={styles.snackbar}
@@ -113,7 +152,7 @@ export function SnackbarProvider({children}) {
             </button>
           </section>
         )}
-      </div>
+      </div>, host)}
     </SnackbarContext.Provider>
   );
 }

@@ -1,3 +1,4 @@
+import SnackbarError from "../snackbar/SnackbarError";
 import {useEffect, useMemo, useState} from "react";
 import Link from "next/link";
 import {useTranslation} from "react-i18next";
@@ -115,9 +116,7 @@ const PortfolioSection = () => {
       )}
 
       {!state.loading && state.error && (
-        <div className={styles.message}>
-          <p>{t("portfolio.error")}</p>
-        </div>
+        <SnackbarError message={t("portfolio.error")} />
       )}
 
       {!state.loading && !state.error && state.projects.length === 0 && (

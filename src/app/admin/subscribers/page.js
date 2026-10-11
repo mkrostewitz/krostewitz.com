@@ -1,3 +1,4 @@
+import SnackbarError from "../../components/snackbar/SnackbarError";
 import Link from "next/link";
 import {redirect} from "next/navigation";
 
@@ -100,7 +101,7 @@ export default async function AdminSubscribersPage({searchParams}) {
         </form>
 
         {failed ? (
-          <p role="alert" className={styles.error}>Unable to load subscribers. Please refresh the page to try again.</p>
+          <SnackbarError message="Unable to load subscribers. Please refresh the page to try again." />
         ) : (
           <>
             <SubscriberMap subscribers={mappedSubscribers} truncated={mapTruncated} />
