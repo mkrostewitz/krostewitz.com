@@ -2,7 +2,7 @@
 
 import {useEffect, useRef, useState} from "react";
 import {createPortal} from "react-dom";
-import {localDay, suggestedFollowUp} from "../../lib/leadOutreach.mjs";
+import {CLOSED_STATUSES, localDay, suggestedFollowUp} from "../../lib/leadOutreach.mjs";
 import styles from "../admin.module.css";
 import outreach from "./outreach.module.css";
 
@@ -25,7 +25,7 @@ export default function ActivityModal({lead, saving, onSave, onClose}) {
   const [override, setOverride] = useState(null);
   const suggestion = suggestedFollowUp(lead, {occurredOn});
   const followUpOn = override === null ? suggestion || "" : override;
-  const closed = ["won", "lost"].includes(lead.status);
+  const closed = CLOSED_STATUSES.includes(lead.status);
 
   useEffect(() => {
     const element = dialog.current;

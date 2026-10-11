@@ -19,7 +19,7 @@ export default function BlogBackLink() {
   }, []);
 
   return (
-    <Link className={styles.backLink} href="/#blog">
+    <Link className={styles.backLink} href={`/blog?lng=${language}`}>
       {t("blog.backToBlog", {defaultValue: defaultLabel})}
     </Link>
   );

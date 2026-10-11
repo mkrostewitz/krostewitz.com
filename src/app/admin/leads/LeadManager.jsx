@@ -1,5 +1,6 @@
 "use client";
 
+import {LEAD_STATUS_OPTIONS} from "../../lib/leadStatuses.mjs";
 import {LocateFixed, X} from "lucide-react";
 import {useEffect, useMemo, useState} from "react";
 
@@ -15,13 +16,7 @@ import CreateLeadModal from "./CreateLeadModal";
 import outreach from "./outreach.module.css";
 import {ACTIVITY_TYPES, CHANNELS, followUpState, localDay, matchesLeadFilters} from "../../lib/leadOutreach.mjs";
 
-const STATUS_OPTIONS = [
-  {value: "", label: "All statuses"},
-  {value: "pending", label: "Pending"},
-  {value: "won", label: "Won"},
-  {value: "lost", label: "Lost"},
-  {value: "pending_verification", label: "Pending verification"},
-];
+const STATUS_OPTIONS = [{value: "", label: "All statuses"}, ...LEAD_STATUS_OPTIONS];
 
 const SOURCE_OPTIONS = [
   {value: "", label: "All sources"},
@@ -104,7 +99,7 @@ export default function LeadManager({user}) {
   const {closeSnackbar, showSnackbar} = useSnackbar();
   const [leads, setLeads] = useState([]);
   const [activeLeadId, setActiveLeadId] = useState("");
-  const [statusFilter, setStatusFilter] = useState("pending");
+  const [statusFilter, setStatusFilter] = useState("");
   const [search, setSearch] = useState("");
   const [followUpFilter, setFollowUpFilter] = useState("");
   const [sourceFilter, setSourceFilter] = useState("");
@@ -348,7 +343,7 @@ export default function LeadManager({user}) {
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || "Unable to create lead.");
       setLeads((current) => [data.lead, ...current]);
-      setStatusFilter("pending"); setSourceFilter(""); setSearch(""); setFollowUpFilter("");
+      setStatusFilter(""); setSourceFilter(""); setSearch(""); setFollowUpFilter("");
       setIsCreating(false);
       openLeadDetails(data.lead.id);
       showSnackbar({type: "success", message: "Lead created."});
@@ -387,6 +382,9 @@ export default function LeadManager({user}) {
           onSave={createLead} onClose={() => setIsCreating(false)} />}
         <div className={outreach.filters}>
           <label className={styles.field}>Search contacts<input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Name, company, email, phone…" /></label>
+          <label className={styles.field}>Status<select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+            {STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+          </select></label>
           <label className={styles.field}>Follow-up<select aria-label="Follow-up" value={followUpFilter} onChange={(event) => setFollowUpFilter(event.target.value)}>
             <option value="">All follow-ups</option><option value="due">Due today & overdue</option><option value="overdue">Overdue</option><option value="today">Today</option><option value="upcoming">Upcoming</option><option value="unscheduled">No follow-up scheduled</option>
           </select></label>

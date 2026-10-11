@@ -454,6 +454,17 @@
     "viewCode": "Code ansehen"
   },
   "blog": {
+    "archiveTitle": "Alle Beiträge",
+    "seeAll": "Alle Beiträge ansehen",
+    "searchLabel": "Beiträge durchsuchen",
+    "searchPlaceholder": "Titel, Zusammenfassungen oder Tags durchsuchen…",
+    "resultCount_one": "{{count}} Beitrag",
+    "resultCount_other": "{{count}} Beiträge",
+    "clearFilters": "Filter zurücksetzen",
+    "previous": "Vorherige Beiträge",
+    "next": "Nächste Beiträge",
+    "pause": "Scrollen pausieren",
+    "play": "Scrollen fortsetzen",
     "eyebrow": "Logbuch",
     "title": "Berufliches, Segeln und Kochen",
     "subtitle": "Praktische Gedanken zu Wachstum, Operations und digitalen Systemen, dazu Notizen vom Wasser und aus der Küche.",
@@ -463,7 +474,7 @@
     "topics": ["Berufliches", "Segeln", "Kochen"],
     "loading": "Beiträge werden geladen...",
     "empty": "Berufliche Notizen, Segelgeschichten und Küchenexperimente erscheinen hier, sobald sie veröffentlicht sind.",
-    "emptyFiltered": "Für diese Kategorie gibt es noch keine veröffentlichten Beiträge.",
+    "emptyFiltered": "Keine Beiträge entsprechen deiner Suche und den ausgewählten Tags.",
     "readMore": "Weiterlesen",
     "backToBlog": "Zurück zum Blog"
   },

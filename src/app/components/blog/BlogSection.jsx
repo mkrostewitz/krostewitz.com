@@ -3,6 +3,8 @@
 /* eslint-disable @next/next/no-img-element */
 
 import Link from "next/link";
+import BlogCarousel from "./BlogCarousel";
+import {loadRuntimeTranslations} from "../../../lib/i18n";
 import NewsletterSignup from "../newsletter/NewsletterSignup";
 import {useEffect, useMemo, useState} from "react";
 import {useTranslation} from "react-i18next";
@@ -78,9 +80,10 @@ function BlogCardSkeleton() {
   );
 }
 
-export default function BlogSection() {
+export default function BlogSection({archive = false}) {
   const {t, i18n} = useTranslation();
-  const topics = t("blog.topics", {returnObjects: true});
+  const [query, setQuery] = useState("");
+  const Heading = archive ? "h1" : "h2";
   const language =
     getSupportedSiteLanguage(i18n.resolvedLanguage || i18n.language) || "en";
   const [posts, setPosts] = useState([]);
@@ -110,19 +113,27 @@ export default function BlogSection() {
   }, [categories, posts, i18n.language]);
 
   const visiblePosts = useMemo(() => {
-    if (activeCategory === ALL_CATEGORIES) return posts;
-
-    return posts.filter((post) =>
-      normalizeCategories(post.categories).some(
+    const terms = query.trim().toLocaleLowerCase(language).split(/\s+/).filter(Boolean);
+    return posts.filter((post) => {
+      const tags = normalizeCategories(post.categories);
+      const matchesCategory = activeCategory === ALL_CATEGORIES || tags.some(
         (category) => category.slug === activeCategory
-      )
-    );
-  }, [activeCategory, posts]);
+      );
+      const text = [post.title, post.summary, ...tags.map((tag) => tag.label)]
+        .join(" ").toLocaleLowerCase(language);
+      return matchesCategory && terms.every((term) => text.includes(term));
+    });
+  }, [activeCategory, posts, query, language]);
+
+  useEffect(() => {
+    void loadRuntimeTranslations();
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
 
     async function loadPosts() {
+      setIsLoading(true);
       try {
         const searchParams = new URLSearchParams({language});
         const response = await fetch(`/api/posts?${searchParams.toString()}`, {
@@ -168,7 +179,9 @@ export default function BlogSection() {
     }
   }, [activeCategory, availableCategories]);
 
-  if (blogEnabled === false) return null;
+  if (blogEnabled === false && !archive) return null;
+
+  const PostLayout = archive ? "div" : BlogCarousel;
 
   return (
     <section
@@ -178,16 +191,27 @@ export default function BlogSection() {
     >
       <div className={styles.sectionHeader}>
         <span className={pageStyles.eyebrow}>{t("blog.eyebrow")}</span>
-        <h2>{t("blog.title")}</h2>
+        <Heading>{t(archive ? "blog.archiveTitle" : "blog.title")}</Heading>
         <p>{t("blog.subtitle")}</p>
 
-        {!isLoading && availableCategories.length > 0 ? (
+        {archive && (
+          <label className={styles.searchLabel}>
+            {t("blog.searchLabel")}
+            <input type="search" value={query} onChange={(event) => setQuery(event.target.value)}
+              placeholder={t("blog.searchPlaceholder")} className={styles.searchInput} />
+          </label>
+        )}
+        {!archive && <Link className={pageStyles.secondary} href={`/blog?lng=${language}`}>
+          {t("blog.seeAll")}
+        </Link>}
+        {archive && !isLoading && availableCategories.length > 0 ? (
           <div className={styles.filterList} aria-label={t("blog.filterLabel")}>
             <button
               className={`${styles.filterButton} ${
                 activeCategory === ALL_CATEGORIES ? styles.filterButtonActive : ""
               }`}
               type="button"
+              aria-pressed={activeCategory === ALL_CATEGORIES}
               onClick={() => setActiveCategory(ALL_CATEGORIES)}
             >
               {t("blog.filterAll")}
@@ -199,23 +223,23 @@ export default function BlogSection() {
                 }`}
                 key={category.slug}
                 type="button"
+                aria-pressed={activeCategory === category.slug}
                 onClick={() => setActiveCategory(category.slug)}
               >
                 {category.label}
               </button>
             ))}
           </div>
-        ) : !isLoading && Array.isArray(topics) && topics.length > 0 ? (
-          <div className={styles.topicList} aria-label={t("blog.topicLabel")}>
-            {topics.map((topic) => (
-              <span className={styles.topic} key={topic}>
-                {topic}
-              </span>
-            ))}
-          </div>
         ) : null}
       </div>
 
+      {archive && !isLoading && <p className={styles.resultCount} role="status">
+        {t("blog.resultCount", {count: visiblePosts.length})}
+        {(query || activeCategory !== ALL_CATEGORIES) && <button type="button"
+          className={styles.filterButton} onClick={() => {setQuery(""); setActiveCategory(ALL_CATEGORIES);}}>
+          {t("blog.clearFilters")}
+        </button>}
+      </p>}
       {isLoading ? (
         <div
           className={styles.grid}
@@ -227,7 +251,7 @@ export default function BlogSection() {
           ))}
         </div>
       ) : visiblePosts.length > 0 ? (
-        <div className={styles.grid}>
+        <PostLayout className={styles.grid}>
           {visiblePosts.map((post) => {
             const previewMedia = getPreviewMedia(post);
 
@@ -273,7 +297,7 @@ export default function BlogSection() {
               </Link>
             );
           })}
-        </div>
+        </PostLayout>
       ) : !isLoading ? (
         <p className={styles.empty}>
           {posts.length > 0 ? t("blog.emptyFiltered") : t("blog.empty")}
