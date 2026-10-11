@@ -1,5 +1,6 @@
 "use client";
 
+import {LEAD_STATUS_OPTIONS, CLOSED_STATUSES} from "../../lib/leadStatuses.mjs";
 import {useId, useMemo, useState} from "react";
 import {createPortal} from "react-dom";
 import {CHANNELS, CONTACT_FIELDS, addDays, localDay, suggestedFollowUp} from "../../lib/leadOutreach.mjs";
@@ -25,7 +26,7 @@ export default function OutreachForm({lead, saving, onSave, onCancel, onDelete, 
   const [followUpOn, setFollowUpOn] = useState(lead?.followUpOn || "");
   const [followUpTask, setFollowUpTask] = useState(lead?.followUpTask || "");
   const suggestion = suggestedFollowUp(lead);
-  const closed = ["won", "lost"].includes(status);
+  const closed = CLOSED_STATUSES.includes(status);
   const query = encodeURIComponent([contact.firstName, contact.lastName, contact.company].filter(Boolean).join(" "));
 
   async function savePatch(patch) {
@@ -41,7 +42,7 @@ export default function OutreachForm({lead, saving, onSave, onCancel, onDelete, 
       contact, preferredChannel,
       followUpOn: closed ? null : followUpOn || null,
       followUpTask: closed ? "" : followUpTask,
-      ...(lead ? {status} : {}),
+      status,
 
     };
     void savePatch(patch);
@@ -127,12 +128,12 @@ export default function OutreachForm({lead, saving, onSave, onCancel, onDelete, 
               {Object.entries(CHANNELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
             </select>
           </label>
-          {lead && <label className={styles.field}>Lead status
+          <label className={styles.field}>Lead status
             <select value={status} onChange={(event) => setStatus(event.target.value)}>
-              {lead.status === "pending_verification" && <option value="pending_verification">Pending verification</option>}
-              <option value="pending">Pending</option><option value="won">Won</option><option value="lost">Lost</option>
+              {LEAD_STATUS_OPTIONS.filter((option) => option.value !== "pending_verification" || lead?.status === "pending_verification")
+                .map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
             </select>
-          </label>}
+          </label>
         </div>
 
           {closed ? <p className={styles.muted}>Closing this lead clears its follow-up reminder.</p> : <>

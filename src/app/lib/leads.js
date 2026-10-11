@@ -1,5 +1,8 @@
 import "server-only";
 
+import {LEAD_STATUSES, normalizeLeadStatus} from "./leadStatuses.mjs";
+export {LEAD_STATUSES} from "./leadStatuses.mjs";
+
 import crypto from "crypto";
 import {ObjectId} from "mongodb";
 
@@ -23,17 +26,6 @@ const LEADS_COLLECTION = "leads";
 const DOWNLOAD_TOKEN_MAX_AGE_MS = 1000 * 60 * 60 * 24;
 
 export const LEAD_SOURCE_TYPES = ["contact_form", "cv_download"];
-export const LEAD_STATUSES = [
-  "pending_verification",
-  "pending",
-  "won",
-  "lost",
-  // Legacy values kept readable so older lead records can still be listed.
-  "new",
-  "contacted",
-  "qualified",
-  "archived",
-];
 export const LEAD_REQUEST_TYPES = [
   "general",
   "headhunter",
@@ -512,16 +504,6 @@ function hashDownloadToken(token) {
   return crypto.createHash("sha256").update(String(token || "")).digest("hex");
 }
 
-function normalizeLeadStatus(value) {
-  const status = String(value || "").trim();
-
-  if (["new", "contacted", "qualified"].includes(status)) return "pending";
-  if (status === "archived") return "lost";
-  if (LEAD_STATUSES.includes(status)) return status;
-
-  return "pending";
-}
-
 function serializeLeadAction(action, index, fallbackId) {
   const text = cleanText(action?.text, 4000);
   if (!text) return null;
@@ -755,10 +737,7 @@ export async function getAdminLeads(filters = {}) {
 
   const query = {};
   if (filters.status && LEAD_STATUSES.includes(filters.status)) {
-    query.status =
-      filters.status === "pending"
-        ? {$in: ["pending", "new", "contacted", "qualified"]}
-        : filters.status;
+    query.status = filters.status;
   }
   if (filters.sourceType && [...LEAD_SOURCE_TYPES, "manual"].includes(filters.sourceType)) {
     query["source.type"] = filters.sourceType;
@@ -938,8 +917,13 @@ function outreachFields(input) {
 }
 
 export async function createAdminLead(input = {}, user) {
+  const status = String(input.status ?? "pending").trim();
+  if (!LEAD_STATUSES.includes(status) || status === "pending_verification") {
+    throw new LeadValidationError("Invalid lead status.", 400);
+  }
   const contact = normalizeContact(input.contact);
   const fields = outreachFields({
+    status,
     preferredChannel: input.preferredChannel || "linkedin",
     followUpOn: input.followUpOn || null,
     followUpTask: input.followUpTask || "",
@@ -960,7 +944,7 @@ export async function createAdminLead(input = {}, user) {
   }
   const document = {
     contact,
-    status: "pending",
+    status,
     source: {type: "manual", label: "Personal outreach", context: {}},
     request: {type: "general", message: ""},
     preferredChannel: fields.preferredChannel || "linkedin",

@@ -1,3 +1,5 @@
+import {CLOSED_STATUSES} from "./leadStatuses.mjs";
+export {CLOSED_STATUSES} from "./leadStatuses.mjs";
 import {normalizeAddress, formatAddress} from "./leadAddress.mjs";
 
 export const ACTIVITY_TYPES = {
@@ -14,7 +16,7 @@ export const ACTIVITY_TYPES = {
 };
 export const CHANNELS = {linkedin: "LinkedIn", email: "Email", phone: "Phone", other: "Other"};
 export const CONTACT_FIELDS = ["firstName", "lastName", "company", "role", "location", "email", "phone", "linkedinUrl", "website", "detailsSource"];
-export const CLOSED_STATUSES = ["won", "lost", "archived"];
+
 
 export class OutreachValidationError extends Error {
   constructor(message) { super(message); this.name = "OutreachValidationError"; this.status = 400; }
