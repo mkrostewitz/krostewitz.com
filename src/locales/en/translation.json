@@ -454,6 +454,17 @@
     "viewCode": "View code"
   },
   "blog": {
+    "archiveTitle": "All posts",
+    "seeAll": "See all Posts",
+    "searchLabel": "Search posts",
+    "searchPlaceholder": "Search titles, summaries, or tags…",
+    "resultCount_one": "{{count}} post",
+    "resultCount_other": "{{count}} posts",
+    "clearFilters": "Clear filters",
+    "previous": "Previous posts",
+    "next": "Next posts",
+    "pause": "Pause scrolling",
+    "play": "Resume scrolling",
     "eyebrow": "Logbook",
     "title": "Professional notes, sailing, and cooking",
     "subtitle": "A place for practical writing on growth, operations, and systems, plus notes from the water and the kitchen.",
@@ -463,7 +474,7 @@
     "topics": ["Professional notes", "Sailing", "Cooking"],
     "loading": "Loading posts...",
     "empty": "Professional notes, sailing logs, and cooking experiments will appear here as they are published.",
-    "emptyFiltered": "No published posts match this category yet.",
+    "emptyFiltered": "No posts match your search and tags.",
     "readMore": "Read more",
     "backToBlog": "Back to blog"
   },
