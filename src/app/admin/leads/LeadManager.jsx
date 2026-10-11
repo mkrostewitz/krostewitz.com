@@ -1,6 +1,7 @@
 "use client";
 
 import {LEAD_STATUS_OPTIONS} from "../../lib/leadStatuses.mjs";
+import {groupLeadsByCompany, leadCompanySuggestions} from "../../lib/leadCompanies.mjs";
 import {LocateFixed, X} from "lucide-react";
 import {useEffect, useMemo, useState} from "react";
 
@@ -8,6 +9,7 @@ import {useLoadingState} from "../../components/loading/LoadingProvider";
 import {useSnackbar} from "../../components/snackbar/SnackbarProvider";
 import AdminHeader from "../AdminHeader";
 import styles from "../admin.module.css";
+import DisclosureSummary from "./DisclosureSummary";
 import OutreachForm from "./OutreachForm";
 import LeadMap from "./LeadMap";
 import DeleteLeadModal from "./DeleteLeadModal";
@@ -149,6 +151,10 @@ export default function LeadManager({user}) {
       return aDate.localeCompare(bDate) || (b.createdAt || "").localeCompare(a.createdAt || "");
     });
   }, [leads, statusFilter, sourceFilter, search, followUpFilter, today]);
+
+  const companyGroups = useMemo(() => groupLeadsByCompany(visibleLeads), [visibleLeads]);
+  // All database pages are loaded above; filters must not narrow autocomplete choices.
+  const companyNames = useMemo(() => leadCompanySuggestions(leads), [leads]);
 
   const overdueCount = leads.filter((lead) => followUpState(lead, today) === "overdue").length;
   const todayCount = leads.filter((lead) => followUpState(lead, today) === "today").length;
@@ -378,7 +384,7 @@ export default function LeadManager({user}) {
           setLeads(current => [...imported, ...current]);
           setStatusFilter(''); setSearch(''); setSourceFilter(''); setFollowUpFilter('');
         }} />}
-        {isCreating && <CreateLeadModal saving={savingLeadId === "new"}
+        {isCreating && <CreateLeadModal companyNames={companyNames} saving={savingLeadId === "new"}
           onSave={createLead} onClose={() => setIsCreating(false)} />}
         <div className={outreach.filters}>
           <label className={styles.field}>Search contacts<input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Name, company, email, phone…" /></label>
@@ -426,7 +432,7 @@ export default function LeadManager({user}) {
         <div className={styles.leadWorkspace}>
           <section className={styles.postListPanel}>
             <details className={outreach.mapToggle} onToggle={(event) => setIsMapOpen(event.currentTarget.open)}>
-              <summary>Lead locations</summary>
+              <DisclosureSummary>Lead locations</DisclosureSummary>
             <div className={styles.panelHeader}>
               <div className={styles.titleBlock}>
                 <h2>Lead map</h2>
@@ -455,7 +461,7 @@ export default function LeadManager({user}) {
             />}
 
             </details>
-            <p className={styles.muted}>{visibleLeads.length} contact{visibleLeads.length === 1 ? "" : "s"} · earliest follow-up first</p>
+            <p className={styles.muted}>{visibleLeads.length} contact{visibleLeads.length === 1 ? "" : "s"} · grouped by company · earliest follow-up first within each company</p>
             <div className={styles.leadList} aria-label="Leads">
               <div className={styles.leadListHeader} aria-hidden="true">
                 <span>Lead</span>
@@ -466,7 +472,13 @@ export default function LeadManager({user}) {
                 <span>Next follow-up</span>
               </div>
 
-              {visibleLeads.map((lead) => (
+              {companyGroups.map((group) => (
+                <details key={group.key} className={outreach.companyGroup} open>
+                  <DisclosureSummary className={outreach.companyHeading}>
+                    <span>{group.name || "No company"}</span>
+                    <span className={outreach.companyCount}>{group.leads.length} contact{group.leads.length === 1 ? "" : "s"}</span>
+                  </DisclosureSummary>
+                  {group.leads.map((lead) => (
                 <button
                   key={lead.id}
                   type="button"
@@ -500,6 +512,8 @@ export default function LeadManager({user}) {
                     {lead.followUpTask && <small> — {lead.followUpTask}</small>}
                   </span>
                 </button>
+                  ))}
+                </details>
               ))}
 
               {!isLoading && visibleLeads.length === 0 && (
@@ -547,7 +561,7 @@ export default function LeadManager({user}) {
 
               <div className={styles.leadModalBody}>
                 {activeLead.source?.type !== "manual" && <details>
-                  <summary>Inbound lead details</summary>
+                  <DisclosureSummary>Inbound lead details</DisclosureSummary>
                 <div className={styles.leadDetailGrid}>
                   <div>
                     <span>Email</span>
@@ -616,6 +630,7 @@ export default function LeadManager({user}) {
                 </details>}
 
                 <OutreachForm
+                  companyNames={companyNames}
                   key={`${activeLead.id}:${activeLead.updatedAt}`}
                   lead={activeLead}
                   footerTarget={footerTarget}

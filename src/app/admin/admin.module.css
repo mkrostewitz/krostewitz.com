@@ -1055,6 +1055,11 @@
   font-weight: 800;
 }
 
+.sourceBadge {
+  justify-content: center;
+  text-align: center;
+}
+
 .leadStatChip {
   cursor: pointer;
   font: inherit;
@@ -1178,6 +1183,17 @@
 
 .leadListRow:last-child {
   border-bottom: 0;
+}
+
+.leadListHeader > :nth-child(2) {
+  text-align: center;
+}
+
+.leadListRow > .sourceBadge {
+  justify-self: center;
+  align-self: center;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .leadListRow:hover,

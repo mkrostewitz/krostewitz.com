@@ -7,7 +7,7 @@ import OutreachForm from "./OutreachForm";
 import styles from "../admin.module.css";
 import outreach from "./outreach.module.css";
 
-export default function CreateLeadModal({saving, onSave, onClose}) {
+export default function CreateLeadModal({saving, onSave, onClose, companyNames}) {
   const dialog = useRef(null);
   const [error, setError] = useState("");
 
@@ -40,7 +40,7 @@ export default function CreateLeadModal({saving, onSave, onClose}) {
         </button>
       </div>
       {error && <p role="alert">{error}</p>}
-      <OutreachForm saving={saving} onSave={save} onCancel={onClose} />
+      <OutreachForm companyNames={companyNames} saving={saving} onSave={save} onCancel={onClose} />
     </dialog>, document.body
   );
 }
