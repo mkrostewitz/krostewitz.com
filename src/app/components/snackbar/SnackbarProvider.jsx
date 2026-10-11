@@ -34,7 +34,8 @@ export function SnackbarProvider({children}) {
     // notification inside the active dialog so it remains visible and dismissible.
     function updateHost() {
       const dialogs = [...document.querySelectorAll("dialog:modal")];
-      setHost(dialogs.at(-1) || document.body);
+      const focusedDialog = document.activeElement?.closest("dialog:modal");
+      setHost(focusedDialog || dialogs.at(-1) || document.body);
     }
     updateHost();
     const observer = new MutationObserver(updateHost);

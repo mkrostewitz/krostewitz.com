@@ -1,5 +1,6 @@
 "use client";
 
+import SnackbarError from "../snackbar/SnackbarError";
 import mapboxgl from "mapbox-gl";
 import {usePathname} from "next/navigation";
 import {useCallback, useEffect, useState} from "react";
@@ -209,7 +210,7 @@ export default function AddressMap({
   if (!canRenderMap) {
     return (
       <div className={`${styles.mapRoot} ${styles.placeholder} ${className}`}>
-        <span>Map preview unavailable</span>
+        <SnackbarError message="Map preview unavailable" />
       </div>
     );
   }
@@ -220,6 +221,7 @@ export default function AddressMap({
       aria-label={label}
       data-map-ready={isMapReady ? "true" : "false"}
     >
+      {mapErrorKey === mapKey && <SnackbarError message="Unable to load the interactive map." />}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         alt=""
