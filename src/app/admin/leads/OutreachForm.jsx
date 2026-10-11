@@ -4,6 +4,7 @@ import {LEAD_STATUS_OPTIONS, CLOSED_STATUSES} from "../../lib/leadStatuses.mjs";
 import {useId, useMemo, useState} from "react";
 import {createPortal} from "react-dom";
 import {CHANNELS, CONTACT_FIELDS, addDays, localDay, suggestedFollowUp} from "../../lib/leadOutreach.mjs";
+import {useSnackbar} from "../../components/snackbar/SnackbarProvider";
 import styles from "../admin.module.css";
 import DisclosureSummary from "./DisclosureSummary";
 import outreach from "./outreach.module.css";
@@ -16,6 +17,7 @@ import {formatAddress, normalizeAddress} from "../../lib/leadAddress.mjs";
 const LABELS = {firstName: "First name", lastName: "Last name", company: "Company", role: "Role / job title", location: "Contact address / city", email: "Email", phone: "Phone", linkedinUrl: "LinkedIn profile URL", website: "Company website", detailsSource: "Contact details source URL"};
 
 export default function OutreachForm({lead, saving, onSave, onCancel, onDelete, footerTarget, children, companyNames = []}) {
+  const {showSnackbar} = useSnackbar();
   const formId = useId();
   const companiesId = useId();
   const [contact, setContact] = useState(() => ({...Object.fromEntries(CONTACT_FIELDS.map((key) => [key, lead?.[key] || ""])), ...(lead?.address ? {address: normalizeAddress(lead.address)} : {})}));
@@ -34,7 +36,10 @@ export default function OutreachForm({lead, saving, onSave, onCancel, onDelete, 
   async function savePatch(patch) {
     setPreparing(true);
     try { return await onSave({...patch, contact: await prepareContact(contact)}); }
-    catch (error) { if (error.name !== "AbortError") throw error; return null; }
+    catch (error) {
+      if (error.name !== "AbortError") showSnackbar({type: "error", message: error.message || "Unable to save lead."});
+      return null;
+    }
     finally { setPreparing(false); }
   }
 

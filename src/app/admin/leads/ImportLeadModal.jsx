@@ -4,10 +4,12 @@ import {useEffect, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
 import {Download, FileSpreadsheet, Upload, X} from 'lucide-react';
 import {csvRows, spreadsheetLeads} from '../../lib/leadImport.mjs';
+import {useSnackbar} from '../../components/snackbar/SnackbarProvider';
 import styles from '../admin.module.css';
 import outreach from './outreach.module.css';
 
 export default function ImportLeadModal({onClose, onImported}) {
+  const {showSnackbar} = useSnackbar();
   const dialog = useRef(null);
   const [entries, setEntries] = useState([]);
   const [selected, setSelected] = useState([]);
@@ -38,9 +40,11 @@ export default function ImportLeadModal({onClose, onImported}) {
       }
       const parsed = spreadsheetLeads(rows);
       setEntries(parsed);
+      const invalid = parsed.filter(entry => entry.error);
+      if (invalid.length) showSnackbar({type: 'error', message: invalid.map(entry => `Row ${entry.row}: ${entry.error}`).join('\n')});
       setSelected(parsed.filter(entry => !entry.error).map(entry => entry.row));
       setMessage(`${parsed.length} contacts found. Review names carefully: titles were removed and names were split automatically.`);
-    } catch (error) {setMessage(error.message || 'Unable to read this spreadsheet.');}
+    } catch (error) {showSnackbar({type: 'error', message: error.message || 'Unable to read this spreadsheet.'});}
     finally {setBusy(false);}
   }
   function edit(row, patch) {
@@ -54,6 +58,8 @@ export default function ImportLeadModal({onClose, onImported}) {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Unable to import leads.');
       setResults(data.results);
+      const failures = data.results.filter(result => result.status === 'error');
+      if (failures.length) showSnackbar({type: 'error', message: failures.map(result => `Row ${result.row}: ${result.message}`).join('\n')});
       setReviewed(!commit);
       if (commit) {
         onImported(data.leads);
@@ -63,9 +69,9 @@ export default function ImportLeadModal({onClose, onImported}) {
           return;
         }
         setSelected(errors.map(result => result.row));
-        setMessage(`${data.leads.length} imported; ${data.results.filter(result => result.status === 'duplicate').length} duplicates skipped; ${errors.length} errors.`);
+        setMessage(`${data.leads.length} imported; ${data.results.filter(result => result.status === 'duplicate').length} duplicates skipped. Correct the selected rows and retry.`);
       } else setMessage('Duplicate check complete. Only rows marked Ready to import will be added.');
-    } catch (error) {setMessage(error.message); setReviewed(false);}
+    } catch (error) {showSnackbar({type: 'error', message: error.message || 'Unable to import leads.'}); setReviewed(false);}
     finally {setBusy(false);}
   }
   const ready = results.filter(result => result.status === 'ready').length;
@@ -125,7 +131,7 @@ export default function ImportLeadModal({onClose, onImported}) {
               <label className={styles.field}>Follow-up date<input type="date" value={entry.followUpOn} onChange={event => edit(entry.row, {followUpOn: event.target.value})} /></label>
               <p>Channel: {entry.channel || 'Other'}</p>
             </div>
-            {(result || entry.error) && <p role="status">{result?.message || entry.error}</p>}
+            {result && result.status !== "error" && <p role="status">{result.message}</p>}
           </fieldset>;
         })}
       </div>}

@@ -1,7 +1,7 @@
 "use client";
 
 import {X} from "lucide-react";
-import {useEffect, useRef, useState} from "react";
+import {useEffect, useRef} from "react";
 import {createPortal} from "react-dom";
 import OutreachForm from "./OutreachForm";
 import styles from "../admin.module.css";
@@ -9,7 +9,6 @@ import outreach from "./outreach.module.css";
 
 export default function CreateLeadModal({saving, onSave, onClose, companyNames}) {
   const dialog = useRef(null);
-  const [error, setError] = useState("");
 
   useEffect(() => {
     const element = dialog.current;
@@ -23,12 +22,6 @@ export default function CreateLeadModal({saving, onSave, onClose, companyNames})
     };
   }, []);
 
-  async function save(patch) {
-    setError("");
-    const result = await onSave(patch);
-    if (result?.error) setError(result.error);
-  }
-
   return createPortal(
     <dialog ref={dialog} className={`${outreach.activityModal} ${outreach.createModal}`}
       aria-labelledby="create-lead-title"
@@ -39,8 +32,7 @@ export default function CreateLeadModal({saving, onSave, onClose, companyNames})
           <X aria-hidden="true" size={18} />
         </button>
       </div>
-      {error && <p role="alert">{error}</p>}
-      <OutreachForm companyNames={companyNames} saving={saving} onSave={save} onCancel={onClose} />
+      <OutreachForm companyNames={companyNames} saving={saving} onSave={onSave} onCancel={onClose} />
     </dialog>, document.body
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
-import {ErrorMessage, Field, Form, Formik} from "formik";
+import FormikErrorsSnackbar from "../snackbar/FormikErrorsSnackbar";
+import {Field, Form, Formik} from "formik";
 import {X} from "lucide-react";
 import {useEffect, useMemo, useState} from "react";
 import {useTranslation} from "react-i18next";
@@ -301,6 +302,7 @@ export default function LeadCaptureModal({
               <Form
                 className={`${styles.formPanel} ${styles.form} ${styles.modalForm}`}
               >
+                <FormikErrorsSnackbar />
                 <div className={styles.modalBody}>
                   {isCvRequest && (
                     <p className={styles.formIntro}>{t("cv.form.intro")}</p>
@@ -317,11 +319,6 @@ export default function LeadCaptureModal({
                         name="name"
                         placeholder={t("contact.form.placeholderName")}
                       />
-                      <ErrorMessage
-                        name="name"
-                        component="span"
-                        className={styles.error}
-                      />
                     </label>
                     <label className={styles.field}>
                       {t("contact.form.email")}
@@ -329,11 +326,6 @@ export default function LeadCaptureModal({
                         name="email"
                         type="email"
                         placeholder={t("contact.form.placeholderEmail")}
-                      />
-                      <ErrorMessage
-                        name="email"
-                        component="span"
-                        className={styles.error}
                       />
                     </label>
 
@@ -345,11 +337,6 @@ export default function LeadCaptureModal({
                             name="phone"
                             type="tel"
                             placeholder={t("cv.form.placeholderPhone")}
-                          />
-                          <ErrorMessage
-                            name="phone"
-                            component="span"
-                            className={styles.error}
                           />
                         </label>
 
@@ -365,11 +352,6 @@ export default function LeadCaptureModal({
                               </option>
                             ))}
                           </Field>
-                          <ErrorMessage
-                            name="requestType"
-                            component="span"
-                            className={styles.error}
-                          />
                         </label>
                       </>
                     )}
@@ -382,11 +364,6 @@ export default function LeadCaptureModal({
                           rows="5"
                           name="message"
                           placeholder={t("contact.form.placeholderMessage")}
-                        />
-                        <ErrorMessage
-                          name="message"
-                          component="span"
-                          className={styles.error}
                         />
                       </label>
                     )}
@@ -464,6 +441,7 @@ export default function LeadCaptureModal({
               <Form
                 className={`${styles.formPanel} ${styles.form} ${styles.modalForm}`}
               >
+                <FormikErrorsSnackbar />
                 <div className={styles.modalBody}>
                   <div className={styles.formHeader}>
                     <p className={styles.kicker}>
@@ -483,11 +461,6 @@ export default function LeadCaptureModal({
                       name="code"
                       placeholder={t("contact.form.verifyCodePlaceholder")}
                       maxLength="6"
-                    />
-                    <ErrorMessage
-                      name="code"
-                      component="span"
-                      className={styles.error}
                     />
                   </label>
                   <div className={styles.actionsRow}>

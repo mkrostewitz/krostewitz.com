@@ -2,10 +2,12 @@
 
 import {useEffect, useId, useRef, useState} from "react";
 import {ADDRESS_FIELDS, addressFromMapbox, formatAddress, normalizeAddress} from "../../lib/leadAddress.mjs";
+import {useSnackbar} from "../../components/snackbar/SnackbarProvider";
 import styles from "../admin.module.css";
 import outreach from "./outreach.module.css";
 
 export default function AddressFields({address, legacyLocation, onChange}) {
+  const {showSnackbar} = useSnackbar();
   const [query, setQuery] = useState(legacyLocation || formatAddress(address));
   const [results, setResults] = useState([]);
   const [message, setMessage] = useState("");
@@ -57,7 +59,7 @@ export default function AddressFields({address, legacyLocation, onChange}) {
       setResults(next);
       setMessage(next.length ? `${next.length} address suggestions. Use the arrow keys and Enter to select.` : "No addresses found. Try a more specific search or enter the address below.");
     } catch (error) {
-      if (request.current === controller && error.name !== "AbortError") setMessage("Address search is unavailable. Try again or enter the address below.");
+      if (request.current === controller && error.name !== "AbortError") showSnackbar({type: "error", message: "Address search is unavailable. Try again or enter the address manually."});
     } finally {
       if (request.current === controller) setSearching(false);
     }

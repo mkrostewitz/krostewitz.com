@@ -1,9 +1,11 @@
 "use client";
 
 import {useCallback, useEffect, useRef, useState} from "react";
+import {useSnackbar} from "../../components/snackbar/SnackbarProvider";
 import {formatAddress, geocodeAddress, hasAddressCoordinates} from "../../lib/leadAddress.mjs";
 
 export default function useContactGeocoding(contact, setContact) {
+  const {showSnackbar} = useSnackbar();
   const pending = useRef(null);
   const [failure, setFailure] = useState(null);
   const [attempt, setAttempt] = useState(0);
@@ -34,7 +36,7 @@ export default function useContactGeocoding(contact, setContact) {
         setContact((current) => formatAddress(current.address || {}) === query
           ? {...current, address: resolved} : current);
       }).catch((error) => {
-        if (!cancelled) setFailure({query, attempt, message: error.name === "TimeoutError" ? "Address lookup timed out. Please retry." : error.message});
+        if (!cancelled && error.name !== "AbortError") setFailure({query, attempt, message: error.name === "TimeoutError" ? "Address lookup timed out. Please retry." : error.message});
       });
     }, 450);
     return () => {
@@ -44,6 +46,12 @@ export default function useContactGeocoding(contact, setContact) {
       pending.current = null;
     };
   }, [address, query, located, attempt, resolveAddress, setContact]);
+
+  useEffect(() => {
+    if (failure && failure.query === query && failure.attempt === attempt) {
+      showSnackbar({type: "error", message: failure.message});
+    }
+  }, [failure, query, attempt, showSnackbar]);
 
   const prepareContact = async (value) => {
     try {
@@ -62,6 +70,6 @@ export default function useContactGeocoding(contact, setContact) {
     setAttempt((current) => current + 1);
   }
 
-  const message = query && !located ? (failure?.query === query && failure?.attempt === attempt ? failure.message : "Locating address…") : "";
+  const message = query && !located ? (failure?.query === query && failure?.attempt === attempt ? "" : "Locating address…") : "";
   return {message, prepareContact, retry, needsGeocoding: Boolean(query && !located)};
 }
