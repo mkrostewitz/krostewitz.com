@@ -1,15 +1,34 @@
 import {useEffect, useState} from "react";
 import {useTranslation} from "react-i18next";
 
+import {localizeTimeline} from "../../lib/cvTimelineData.mjs";
 import {useInViewOnce} from "@/lib/useInViewOnce";
 import pageStyles from "../../page.module.css";
 import styles from "./timeline-section.module.css";
 
 const TimelineSection = () => {
-  const {t} = useTranslation();
+  const {t, i18n} = useTranslation();
   const [sectionRef, inView] = useInViewOnce({threshold: 0.15});
   const [selectedIndex, setSelectedIndex] = useState(null);
-  const timeline = t("timeline", {returnObjects: true});
+  const [entries, setEntries] = useState(null);
+  const fallback = t("timeline", {returnObjects: true});
+  const timeline = entries === null
+    ? (Array.isArray(fallback) ? fallback : [])
+    : localizeTimeline(entries, (i18n.resolvedLanguage || i18n.language || "en").split("-")[0]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch("/api/content/cv-timeline", {cache: "no-store", signal: controller.signal})
+      .then((response) => response.ok ? response.json() : null)
+      .then((data) => {
+        if (Array.isArray(data?.entries)) {
+          setSelectedIndex(null);
+          setEntries(data.entries);
+        }
+      })
+      .catch(() => {});
+    return () => controller.abort();
+  }, []);
   const selectedItem =
     Number.isInteger(selectedIndex) && Array.isArray(timeline)
       ? timeline[selectedIndex]
@@ -54,7 +73,7 @@ const TimelineSection = () => {
       <div className={styles.timeline}>
         {timeline.map((item, idx) => (
           <div
-            key={item.title}
+            key={item.id || item.title}
             className={`${styles.timelineItem} ${
               inView ? styles.timelineItemVisible : ""
             }`}

@@ -5,6 +5,7 @@ import {useEffect, useState} from "react";
 import {useLoadingState} from "../../components/loading/LoadingProvider";
 import {useSnackbar} from "../../components/snackbar/SnackbarProvider";
 import AdminHeader from "../AdminHeader";
+import TimelineEditor from "./TimelineEditor";
 import styles from "../admin.module.css";
 
 const LANGUAGES = [
@@ -132,7 +133,7 @@ export default function CvManager({user}) {
       <main className={styles.main} aria-busy={isLoading}>
         <div className={styles.toolbar}>
           <div className={styles.titleBlock}>
-            <h1>CV Files</h1>
+            <h1>CV</h1>
             <p className={styles.muted}>
               Upload the public CV PDFs served from DigitalOcean Spaces.
             </p>
@@ -193,6 +194,9 @@ export default function CvManager({user}) {
               </section>
             );
           })}
+        </div>
+        <div style={{marginTop: 24}}>
+          <TimelineEditor />
         </div>
       </main>
     </div>
