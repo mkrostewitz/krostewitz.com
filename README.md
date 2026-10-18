@@ -206,7 +206,7 @@ For local testing, use a separate MongoDB database and an SMTP test inbox. Subsc
 
 ### Editable CV timeline
 
-Manage career entries under **Admin → CV → CV timeline** (`/admin/cv`). The editor supports adding, editing, removing, and ordering entries, with English/German periods, titles, locations, descriptions, and highlights. Click **Save timeline** to publish. PDF uploads remain separate.
+Manage career entries under **Admin → CV → CV timeline** (`/admin/cv`). Stations appear as compact timeline cards with date badges; select a card to open its editor. English/German tabs contain the period, title, location, role description, and achievements. **Translate to…** uses the configured AI model and `OPENAI_API_KEY` to draft every field in the target language, asks before replacing existing translations, and leaves the result unsaved for review. You can also add, remove, and reorder stations. Click **Save timeline** to publish. PDF uploads remain separate.
 
 The MongoDB collection is **`cv_timeline`** in the database selected by `MONGO_DB_NAME`. **Each career entry is its own document** with a stable `_id`, numeric `order` (ascending display order), `translations.en` / `translations.de`, `createdAt`, `updatedAt`, and `updatedBy`. There is no wrapper document or entries array. Initialization and editor revision metadata live separately in `site_content`, document `_id: "cv_timeline_settings"`.
 

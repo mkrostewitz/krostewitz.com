@@ -1,0 +1,27 @@
+.fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+.timeline { display: grid; gap: 20px; position: relative; }
+.timeline::before { content: ""; position: absolute; left: 183px; top: 22px; bottom: 22px; width: 2px; background: var(--border-muted); }
+.station { display: grid; grid-template-columns: 150px 40px minmax(0, 1fr); gap: 14px; align-items: start; position: relative; }
+.period { border: 1px solid var(--border-muted); border-radius: 10px; padding: 14px 10px; font-weight: 700; text-align: center; background: var(--surface); }
+.marker { width: 28px; height: 28px; margin: 12px auto 0; border: 1px solid var(--border-muted); border-radius: 50%; background: var(--surface); display: grid; place-items: center; }
+.marker::after { content: ""; width: 10px; height: 10px; border-radius: 50%; background: currentColor; }
+.card { min-width: 0; border: 1px solid var(--border-muted); border-radius: 12px; overflow: hidden; background: var(--surface); }
+.preview { display: block; width: 100%; text-align: left; color: inherit; font: inherit; border: 0; background: transparent; padding: 20px; cursor: pointer; }
+.preview:hover { background: var(--surface-hover, rgba(127, 127, 127, 0.06)); }
+.preview:focus-visible { outline: 2px solid currentColor; outline-offset: -4px; }
+.preview h3 { margin: 0 0 8px; font-size: 1.1rem; }
+.location { opacity: 0.7; margin: 0 0 12px; }
+.summary { margin: 0; line-height: 1.65; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.editLabel { display: block; margin-top: 14px; font-size: 0.85rem; font-weight: 600; }
+.controls { padding: 0 20px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.editor { border-top: 1px solid var(--border-muted); padding: 20px; }
+.fields { display: grid; gap: 16px; margin-top: 16px; }
+@media (max-width: 800px) {
+  .timeline::before { left: 13px; }
+  .station { grid-template-columns: 28px minmax(0, 1fr); gap: 10px; }
+  .period { grid-column: 2; justify-self: start; }
+  .marker { grid-column: 1; grid-row: 1; }
+  .card { grid-column: 2; }
+  .preview, .editor { padding: 16px; }
+  .controls { padding: 0 16px 16px; }
+}
