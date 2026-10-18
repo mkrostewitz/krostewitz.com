@@ -203,3 +203,15 @@ Operational records:
 - `newsletter_failures`: post/subscriber IDs for recipients skipped after five failed attempts; inspect these and the Netlify function logs to investigate delivery failures. SMTP acceptance does not guarantee inbox placement; bounce processing is not included.
 
 For local testing, use a separate MongoDB database and an SMTP test inbox. Subscribe, confirm, publish a draft, and call the scheduler endpoint with the configured secret. Verify a second call does not repeat delivery, ordinary post edits do not restart a campaign, and unsubscribed addresses receive no subsequent announcements. Automated delivery checks: `node --test src/app/lib/newsletterCore.test.mjs`.
+
+### Editable CV timeline
+
+Manage career entries under **Admin → CV → CV timeline** (`/admin/cv`). The editor supports adding, editing, removing, and ordering entries, with English/German periods, titles, locations, descriptions, and highlights. Click **Save timeline** to publish. PDF uploads remain separate.
+
+The MongoDB collection is **`cv_timeline`** in the database selected by `MONGO_DB_NAME`. **Each career entry is its own document** with a stable `_id`, numeric `order` (ascending display order), `translations.en` / `translations.de`, `createdAt`, `updatedAt`, and `updatedBy`. There is no wrapper document or entries array. Initialization and editor revision metadata live separately in `site_content`, document `_id: "cv_timeline_settings"`.
+
+Run `npm run migrate:cv-timeline` with the target database's usual `MONGO_DB_URI`, `MONGO_DB_NAME`, `MONGO_DB_USER`, and `MONGO_DB_PASSWORD` configuration. The script loads Next.js environment files. It splits the earlier `_id: "timeline"` wrapper into individual documents, preserving edits, order, languages, and audit fields, then removes the wrapper. Retrying migration preserves existing entry documents. First access also runs this initialization automatically. New databases seed from `site_content` → `translations` when available, otherwise the bundled translations.
+
+To move your edited timeline to production, export/import the **`cv_timeline` collection**, preserving document IDs and `order`, alongside deploying this code. Replace the target collection rather than merging it, so removed entries stay removed. Also migrate the `site_content` document `_id: "cv_timeline_settings"` to preserve revision and initialization state (required for an intentionally empty timeline). Import before serving traffic. PDF metadata remains in its existing storage. Saves update individual documents; multi-entry changes are not a MongoDB transaction.
+
+Public timeline requests bypass caching, so saved changes appear on the next page load. Bundled/legacy translations remain an outage fallback. No server restart or rebuild is needed for timeline edits.
