@@ -17,11 +17,11 @@ const ACTIVITIES = {
   note: {label: "Note", type: "note", channel: "other"},
 };
 
-export default function ActivityModal({lead, saving, onSave, onClose}) {
+export default function ActivityModal({lead, saving, onSave, onClose, draft = false, initialAction}) {
   const dialog = useRef(null);
-  const [kind, setKind] = useState("call");
-  const [occurredOn, setOccurredOn] = useState(localDay);
-  const [text, setText] = useState("");
+  const [kind, setKind] = useState(() => Object.keys(ACTIVITIES).find((key) => ACTIVITIES[key].type === initialAction?.type && ACTIVITIES[key].channel === initialAction?.channel) || "call");
+  const [occurredOn, setOccurredOn] = useState(() => initialAction?.occurredOn || localDay());
+  const [text, setText] = useState(initialAction?.text || "");
   const [override, setOverride] = useState(null);
   const suggestion = suggestedFollowUp(lead, {occurredOn});
   const followUpOn = override === null ? suggestion || "" : override;
@@ -48,7 +48,8 @@ export default function ActivityModal({lead, saving, onSave, onClose}) {
       onCancel={(event) => {event.preventDefault(); if (!saving) onClose();}}
       onKeyDown={(event) => {if (event.key === "Escape") event.stopPropagation();}}>
       <form onSubmit={submit} className={outreach.form}>
-        <h2 id="activity-title">Add activity</h2>
+        <h2 id="activity-title">{initialAction ? "Edit activity" : "Add activity"}</h2>
+        {draft && <p className={styles.muted}>This activity will be saved together with the new lead.</p>}
         <p className={styles.muted}>{lead.name || lead.email}</p>
         <fieldset className={outreach.fieldset} disabled={saving}>
           <label className={styles.field}>Activity
@@ -73,7 +74,7 @@ export default function ActivityModal({lead, saving, onSave, onClose}) {
             </div>
           </>}
           <div className={styles.buttonRow}>
-            <button className={styles.button} type="submit">{saving ? "Saving…" : "Save activity"}</button>
+            <button className={styles.button} type="submit">{saving ? "Saving…" : draft ? "Use activity" : "Save activity"}</button>
             <button className={styles.secondaryButton} type="button" onClick={onClose}>Cancel</button>
           </div>
         </fieldset>

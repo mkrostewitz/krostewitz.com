@@ -9,7 +9,12 @@ import {getDb} from "./mongo";
 const CHALLENGES_COLLECTION = "admin_auth_challenges";
 const SESSIONS_COLLECTION = "admin_sessions";
 const USERS_COLLECTION = "users";
-const SESSION_COOKIE = "mk_admin_session";
+// HTTP development cookies must not collide with secure production cookies
+// on the parent domain: browsers can reject the local Set-Cookie entirely.
+const SESSION_COOKIE =
+  process.env.NODE_ENV === "production"
+    ? "mk_admin_session"
+    : "mk_admin_session_dev";
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
 const EMAIL_CHALLENGE_MAX_AGE_MS = 1000 * 60 * 10;
 const TOTP_CHALLENGE_MAX_AGE_MS = 1000 * 60 * 5;

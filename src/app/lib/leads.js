@@ -3,6 +3,9 @@ import "server-only";
 import {LEAD_STATUSES, normalizeLeadStatus} from "./leadStatuses.mjs";
 export {LEAD_STATUSES} from "./leadStatuses.mjs";
 
+import {getLeadTypes, normalizeLeadTypes, saveLeadTypes} from "./leadTypes.mjs";
+import {saveContactCategories} from "./contactCategories.mjs";
+
 import crypto from "crypto";
 import {ObjectId} from "mongodb";
 
@@ -556,6 +559,8 @@ export function serializeLead(document) {
   return {
     id: String(document._id),
     status: normalizeLeadStatus(document.status),
+    leadType: getLeadTypes(document)[0] || "",
+    leadTypes: getLeadTypes(document),
     ...contactNames({...contact, name: contact.name || document.name || ""}),
     nameNeedsReview: !Object.hasOwn(contact, "firstName") && !Object.hasOwn(contact, "lastName") && Boolean(contact.name || document.name),
     email: contact.email || document.email || "",
@@ -567,6 +572,9 @@ export function serializeLead(document) {
     linkedinUrl: contact.linkedinUrl || "",
     website: contact.website || "",
     detailsSource: contact.detailsSource || "",
+    research: contact.research || null,
+    industries: contact.industries,
+    products: contact.products,
     preferredChannel: document.preferredChannel || (source.type === "manual" ? "linkedin" : "email"),
     followUpOn: document.followUpOn || null,
     followUpTask: document.followUpTask || "",
@@ -729,6 +737,12 @@ export async function recordLeadDownload(leadId) {
       $inc: {downloadCount: 1},
     }
   );
+}
+
+export async function getAdminLeadTypes() {
+  const db = await getDb();
+  const types = await db.collection("leadTypes").find({}).toArray();
+  return types.map((type) => type.label).sort((a, b) => a.localeCompare(b));
 }
 
 export async function getAdminLeads(filters = {}) {
@@ -922,6 +936,7 @@ export async function createAdminLead(input = {}, user) {
     throw new LeadValidationError("Invalid lead status.", 400);
   }
   const contact = normalizeContact(input.contact);
+  const leadTypes = normalizeLeadTypes(Object.hasOwn(input, "leadTypes") ? input.leadTypes : getLeadTypes(input));
   const fields = outreachFields({
     status,
     preferredChannel: input.preferredChannel || "linkedin",
@@ -944,6 +959,7 @@ export async function createAdminLead(input = {}, user) {
   }
   const document = {
     contact,
+    leadTypes: await saveLeadTypes(db.collection("leadTypes"), leadTypes),
     status,
     source: {type: "manual", label: "Personal outreach", context: {}},
     request: {type: "general", message: ""},
@@ -953,6 +969,7 @@ export async function createAdminLead(input = {}, user) {
     actions: action ? [action] : [],
     createdAt: now, updatedAt: now, updatedBy: user?.email || null,
   };
+  await saveContactCategories(db, contact);
   const result = await leads.insertOne(document);
   return serializeLead({...document, _id: result.insertedId});
 }
@@ -997,6 +1014,24 @@ export async function updateAdminLead(leadId, input = {}, user) {
     updateOperations.$push = pushUpdate;
   }
 
+  if (Object.hasOwn(input, "leadTypes") || Object.hasOwn(input, "leadType")) {
+    if (!await leads.findOne({_id}, {projection: {_id: 1}})) {
+      throw new LeadValidationError("Lead not found.", 404);
+    }
+    setUpdate.leadTypes = await saveLeadTypes(db.collection("leadTypes"),
+      Object.hasOwn(input, "leadTypes") ? input.leadTypes : getLeadTypes(input));
+    updateOperations.$unset = {leadType: ""};
+  }
+
+  const categories = {};
+  for (const field of ["industries", "products"]) {
+    if (Object.hasOwn(setUpdate, `contact.${field}`)) categories[field] = setUpdate[`contact.${field}`];
+  }
+  if (Object.keys(categories).length) {
+    if (!await leads.findOne({_id}, {projection: {_id: 1}})) throw new LeadValidationError("Lead not found.", 404);
+    await saveContactCategories(db, categories);
+    for (const [field, values] of Object.entries(categories)) setUpdate[`contact.${field}`] = values;
+  }
   const result = await leads.updateOne({_id}, updateOperations);
 
   if (result.matchedCount === 0) {

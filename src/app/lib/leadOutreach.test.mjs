@@ -87,3 +87,16 @@ test("legacy full names remain editable without dropping surname components", ()
   assert.equal(normalizeContact({name: "Old Name", firstName: "New", lastName: "Name"}).name, "New Name");
   assert.throws(() => normalizeContact({name: "Old Name", firstName: "", lastName: ""}), /name is required/);
 });
+
+test("first activity suggests contacted without inferring a later pipeline stage", async () => {
+  const {suggestedActivityStatus} = await import("./leadOutreach.mjs");
+  for (const type of ["call", "message_sent", "connection_requested", "connection_accepted", "email_sent", "meeting"]) {
+    assert.equal(suggestedActivityStatus("pending", {type}), "contacted");
+    assert.equal(suggestedActivityStatus("new", {type}), "contacted");
+  }
+  for (const type of ["note", "followed"]) assert.equal(suggestedActivityStatus("pending", {type}), "pending");
+  for (const status of ["qualified", "on_hold", "won", "lost", "archived"]) {
+    assert.equal(suggestedActivityStatus(status, {type: "call"}), status);
+  }
+  assert.equal(suggestedFollowUp({status: "pending"}, {occurredOn: "2026-10-30"}), "2026-11-04");
+});
