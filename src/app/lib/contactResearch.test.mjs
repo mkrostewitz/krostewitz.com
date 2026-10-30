@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {normalizeResearch, parseResearchResponse, researchContact, researchIdentity, researchFactSections} from "./contactResearch.mjs";
+import {normalizeResearch, parseResearchResponse, researchContact, researchIdentity, researchFactSections, researchFactText, setResearchFact, refreshResearch} from "./contactResearch.mjs";
 import {normalizeContact} from "./leadOutreach.mjs";
 
 const contact = {firstName: "Ada", lastName: "Example", company: "Example Ltd"};
@@ -92,4 +92,19 @@ test('research receives saved category labels and instructions to reuse equivale
   assert.deepEqual(JSON.parse(sent.input).categoryCatalog, categories);
   assert.match(sent.instructions, /reuse its exact spelling/);
   assert.match(sent.instructions, /Do not conflate merely related concepts/);
+});
+
+
+test("manual corrections survive persistence and AI refresh without changing source citations", () => {
+  const original = parseResearchResponse(completed, contact);
+  const edited = setResearchFact(original, {section: "Company", label: "Revenue 2026", text: "EUR 10m, FY2026", source: "https://example.com/report"});
+  assert.deepEqual(edited.citations, original.citations);
+  assert.equal(edited.text, original.text);
+  assert.deepEqual(normalizeContact({...contact, research: edited}).research.edits, edited.edits);
+  const refreshed = refreshResearch(edited, {...original, text: "Updated AI findings"});
+  assert.deepEqual(refreshed.edits, edited.edits);
+  const cleared = setResearchFact(edited, {...edited.edits[0], text: ""});
+  assert.equal(cleared.edits.length, 1);
+  assert.equal(cleared.edits[0].text, "");
+  assert.equal(researchFactText(original, {start: 0, end: original.text.length}), "Works at Example .");
 });

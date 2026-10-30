@@ -54,7 +54,26 @@ export function normalizeResearch(value) {
       return [{url: url.href, title: String(item.title || url.hostname).slice(0, 300), start, end}];
     } catch { return []; }
   }).sort((a, b) => a.start - b.start);
-  return {text, citations, identity: researchIdentity(value.identity), researchedAt: Number.isFinite(Date.parse(value.researchedAt)) ? new Date(value.researchedAt).toISOString() : null};
+  const edits = (Array.isArray(value.edits) ? value.edits : []).slice(0, 30).filter((edit) => edit && ["Company", "Person"].includes(edit.section) && typeof edit.label === "string" && typeof edit.text === "string").map((edit) => ({
+    section: edit.section, label: edit.label.slice(0, 100), text: edit.text.slice(0, 4000), source: typeof edit.source === "string" ? edit.source.slice(0, 2000) : "",
+  }));
+  return {text, citations, edits, identity: researchIdentity(value.identity), researchedAt: Number.isFinite(Date.parse(value.researchedAt)) ? new Date(value.researchedAt).toISOString() : null};
+}
+
+export function researchFactText(research, fact) {
+  let text = research.text.slice(fact.start, fact.end);
+  for (const citation of [...research.citations].reverse()) {
+    if (citation.start >= fact.start && citation.end <= fact.end) text = text.slice(0, citation.start - fact.start) + text.slice(citation.end - fact.start);
+  }
+  return text.trim();
+}
+
+export function setResearchFact(research, edit) {
+  return normalizeResearch({...research, edits: [...research.edits.filter((item) => item.section !== edit.section || item.label !== edit.label), edit]});
+}
+
+export function refreshResearch(previous, next) {
+  return normalizeResearch({...next, edits: previous?.edits || []});
 }
 
 export function parseResearchResponse(data, identity) {
