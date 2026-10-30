@@ -118,7 +118,6 @@ export default function LeadManager({user}) {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [isImporting, setIsImporting] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
-  const [isMapOpen, setIsMapOpen] = useState(false);
   const [today, setToday] = useState(localDay);
   useEffect(() => {
     const timer = setInterval(() => setToday(localDay()), 60000);
@@ -446,13 +445,12 @@ export default function LeadManager({user}) {
 
         <div className={styles.leadWorkspace}>
           <section className={`${styles.postListPanel} ${outreach.listPanel}`}>
-            <details className={outreach.mapToggle} onToggle={(event) => setIsMapOpen(event.currentTarget.open)}>
-              <DisclosureSummary>Lead locations</DisclosureSummary>
+            <section className={outreach.contactMap} aria-labelledby="contact-map-heading">
             <div className={styles.panelHeader}>
               <div className={styles.titleBlock}>
-                <h2>Lead map</h2>
+                <h2 id="contact-map-heading">Contact map</h2>
                 <p className={styles.muted}>
-                  Select a marker or a lead below to inspect details.
+                  Locations for contacts matching your filters. Select a marker to open contact details.
                 </p>
               </div>
               <div className={styles.buttonRow}>
@@ -469,13 +467,14 @@ export default function LeadManager({user}) {
               </div>
             </div>
 
-            {isMapOpen && <LeadMap
+            <LeadMap
               activeLeadId={activeLead?.id || ""}
               leads={visibleLeads}
               onSelectLead={openLeadDetails}
-            />}
+              mapLabel="Contact locations"
+            />
 
-            </details>
+            </section>
             <div className={outreach.listSummary}>
               <strong>{visibleLeads.length} contact{visibleLeads.length === 1 ? "" : "s"} <span>in {companyGroups.length} group{companyGroups.length === 1 ? "" : "s"}</span></strong>
               <span>Earliest follow-up first within each company</span>
