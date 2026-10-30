@@ -1,6 +1,9 @@
+import {normalizeLinkedinProfileUrl} from "./linkedinProfile.mjs";
 import {CLOSED_STATUSES} from "./leadStatuses.mjs";
 export {CLOSED_STATUSES} from "./leadStatuses.mjs";
 import {normalizeAddress, formatAddress} from "./leadAddress.mjs";
+import {normalizeResearch} from "./contactResearch.mjs";
+import {CATEGORY_FIELDS, normalizeCategories} from "./contactCategories.mjs";
 
 export const ACTIVITY_TYPES = {
   note: "Note",
@@ -42,6 +45,8 @@ export function normalizeContact(input = {}) {
   if (!input || typeof input !== "object" || Array.isArray(input)) throw new OutreachValidationError("Enter valid contact details.");
   const contact = Object.fromEntries(CONTACT_FIELDS.map((key) => [key, clean(input[key], key.endsWith("Url") || ["website", "detailsSource"].includes(key) ? 2000 : 200)]));
   Object.assign(contact, contactNames(input));
+  if (Object.hasOwn(input, "research")) contact.research = normalizeResearch(input.research);
+  for (const field of CATEGORY_FIELDS) if (Object.hasOwn(input, field)) contact[field] = normalizeCategories(input[field]);
   if (Object.hasOwn(input, "address")) {
     try { contact.address = normalizeAddress(input.address); }
     catch (error) { throw new OutreachValidationError(error.message); }
@@ -51,15 +56,14 @@ export function normalizeContact(input = {}) {
   contact.email = contact.email.toLowerCase();
   if (contact.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact.email)) throw new OutreachValidationError("Enter a valid email address or leave it empty.");
   if (contact.phone && !/^\+?[\d\s()./-]{5,40}$/.test(contact.phone)) throw new OutreachValidationError("Enter a valid phone number or leave it empty.");
-  for (const key of ["linkedinUrl", "website", "detailsSource"]) {
+  try { contact.linkedinUrl = normalizeLinkedinProfileUrl(input.linkedinUrl); }
+  catch (error) { throw new OutreachValidationError(error.message); }
+  for (const key of ["website", "detailsSource"]) {
     if (!contact[key]) continue;
     let url;
     try { url = new URL(contact[key]); } catch { throw new OutreachValidationError(`Enter a complete https:// URL for ${key}.`); }
     if (!["https:", "http:"].includes(url.protocol) || url.username || url.password) throw new OutreachValidationError("Contact links must be HTTP or HTTPS URLs.");
-    if (key === "linkedinUrl") {
-      if (!(url.hostname === "linkedin.com" || url.hostname.endsWith(".linkedin.com")) || !/^\/in\/[^/]+\/?$/.test(url.pathname)) throw new OutreachValidationError("Enter a LinkedIn personal profile URL (linkedin.com/in/…).");
-      contact[key] = `https://www.linkedin.com${url.pathname.replace(/\/$/, "")}`;
-    } else contact[key] = url.href;
+    contact[key] = url.href;
   }
   return contact;
 }
@@ -102,11 +106,14 @@ export function normalizeActivity(input = {}, now = new Date()) {
   return {type, channel, occurredOn, text};
 }
 
-export function matchesLeadFilters(lead, {status = "", source = "", search = "", followUp = "", today = localDay()} = {}) {
+export function matchesLeadFilters(lead, {status = "", source = "", search = "", followUp = "", tags = [], today = localDay()} = {}) {
   const query = search.trim().toLowerCase();
+  const leadTags = Array.isArray(lead.leadTypes) ? lead.leadTypes : lead.leadType ? [lead.leadType] : [];
+  const tagKey = (tag) => tag.normalize("NFKC").trim().replace(/\s+/g, " ").toLowerCase();
   return (!status || lead.status === status) &&
     (!source || lead.source?.type === source) &&
-    (!query || [lead.name, lead.company, lead.role, lead.email, lead.phone].some((value) => String(value || "").toLowerCase().includes(query))) &&
+    (!tags.length || tags.some((tag) => leadTags.some((value) => tagKey(value) === tagKey(tag)))) &&
+    (!query || [lead.name, lead.company, lead.role, lead.email, lead.phone, ...leadTags].some((value) => String(value || "").toLowerCase().includes(query))) &&
     (!followUp || (followUp === "due"
       ? ["overdue", "today"].includes(followUpState(lead, today))
       : followUpState(lead, today) === followUp));
@@ -118,4 +125,11 @@ export function suggestedFollowUp(lead, activity) {
     .map((item) => item.occurredOn || item.createdAt?.slice(0, 10))
     .filter(Boolean).sort();
   return dates.length ? addDays(dates.at(-1), 5) : null;
+}
+
+// Recording contact does not imply qualification or a future scheduled meeting.
+export function suggestedActivityStatus(status, activity) {
+  if (!["pending", "new"].includes(status)) return status;
+  return ["call", "message_sent", "connection_requested", "connection_accepted", "email_sent", "meeting", "reply_received", "follow_up"].includes(activity?.type)
+    ? "contacted" : status;
 }

@@ -10,6 +10,9 @@ import {useSnackbar} from "../../components/snackbar/SnackbarProvider";
 import AdminHeader from "../AdminHeader";
 import styles from "../admin.module.css";
 import DisclosureSummary from "./DisclosureSummary";
+import LeadTagsAutocomplete from "./LeadTagsAutocomplete";
+import {getLeadTypes} from "../../lib/leadTypes.mjs";
+import {linkedinProfileState} from "../../lib/linkedinProfile.mjs";
 import OutreachForm from "./OutreachForm";
 import LeadMap from "./LeadMap";
 import DeleteLeadModal from "./DeleteLeadModal";
@@ -100,6 +103,12 @@ function compactLocation(tracking = {}) {
 export default function LeadManager({user}) {
   const {closeSnackbar, showSnackbar} = useSnackbar();
   const [leads, setLeads] = useState([]);
+  const [leadTypes, setLeadTypes] = useState([]);
+
+  function rememberLeadTypes(types) {
+    setLeadTypes((current) => [...new Set([...current, ...types])].sort((a, b) => a.localeCompare(b)));
+  }
+  const [tagFilter, setTagFilter] = useState([]);
   const [activeLeadId, setActiveLeadId] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [search, setSearch] = useState("");
@@ -143,14 +152,14 @@ export default function LeadManager({user}) {
 
   const visibleLeads = useMemo(() => {
     return leads.filter((lead) => matchesLeadFilters(lead, {
-      status: statusFilter, source: sourceFilter, search, followUp: followUpFilter, today,
+      status: statusFilter, source: sourceFilter, search, followUp: followUpFilter, tags: tagFilter, today,
     })
     ).sort((a, b) => {
       const aDate = followUpState(a, today) === "closed" ? "9999" : a.followUpOn || "9999";
       const bDate = followUpState(b, today) === "closed" ? "9999" : b.followUpOn || "9999";
       return aDate.localeCompare(bDate) || (b.createdAt || "").localeCompare(a.createdAt || "");
     });
-  }, [leads, statusFilter, sourceFilter, search, followUpFilter, today]);
+  }, [leads, statusFilter, sourceFilter, search, followUpFilter, tagFilter, today]);
 
   const companyGroups = useMemo(() => groupLeadsByCompany(visibleLeads), [visibleLeads]);
   // All database pages are loaded above; filters must not narrow autocomplete choices.
@@ -186,6 +195,7 @@ export default function LeadManager({user}) {
           const response = await fetch(`/api/admin/leads?limit=300&offset=${offset}`, {cache: "no-store"});
           const data = await response.json().catch(() => ({}));
           if (!response.ok) throw new Error(data.error || "Unable to load leads.");
+          if (!cancelled) setLeadTypes(data.leadTypes || []);
           const page = data.leads || [];
           nextLeads.push(...page);
           if (page.length < 300) break;
@@ -246,7 +256,7 @@ export default function LeadManager({user}) {
   }, [isDetailsOpen]);
 
   function leadMatchesCurrentFilters(lead) {
-    return matchesLeadFilters(lead, {status: statusFilter, source: sourceFilter, search, followUp: followUpFilter, today});
+    return matchesLeadFilters(lead, {status: statusFilter, source: sourceFilter, search, followUp: followUpFilter, tags: tagFilter, today});
   }
 
   function openLeadDetails(leadId) {
@@ -270,6 +280,7 @@ export default function LeadManager({user}) {
         throw new Error(data.error || "Unable to update lead.");
       }
 
+      rememberLeadTypes(getLeadTypes(data.lead));
       setLeads((current) =>
         current.map((lead) => (lead.id === leadId ? data.lead : lead))
       );
@@ -348,9 +359,11 @@ export default function LeadManager({user}) {
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || "Unable to create lead.");
+      rememberLeadTypes(getLeadTypes(data.lead));
       setLeads((current) => [data.lead, ...current]);
       setStatusFilter(""); setSourceFilter(""); setSearch(""); setFollowUpFilter("");
       setIsCreating(false);
+      setTagFilter([]);
       openLeadDetails(data.lead.id);
       showSnackbar({type: "success", message: "Lead created."});
     } catch (error) {
@@ -366,27 +379,28 @@ export default function LeadManager({user}) {
       <AdminHeader active="leads" user={user} />
 
       <main className={styles.main} aria-busy={isLoading}>
-        <div className={styles.toolbar}>
+        <div className={`${styles.toolbar} ${outreach.leadsToolbar}`}>
           <div className={styles.titleBlock}>
             <h1>Leads</h1>
             <p className={styles.muted}>
               Track personal outreach, contact requests, and the next follow-up.
             </p>
           </div>
-        </div>
-
-        <div className={styles.buttonRow}>
-          <button className={styles.secondaryButton} type="button" onClick={() => setIsImporting(true)}>Import leads</button>
-          <button className={styles.button} type="button" disabled={isCreating} onClick={() => setIsCreating(true)}>Add new lead</button>
-          <button className={styles.secondaryButton} type="button" aria-pressed={followUpFilter === "due"} onClick={() => {setFollowUpFilter("due"); setStatusFilter(""); setSourceFilter(""); setSearch("");}}>{dueCount} follow-ups due</button>
+          <div className={outreach.headerActions}>
+            <button className={styles.secondaryButton} type="button" onClick={() => setIsImporting(true)}>Import leads</button>
+            <button className={`${styles.button} ${outreach.primaryAction}`} type="button" disabled={isCreating} onClick={() => setIsCreating(true)}>Add new lead</button>
+          </div>
         </div>
         {isImporting && <ImportLeadModal onClose={() => setIsImporting(false)} onImported={(imported) => {
+          setTagFilter([]);
           setLeads(current => [...imported, ...current]);
           setStatusFilter(''); setSearch(''); setSourceFilter(''); setFollowUpFilter('');
         }} />}
-        {isCreating && <CreateLeadModal companyNames={companyNames} saving={savingLeadId === "new"}
+        {isCreating && <CreateLeadModal leadTypes={leadTypes} companyNames={companyNames} saving={savingLeadId === "new"}
           onSave={createLead} onClose={() => setIsCreating(false)} />}
         <div className={outreach.filters}>
+          <LeadTagsAutocomplete label="Filter by tags" value={tagFilter} options={leadTypes} onChange={setTagFilter}
+            help="Matches any selected tag. Clear tags to show all leads." />
           <label className={styles.field}>Search contacts<input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Name, company, email, phone…" /></label>
           <label className={styles.field}>Status<select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
             {STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
@@ -427,10 +441,11 @@ export default function LeadManager({user}) {
               setStatusFilter(""); setSourceFilter(""); setSearch("");
             }}
           >{chip.count} {chip.label}</button>)}
+          <button className={`${styles.leadStatChip} ${followUpFilter === "due" ? styles.leadStatChipActive : ""}`} type="button" aria-pressed={followUpFilter === "due"} onClick={() => {setFollowUpFilter("due"); setStatusFilter(""); setSourceFilter(""); setSearch("");}}>{dueCount} follow-ups due</button>
         </div>
 
         <div className={styles.leadWorkspace}>
-          <section className={styles.postListPanel}>
+          <section className={`${styles.postListPanel} ${outreach.listPanel}`}>
             <details className={outreach.mapToggle} onToggle={(event) => setIsMapOpen(event.currentTarget.open)}>
               <DisclosureSummary>Lead locations</DisclosureSummary>
             <div className={styles.panelHeader}>
@@ -461,12 +476,14 @@ export default function LeadManager({user}) {
             />}
 
             </details>
-            <p className={styles.muted}>{visibleLeads.length} contact{visibleLeads.length === 1 ? "" : "s"} · grouped by company · earliest follow-up first within each company</p>
+            <div className={outreach.listSummary}>
+              <strong>{visibleLeads.length} contact{visibleLeads.length === 1 ? "" : "s"} <span>in {companyGroups.length} group{companyGroups.length === 1 ? "" : "s"}</span></strong>
+              <span>Earliest follow-up first within each company</span>
+            </div>
             <div className={styles.leadList} aria-label="Leads">
               <div className={styles.leadListHeader} aria-hidden="true">
                 <span>Lead</span>
-                <span>Source</span>
-                <span>Channel</span>
+                <span>Outreach</span>
                 <span>Status</span>
                 <span>Latest activity</span>
                 <span>Next follow-up</span>
@@ -479,20 +496,28 @@ export default function LeadManager({user}) {
                     <span className={outreach.companyCount}>{group.leads.length} contact{group.leads.length === 1 ? "" : "s"}</span>
                   </DisclosureSummary>
                   {group.leads.map((lead) => (
-                <button
+                <div
                   key={lead.id}
-                  type="button"
-                  className={`${styles.leadListRow} ${
+                  className={`${styles.leadListRow} ${outreach.linkedLeadRow} ${
                     activeLead?.id === lead.id ? styles.leadListRowActive : ""
                   }`}
-                  onClick={() => openLeadDetails(lead.id)}
                 >
                   <span className={styles.leadIdentity}>
-                    <strong>{leadTitle(lead)}</strong>
-                    <small>{[lead.company, lead.role].filter(Boolean).join(" · ") || lead.email}</small>
+                    <span className={outreach.leadNameLinks}>
+                      <button type="button" className={outreach.leadOpenButton} onClick={() => openLeadDetails(lead.id)}><strong>{leadTitle(lead)}</strong></button>
+                      {linkedinProfileState(lead.linkedinUrl).url && <a className={outreach.linkedinLink}
+                        href={linkedinProfileState(lead.linkedinUrl).url} target="_blank" rel="noopener noreferrer"
+                        aria-label={`Open ${leadTitle(lead)}’s LinkedIn profile (new tab)`} title="Open LinkedIn profile">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M20.45 2H3.55C2.69 2 2 2.68 2 3.52v16.96c0 .84.69 1.52 1.55 1.52h16.9c.86 0 1.55-.68 1.55-1.52V3.52c0-.84-.69-1.52-1.55-1.52zM7.93 18.75H4.98V9.2h2.95v9.55zM6.46 7.9a1.71 1.71 0 1 1 0-3.42 1.71 1.71 0 0 1 0 3.42zm12.29 10.85H15.8V14.1c0-1.11-.02-2.54-1.55-2.54-1.55 0-1.79 1.21-1.79 2.46v4.73H9.51V9.2h2.83v1.3h.04c.39-.74 1.36-1.52 2.79-1.52 2.99 0 3.58 1.97 3.58 4.53v5.24z" /></svg>
+                      </a>}
+                    </span>
+                    {(lead.role || lead.email) && <small>{lead.role || lead.email}</small>}
+                    <span className={outreach.tagList}>{getLeadTypes(lead).map((tag) => <span className={outreach.tagChip} key={tag}>{tag}</span>)}</span>
                   </span>
-                  <span className={styles.sourceBadge}>{sourceLabel(lead)}</span>
-                  <span>{CHANNELS[lead.preferredChannel] || "LinkedIn"}</span>
+                  <span className={styles.leadOutreachCell}>
+                    <span>{CHANNELS[lead.preferredChannel] || "LinkedIn"}</span>
+                    <small>{sourceLabel(lead)}</small>
+                  </span>
                   <span className={styles.statusBadge}>
                     {STATUS_LABELS[lead.status] || lead.status}
                   </span>
@@ -509,9 +534,9 @@ export default function LeadManager({user}) {
                           {followUpState(lead, today) === "overdue" ? "Overdue" : "Due today"}
                         </span>
                       : lead.followUpOn && <small>{followUpState(lead, today) === "closed" ? "Closed" : "Upcoming"}</small>}
-                    {lead.followUpTask && <small> — {lead.followUpTask}</small>}
+                    {lead.followUpTask && <small title={lead.followUpTask}>{lead.followUpTask}</small>}
                   </span>
-                </button>
+                </div>
                   ))}
                 </details>
               ))}
@@ -541,7 +566,7 @@ export default function LeadManager({user}) {
               <div className={styles.leadModalHeader}>
                 <div className={styles.titleBlock}>
                   <h2 id="lead-details-title">{leadTitle(activeLead)}</h2>
-                  <p className={styles.muted}>{[activeLead.company, activeLead.role, sourceLabel(activeLead)].filter(Boolean).join(" · ")}</p>
+                  <p className={styles.muted}>{[activeLead.company, activeLead.role, ...getLeadTypes(activeLead), sourceLabel(activeLead)].filter(Boolean).join(" · ")}</p>
                 </div>
                 <div className={styles.leadModalHeaderActions}>
                   <span className={styles.statusBadge}>
@@ -630,6 +655,7 @@ export default function LeadManager({user}) {
                 </details>}
 
                 <OutreachForm
+                  leadTypes={leadTypes}
                   companyNames={companyNames}
                   key={`${activeLead.id}:${activeLead.updatedAt}`}
                   lead={activeLead}

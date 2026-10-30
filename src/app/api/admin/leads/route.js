@@ -1,7 +1,7 @@
 import {NextResponse} from "next/server";
 
 import {getCurrentAdminUser, isSameOriginRequest, unauthorizedResponse} from "../../../lib/adminAuth";
-import {createAdminLead, getAdminLeads, LeadValidationError} from "../../../lib/leads";
+import {createAdminLead, getAdminLeads, getAdminLeadTypes, LeadValidationError} from "../../../lib/leads";
 
 import {OutreachValidationError} from "../../../lib/leadOutreach.mjs";
 
@@ -29,7 +29,7 @@ export async function GET(request) {
       offset: searchParams.get("offset") || "",
     });
 
-    return NextResponse.json({leads});
+    return NextResponse.json({leads, leadTypes: await getAdminLeadTypes()});
   } catch (error) {
     return errorResponse(error);
   }

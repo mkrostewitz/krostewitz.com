@@ -12,7 +12,10 @@ const AUTHORIZATION_URL = "https://www.linkedin.com/oauth/v2/authorization";
 const ACCESS_TOKEN_URL = "https://www.linkedin.com/oauth/v2/accessToken";
 const USERINFO_URL = "https://api.linkedin.com/v2/userinfo";
 const CALLBACK_PATH = "/api/admin/auth/linkedin/callback";
-const STATE_COOKIE = "mk_admin_linkedin_state";
+const STATE_COOKIE =
+  process.env.NODE_ENV === "production"
+    ? "mk_admin_linkedin_state"
+    : "mk_admin_linkedin_state_dev";
 const STATE_MAX_AGE_SECONDS = 60 * 10;
 const REQUIRED_SCOPES = ["openid", "profile", "email"];
 const LINKEDIN_ORGANIZATION_ENV_KEYS = [
