@@ -9,6 +9,13 @@ import {formatAddress, hasAddressCoordinates} from "../../lib/leadAddress.mjs";
 
 function leadTitle(lead) { return lead.name || lead.email || "Contact"; }
 
+const MAP_SOURCES = {
+  contact_form: {label: "Contact form", color: "#2563eb"},
+  manual: {label: "Personal outreach", color: "#9333ea"},
+  cv_download: {label: "CV download", color: "#ea580c"},
+};
+const UNKNOWN_SOURCE = {label: "Other source", color: "#64748b"};
+
 function getLeadCoordinates(lead) {
   const address = lead?.address;
   if (hasAddressCoordinates(address)) {
@@ -212,8 +219,10 @@ export default function LeadMap({activeLeadId, leads, onSelectLead = () => {}, g
       markerElement.className = `${styles.leadMapMarker} ${
         lead.id === activeLeadId ? styles.leadMapMarkerActive : ""
       }`;
-      markerElement.title = leadTitle(lead);
-      markerElement.setAttribute("aria-label", `Select ${leadTitle(lead)}`);
+      const source = MAP_SOURCES[lead.source?.type] || UNKNOWN_SOURCE;
+      markerElement.style.setProperty("--marker-color", source.color);
+      markerElement.title = `${leadTitle(lead)} — ${source.label}`;
+      markerElement.setAttribute("aria-label", `Select ${leadTitle(lead)} — ${source.label}`);
       markerElement.addEventListener("click", () => onSelectLead(lead.id));
 
       return new mapboxgl.Marker({anchor: "bottom", element: markerElement})
@@ -267,8 +276,18 @@ export default function LeadMap({activeLeadId, leads, onSelectLead = () => {}, g
   }
 
   return (
-    <div className={styles.leadMap} aria-label={mapLabel}>
-      <div className={styles.leadMapCanvas} ref={containerRef} />
+    <div>
+      <div className={styles.leadMap} aria-label={mapLabel}>
+        <div className={styles.leadMapCanvas} ref={containerRef} />
+      </div>
+      <ul className={styles.leadMapLegend} aria-label="Contact source colors">
+        {[...Object.values(MAP_SOURCES), ...(mappedLeads.some(({lead}) => !MAP_SOURCES[lead.source?.type]) ? [UNKNOWN_SOURCE] : [])].map((source) => (
+          <li key={source.label}>
+            <span aria-hidden="true" style={{backgroundColor: source.color}} />
+            {source.label}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

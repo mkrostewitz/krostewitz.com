@@ -22,9 +22,7 @@
 @media (max-width: 440px) { .filters { grid-template-columns: 1fr; } }
 
 .activityModal.createModal { width: min(800px, calc(100vw - 32px)); }
-.mapToggle { margin-bottom: 0; }
 .listPanel { gap: 0; min-width: 0; }
-.mapToggle > summary { cursor: pointer; padding: .5rem 0; color: var(--text-muted); font-size: .875rem; }
 .listSummary { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 20px; margin: 16px 0 12px; font-size: .8rem; color: var(--text-muted); }
 .listSummary strong { color: var(--foreground); font-weight: 600; }
 .listSummary strong span { color: var(--text-muted); font-weight: 400; }
