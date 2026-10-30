@@ -1,7 +1,7 @@
 "use client";
 
 import {useEffect, useRef, useState} from "react";
-import {normalizeResearch, researchIdentity, researchFactSections, researchCategories} from "../../lib/contactResearch.mjs";
+import {normalizeResearch, researchIdentity, researchFactSections, researchCategories, researchFactText, setResearchFact, refreshResearch} from "../../lib/contactResearch.mjs";
 import LeadTagsAutocomplete from "./LeadTagsAutocomplete";
 import {normalizeCategories} from "../../lib/contactCategories.mjs";
 import styles from "../admin.module.css";
@@ -32,6 +32,7 @@ export default function ContactResearch({contact, value, onChange, onCategoriesC
     }).catch((error) => {if (error.name !== "AbortError") setCatalogError(error.message);});
     return () => abort.abort();
   }, []);
+  const [editing, setEditing] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const controller = useRef(null);
@@ -59,12 +60,42 @@ export default function ContactResearch({contact, value, onChange, onCategoriesC
       if (currentIdentity.current !== identityKey) throw new Error("Contact details changed during research. Please research again.");
       const result = normalizeResearch(data.research);
       if (!result) throw new Error("Research returned no readable result. Please try again.");
-      onChange(result);
+      onChange(refreshResearch(research, result));
       const suggested = researchCategories(result);
       onCategoriesChange({industries: normalizeCategories([...(contact.industries || []), ...suggested.industries]), products: normalizeCategories([...(contact.products || []), ...suggested.products])});
     } catch (failure) {
       if (failure.name !== "AbortError") setError(failure.message || "Unable to research this contact.");
     } finally { setBusy(false); }
+  }
+
+  function factValue(section, fact) {
+    const edit = research.edits.find((item) => item.section === section && item.label === fact.label);
+    const key = `${section}:${fact.label}`;
+    const text = edit ? edit.text : researchFactText(research, fact);
+    const update = (patch) => onChange(setResearchFact(research, {section, label: fact.label, text, source: edit?.source || "", ...patch}));
+    const source = edit?.source && /^https?:\/\//i.test(edit.source) ? edit.source : null;
+    return <div className={outreach.factValue}>
+      {editing === key ? <>
+        <label className={styles.field}>{fact.label}
+          <textarea rows={3} maxLength={4000} value={text} disabled={busy} onChange={(event) => update({text: event.target.value})} />
+        </label>
+        <label className={styles.field}>Source link (optional)
+          <input type="url" pattern="https?://.*" maxLength={2000} value={edit?.source || ""} disabled={busy} onChange={(event) => update({source: event.target.value})} placeholder="https://…" />
+        </label>
+        <small className={styles.muted}>Your corrections are saved with the lead and kept when AI research is refreshed.</small>
+        <button type="button" className={styles.secondaryButton} onClick={() => setEditing(null)}>Done editing</button>
+      </> : <>
+        {edit ? <>
+          <span className={outreach.researchText}>{edit.text || "No information added."}</span>
+          {source && <a href={source} target="_blank" rel="noopener noreferrer">Source ↗</a>}
+          <small className={styles.muted}>Manually edited</small>
+        </> : <CitedText research={research} start={fact.start} end={fact.end} />}
+        <div className={styles.buttonRow}>
+          <button type="button" disabled={busy} className={styles.secondaryButton} onClick={() => setEditing(key)}>Edit</button>
+          {edit && <button type="button" disabled={busy} className={styles.secondaryButton} onClick={() => onChange({...research, edits: research.edits.filter((item) => item !== edit)})}>Use AI version</button>}
+        </div>
+      </>}
+    </div>;
   }
 
   function categories() {
@@ -87,7 +118,7 @@ export default function ContactResearch({contact, value, onChange, onCategoriesC
   return <section className={outreach.formSection} aria-label="AI contact research" aria-busy={busy}>
     <div className={outreach.sectionHeader}>
       <h3>Company &amp; person facts</h3>
-      <button type="button" className={styles.secondaryButton} disabled={busy || !ready} onClick={run}>{busy ? "Researching…" : research ? "Refresh AI research" : "Research with AI"}</button>
+      <button type="button" className={styles.secondaryButton} disabled={busy || !ready || editing !== null} onClick={run}>{busy ? "Researching…" : research ? "Refresh AI research" : "Research with AI"}</button>
     </div>
     <p className={styles.muted}>A short fact list: industries, revenue, products, current position, experience, and press releases. Sources are linked beside each finding.</p>
     {!ready && <p className={styles.muted}>Add a name and a company or profile link to identify the right person.</p>}
@@ -99,9 +130,9 @@ export default function ContactResearch({contact, value, onChange, onCategoriesC
       {sections ? <div className={outreach.researchFacts}>
         {sections.map((section) => <div key={section.title} className={outreach.researchGroup}>
           <h4>{section.title}</h4>
-          <dl>{section.facts.filter((fact) => !["industries", "products"].includes(fact.label.toLowerCase())).map((fact) => <div key={fact.start}>
+          <dl>{[...section.facts, ...research.edits.filter((edit) => edit.section === section.title && !section.facts.some((fact) => fact.label === edit.label)).map((edit) => ({label: edit.label, start: 0, end: 0}))].filter((fact) => !["industries", "products"].includes(fact.label.toLowerCase())).map((fact) => <div key={fact.label}>
             <dt>{fact.label}</dt>
-            <dd><CitedText research={research} start={fact.start} end={fact.end} /></dd>
+            <dd>{factValue(section.title, fact)}</dd>
           </div>)}</dl>
           {section.title === "Company" && categories()}
         </div>)}

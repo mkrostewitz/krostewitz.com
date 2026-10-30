@@ -399,9 +399,9 @@ export default function LeadManager({user}) {
         {isCreating && <CreateLeadModal leadTypes={leadTypes} companyNames={companyNames} saving={savingLeadId === "new"}
           onSave={createLead} onClose={() => setIsCreating(false)} />}
         <div className={outreach.filters}>
+          <label className={`${styles.field} ${outreach.wide}`}>Search Contacts - Companies<input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Name, company, email, phone…" /></label>
           <LeadTagsAutocomplete label="Filter by tags" value={tagFilter} options={leadTypes} onChange={setTagFilter}
             help="Matches any selected tag. Clear tags to show all leads." />
-          <label className={styles.field}>Search contacts<input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Name, company, email, phone…" /></label>
           <label className={styles.field}>Status<select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
             {STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
           </select></label>
@@ -502,7 +502,7 @@ export default function LeadManager({user}) {
                     activeLead?.id === lead.id ? styles.leadListRowActive : ""
                   }`}
                 >
-                  <span className={styles.leadIdentity}>
+                  <span className={`${styles.leadIdentity} ${outreach.groupedContactIdentity}`}>
                     <span className={outreach.leadNameLinks}>
                       <button type="button" className={outreach.leadOpenButton} onClick={() => openLeadDetails(lead.id)}><strong>{leadTitle(lead)}</strong></button>
                       {linkedinProfileState(lead.linkedinUrl).url && <a className={outreach.linkedinLink}
