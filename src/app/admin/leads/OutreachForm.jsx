@@ -1,9 +1,9 @@
 "use client";
 
-import { Autocomplete, TextField, Paper, Typography, Alert, MenuItem } from "@mui/material";
+import { Autocomplete, TextField, Paper, Typography, Alert, Link, MenuItem } from "@mui/material";
 import { LeadField, LeadButton, LeadAccordion, LeadScope } from "./LeadUi";
 import { LEAD_STATUS_OPTIONS, CLOSED_STATUSES } from "../../lib/leadStatuses.mjs";
-import { useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { ACTIVITY_TYPES, CHANNELS, CONTACT_FIELDS, addDays, localDay, suggestedFollowUp, suggestedActivityStatus } from "../../lib/leadOutreach.mjs";
 import { useSnackbar } from "./LeadSnackbar";
@@ -12,12 +12,18 @@ import DisclosureSummary from "./DisclosureSummary";
 import outreach from "./outreach.module.css";
 import ActivityModal from "./ActivityModal";
 import ContactResearch from "./ContactResearch";
+import ApolloEnrichment from "./ApolloEnrichment";
+import ApolloOutreach from "./ApolloOutreach";
+import LeadSource from "./LeadSource";
+import CompanyFields from "./CompanyFields";
 import { researchCategories } from "../../lib/contactResearch.mjs";
 import LeadMap from "./LeadMap";
 import useContactGeocoding from "./useContactGeocoding";
-import LeadTagsAutocomplete from "./LeadTagsAutocomplete";
+import LeadContactType from "./LeadContactType";
 import { getLeadTypes } from "../../lib/leadTypes.mjs";
 import { linkedinProfileState, normalizeLinkedinProfileUrl } from "../../lib/linkedinProfile.mjs";
+import {useLeadRequirements} from "./LeadRequirements";
+import {missingLeadFields, assertRequiredLeadFields, LEAD_REQUIREMENT_FIELDS} from "../../lib/leadRequirements.mjs";
 import AddressFields from "./AddressFields";
 import { formatAddress, normalizeAddress } from "../../lib/leadAddress.mjs";
 const LABELS = {
@@ -46,13 +52,33 @@ export default function OutreachForm({
   const {
     showSnackbar
   } = useSnackbar();
+  const {requiredFields} = useLeadRequirements();
   const formId = useId();
+  const [apolloSettings, setApolloSettings] = useState(null);
+  useEffect(() => {
+    const abort = new AbortController();
+    fetch("/api/admin/leads/enrich", {
+      cache: "no-store",
+      signal: abort.signal
+    }).then(async response => {
+      if (!response.ok) throw new Error("Unable to load enrichment settings.");
+      setApolloSettings(await response.json());
+    }).catch(error => {
+      if (error.name !== "AbortError") setApolloSettings({
+        available: false,
+        error: "Unable to load enrichment settings. Reopen the form to try again."
+      });
+    });
+    return () => abort.abort();
+  }, []);
   const [tags, setTags] = useState(() => getLeadTypes(lead));
   const [research, setResearch] = useState(lead?.research || null);
   const [contact, setContact] = useState(() => ({
     ...Object.fromEntries(CONTACT_FIELDS.map(key => [key, lead?.[key] || ""])),
+    source: lead?.contactSource || "",
     industries: lead?.industries ?? researchCategories(lead?.research).industries,
     products: lead?.products ?? researchCategories(lead?.research).products,
+    applications: lead?.applications || [],
     ...(lead?.address ? {
       address: normalizeAddress(lead.address)
     } : {})
@@ -100,6 +126,7 @@ export default function OutreachForm({
   async function savePatch(patch) {
     setPreparing(true);
     try {
+      assertRequiredLeadFields(contact, tags, requiredFields);
       return await onSave({
         ...patch,
         leadTypes: tags,
@@ -134,20 +161,26 @@ export default function OutreachForm({
     void savePatch(patch);
   }
   function renderContactField(key) {
+    if (key === "salutation") return <Autocomplete key={key} freeSolo options={["Mr.", "Ms.", "Mrs.", "Mx.", "Dr.", "Prof.", "Prof. Dr."]}
+      inputValue={contact.salutation} value={contact.salutation || null} disabled={saving || preparing}
+      onInputChange={(_, value) => setContact(current => ({...current, salutation: value}))}
+      onChange={(_, value) => setContact(current => ({...current, salutation: value || ""}))}
+      renderInput={params => <TextField {...params} label="Salutation" required={requiredFields.includes("salutation")} helperText="Select or enter a title, e.g. Mr., Ms., or Dr." slotProps={{...params.slotProps, htmlInput: {...params.slotProps.htmlInput, maxLength: 50, autoComplete: "honorific-prefix"}}} />} />;
+
     if (key === "company") return <Autocomplete key={key} freeSolo options={companyNames} inputValue={contact.company} value={contact.company || null} disabled={saving || preparing} onInputChange={(_, value) => setContact(current => ({
       ...current,
       company: value
     }))} onChange={(_, value) => setContact(current => ({
       ...current,
       company: value || ""
-    }))} renderInput={params => <TextField {...params} label="Company" slotProps={{
+    }))} renderInput={params => <TextField {...params} label="Company" required={requiredFields.includes("company")} slotProps={{
       ...params.slotProps,
       htmlInput: {
         ...params.slotProps.htmlInput,
         maxLength: 200
       }
     }} />} />;
-    const field = <LeadField sx={{ minWidth: 0, flex: 1 }} required={(key === "firstName" && !contact.lastName.trim())} autoComplete={key === "firstName" ? "given-name" : key === "lastName" ? "family-name" : undefined} type={key === "email" ? "email" : key === "phone" ? "tel" : ["website", "detailsSource"].includes(key) ? "url" : "text"} maxLength={["linkedinUrl", "website", "detailsSource"].includes(key) ? 2000 : 200} placeholder={key === "linkedinUrl" ? "https://www.linkedin.com/in/…" : undefined} aria-invalid={key === "linkedinUrl" ? Boolean(linkedin.error) : undefined} aria-describedby={key === "linkedinUrl" && linkedin.error ? linkedinHelpId : undefined} onPaste={key === "linkedinUrl" ? event => {
+    const field = <LeadField sx={{ minWidth: 0, flex: 1 }} required={requiredFields.includes(key) || (key === "firstName" && !contact.lastName.trim())} autoComplete={key === "firstName" ? "given-name" : key === "lastName" ? "family-name" : undefined} type={key === "email" ? "email" : key === "phone" ? "tel" : ["website", "detailsSource"].includes(key) ? "url" : "text"} maxLength={["linkedinUrl", "website", "detailsSource"].includes(key) ? 2000 : 200} placeholder={key === "linkedinUrl" ? "https://www.linkedin.com/in/…" : undefined} aria-invalid={key === "linkedinUrl" ? Boolean(linkedin.error) : undefined} aria-describedby={key === "linkedinUrl" && linkedin.error ? linkedinHelpId : undefined} onPaste={key === "linkedinUrl" ? event => {
       const target = event.currentTarget;
       const pasted = target.value.slice(0, target.selectionStart) + event.clipboardData.getData("text") + target.value.slice(target.selectionEnd);
       const result = linkedinProfileState(pasted);
@@ -189,6 +222,7 @@ export default function OutreachForm({
     </div>;
   return <>
     <form id={formId} onSubmit={submit} className={`${outreach.form} ${outreach.leadForm}`}>
+      {missingLeadFields(contact, tags, requiredFields).length > 0 && <Alert severity="warning" role="status">Required before saving: {missingLeadFields(contact, tags, requiredFields).map(key => LEAD_REQUIREMENT_FIELDS[key]).join(", ")}.</Alert>}
       <LeadScope disabled={saving || preparing}>
         <Paper component="section" variant="outlined" aria-label="Contact details" sx={{
           p: {
@@ -200,23 +234,31 @@ export default function OutreachForm({
         }}>
         <div className={outreach.sectionIntro}>
           <Typography component="h3" variant="subtitle1">Contact details</Typography>
-          <Typography className={styles.muted} component="p" variant="body2">A first or last name is all you need to get started.</Typography>
+          <Typography className={styles.muted} component="p" variant="body2">Complete the fields marked *. Additional Apollo requirements are shown in Apollo sync & sequences.</Typography>
         </div>
         <div className={outreach.grid}>
-          {["firstName", "lastName", "company", "role", "email", "phone", "linkedinUrl"].map(renderContactField)}
+          {["salutation", "firstName", "lastName", "company", "role", "email", "phone", "linkedinUrl"].map(renderContactField)}
         </div>
 
         {lead?.nameNeedsReview && <Typography className={styles.muted} component="p" variant="body2">Check the first and last name; the existing full name was split automatically.</Typography>}
-        <LeadTagsAutocomplete label="Tags" value={tags} options={leadTypes} onChange={setTags} disabled={saving || preparing} allowCreate help="Choose existing tags or type a new one and press Enter." />
+        <LeadContactType required={requiredFields.includes("leadTypes")} value={tags} options={leadTypes} onChange={setTags} disabled={saving || preparing} />
+        <LeadSource value={contact.source} onChange={source => setContact(current => ({
+            ...current,
+            source
+          }))} />
         </Paper>
         <LeadAccordion>
-          <DisclosureSummary><strong>More contact details</strong><small>Website, address &amp; research</small></DisclosureSummary>
+          <DisclosureSummary><strong>Company Details</strong><small>Products, applications, website &amp; address</small></DisclosureSummary>
           <div className={outreach.toolContent}>
+            <CompanyFields contact={contact} disabled={saving || preparing} onChange={(key, values) => setContact(current => ({
+              ...current,
+              [key]: values
+            }))} />
             <div className={outreach.grid}>
               {["website", "detailsSource"].map(renderContactField)}
             </div>
         <LeadAccordion>
-          <DisclosureSummary>Address &amp; location <small className={styles.muted}>(optional)</small></DisclosureSummary>
+          <DisclosureSummary>Address &amp; location {!requiredFields.some(key => key.startsWith("address.")) && <small className={styles.muted}>(optional)</small>}</DisclosureSummary>
           <Typography className={outreach.addressPreview} component="p" variant="body2">{formatAddress(contact.address || {}) || contact.location || "No address added"}</Typography>
           <div className={outreach.addressContent}>
         <AddressFields address={contact.address || normalizeAddress()} legacyLocation={contact.address ? "" : contact.location} onChange={address => setContact(current => ({
@@ -244,6 +286,36 @@ export default function OutreachForm({
           </div>
         </LeadAccordion>
 
+        <section className={outreach.leadTools} aria-label="Contact tools">
+          <div className={outreach.sectionIntro}>
+            <Typography component="h3" variant="subtitle1">Contact tools</Typography>
+            <Typography className={styles.muted} component="p" variant="body2">Open a tool to find details, research this lead, or send it to Apollo.</Typography>
+          </div>
+          <LeadAccordion>
+            <DisclosureSummary><strong>Find email &amp; phone</strong><small>Look up contact details with Apollo and review the results.</small></DisclosureSummary>
+            <div className={outreach.toolContent}>
+        <ApolloEnrichment key={JSON.stringify([contact.firstName, contact.lastName, contact.company, contact.linkedinUrl])} settings={apolloSettings} contact={{
+                firstName: contact.firstName,
+                lastName: contact.lastName,
+                company: contact.company,
+                linkedinUrl: contact.linkedinUrl,
+                email: contact.email,
+                phone: contact.phone
+              }} onApplyPhone={phone => setContact(current => ({
+                ...current,
+                phone
+              }))} onApply={email => setContact(current => ({
+                ...current,
+                email
+              }))} />
+            </div>
+          </LeadAccordion>
+          <LeadAccordion>
+            <DisclosureSummary><strong>Apollo sync & sequences</strong><small>Sync contact details, view sequence progress, and manage enrollment.</small></DisclosureSummary>
+            <div className={outreach.toolContent}>
+              {apolloSettings?.available && apolloSettings.listEnabled ? <ApolloOutreach key={lead?.id || "new"} leadId={lead?.id} apollo={lead?.apollo} contact={contact} categories={tags} settings={apolloSettings} /> : <Typography className={styles.muted} component="p" variant="body2">{!apolloSettings ? "Loading Apollo settings…" : apolloSettings.error || <>Enable the list action in <Link href="/admin/integrations">Integrations → Apollo</Link> to send contacts.</>}</Typography>}
+            </div>
+          </LeadAccordion>
           <LeadAccordion>
             <DisclosureSummary><strong>Research company &amp; person</strong><small>{research ? "Review saved research or refresh it with AI." : "Find company facts, experience, and sources with AI."}</small></DisclosureSummary>
             <div className={outreach.toolContent}>
@@ -253,7 +325,7 @@ export default function OutreachForm({
               }))} />
             </div>
           </LeadAccordion>
-
+        </section>
 
         <LeadAccordion>
           <DisclosureSummary><strong>Activity &amp; notes</strong><small>{draftActivity ? "An activity is ready to save with this lead." : "Log calls, messages, meetings, and review past interactions."}</small></DisclosureSummary>

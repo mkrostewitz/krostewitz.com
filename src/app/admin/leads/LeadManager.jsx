@@ -8,6 +8,8 @@ import { LocateFixed, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useLoadingState } from "../../components/loading/LoadingProvider";
 import { useSnackbar } from "./LeadSnackbar";
+import {LeadRequirementsSettings} from "./LeadRequirements";
+import LeadCatalog from "./LeadCatalog";
 import AdminHeader from "../AdminHeader";
 import styles from "../admin.module.css";
 import DisclosureSummary from "./DisclosureSummary";
@@ -242,7 +244,13 @@ export default function LeadManager({
         setActiveLeadId(current => current === leadId ? "" : current);
         setIsDetailsOpen(false);
       }
-      showSnackbar({type: "success", message: successMessage});
+      showSnackbar(data.lead.apollo?.status === "error" ? {
+        type: "error",
+        message: `Lead saved, but Apollo sync failed: ${data.lead.apollo.message}`
+      } : {
+        type: "success",
+        message: data.lead.apollo?.status === "pending" ? `${successMessage} Apollo sync queued in the background.` : successMessage
+      });
       return data.lead;
     } catch (error) {
       showSnackbar({
@@ -344,6 +352,8 @@ export default function LeadManager({
             </Typography>
           </div>
           <div className={outreach.headerActions}>
+            <LeadRequirementsSettings />
+            <LeadCatalog onChange={data => setLeadTypes(data.leadTypes)} />
             <LeadButton type="button" onClick={() => setIsImporting(true)} variant="outlined">Import leads</LeadButton>
             <LeadButton type="button" disabled={isCreating} onClick={() => setIsCreating(true)} variant="contained">Add new lead</LeadButton>
           </div>

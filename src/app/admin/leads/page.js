@@ -1,3 +1,5 @@
+import {getLeadSettings} from "../../lib/leadSettings";
+import LeadRequirementsProvider from "./LeadRequirements";
 import {redirect} from "next/navigation";
 
 import {getCurrentAdminUser} from "../../lib/adminAuth";
@@ -12,5 +14,5 @@ export default async function AdminLeadsPage() {
     redirect("/admin/login");
   }
 
-  return <AdminMuiProvider><LeadSnackbarProvider><LeadManager user={user} /></LeadSnackbarProvider></AdminMuiProvider>;
+  return <AdminMuiProvider><LeadSnackbarProvider><LeadRequirementsProvider initialSettings={await getLeadSettings()}><LeadManager user={user} /></LeadRequirementsProvider></LeadSnackbarProvider></AdminMuiProvider>;
 }

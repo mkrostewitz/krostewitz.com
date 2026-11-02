@@ -1,3 +1,4 @@
+import {normalizeLeadSource} from "./leadSource.mjs";
 import {normalizeLinkedinProfileUrl} from "./linkedinProfile.mjs";
 import {CLOSED_STATUSES} from "./leadStatuses.mjs";
 export {CLOSED_STATUSES} from "./leadStatuses.mjs";
@@ -18,7 +19,7 @@ export const ACTIVITY_TYPES = {
   meeting: "Meeting",
 };
 export const CHANNELS = {linkedin: "LinkedIn", email: "Email", phone: "Phone", other: "Other"};
-export const CONTACT_FIELDS = ["firstName", "lastName", "company", "role", "location", "email", "phone", "linkedinUrl", "website", "detailsSource"];
+export const CONTACT_FIELDS = ["salutation", "firstName", "lastName", "company", "role", "location", "email", "phone", "linkedinUrl", "website", "detailsSource", "source"];
 
 
 export class OutreachValidationError extends Error {
@@ -44,6 +45,14 @@ export function contactNames(input = {}) {
 export function normalizeContact(input = {}) {
   if (!input || typeof input !== "object" || Array.isArray(input)) throw new OutreachValidationError("Enter valid contact details.");
   const contact = Object.fromEntries(CONTACT_FIELDS.map((key) => [key, clean(input[key], key.endsWith("Url") || ["website", "detailsSource"].includes(key) ? 2000 : 200)]));
+  if (Object.hasOwn(input, "salutation")) {
+    if (typeof input.salutation !== "string" || input.salutation.length > 50 || /[\r\n\u0000]/.test(input.salutation)) throw new OutreachValidationError("Enter a salutation of up to 50 characters.");
+    contact.salutation = input.salutation.normalize("NFKC").trim().replace(/\s+/g, " ");
+  } else delete contact.salutation;
+  if (Object.hasOwn(input, "source")) {
+    try { contact.source = normalizeLeadSource(input.source); }
+    catch (error) { throw new OutreachValidationError(error.message); }
+  } else delete contact.source;
   Object.assign(contact, contactNames(input));
   if (Object.hasOwn(input, "research")) contact.research = normalizeResearch(input.research);
   for (const field of CATEGORY_FIELDS) if (Object.hasOwn(input, field)) contact[field] = normalizeCategories(input[field]);

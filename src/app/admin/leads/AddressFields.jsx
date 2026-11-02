@@ -1,5 +1,6 @@
 "use client";
 
+import {useLeadRequirements} from "./LeadRequirements";
 import { useEffect, useRef, useState } from "react";
 import { Autocomplete, Alert, Box, CircularProgress, Stack, TextField, Typography } from "@mui/material";
 import { ADDRESS_FIELDS, addressFromMapbox, formatAddress, normalizeAddress } from "../../lib/leadAddress.mjs";
@@ -9,6 +10,7 @@ export default function AddressFields({
   legacyLocation,
   onChange
 }) {
+  const {requiredFields} = useLeadRequirements();
   const disabled = useLeadDisabled();
   const [query, setQuery] = useState(legacyLocation || formatAddress(address));
   const [results, setResults] = useState([]);
@@ -110,7 +112,7 @@ export default function AddressFields({
       },
       gap: 2
     }}>
-      {Object.entries(ADDRESS_FIELDS).map(([key, label]) => <LeadField key={key} label={label} value={address[key]} maxLength={200} onChange={event => {
+      {Object.entries(ADDRESS_FIELDS).map(([key, label]) => <LeadField required={requiredFields.includes(`address.${key}`)} key={key} label={label} value={address[key]} maxLength={200} onChange={event => {
         invalidateSearch();
         onChange({
           ...address,

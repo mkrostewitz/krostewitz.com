@@ -36,3 +36,12 @@ test('category casing capitalizes labels and preserves technical terms', () => {
   assert.deepEqual(normalizeCategories(['sensors and controls', 'automation systems', 'automation technology', 'IIoT hardware', 'IO-Link devices', 'industrial IoT', 'Sensors and controls']),
     ['Sensors and controls', 'Automation systems', 'Automation technology', 'IIoT hardware', 'IO-Link devices', 'Industrial IoT']);
 });
+
+test("applications normalize like products without adding missing fields to old contacts", async () => {
+  const {normalizeContact} = await import("./leadOutreach.mjs");
+  const contact = normalizeContact({firstName: "Test", products: ["Sensors"], applications: [" automation ", "Automation", "robotics"]});
+  assert.deepEqual(contact.applications, ["Automation", "Robotics"]);
+  assert.deepEqual(contact.products, ["Sensors"]);
+  assert.equal(Object.hasOwn(normalizeContact({firstName: "Test"}), "applications"), false);
+  assert.deepEqual(normalizeContact({firstName: "Test", applications: []}).applications, []);
+});

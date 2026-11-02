@@ -14,3 +14,6 @@
 
 [functions."newsletter-scheduler"]
   schedule = "* * * * *"
+
+[functions."apollo-sync-scheduler"]
+  schedule = "* * * * *"

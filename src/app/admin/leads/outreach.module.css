@@ -123,6 +123,8 @@
 .toolContent { padding: 0; min-width: 0; display: grid; gap: 14px; }
 .toolContent p { margin: 0; font-size: .82rem; line-height: 1.5; }
 .leadForm .toolContent > .formSection { border: 0; padding-bottom: 0; }
+.apolloActions { display: grid; gap: 12px; }
+.apolloActions > button { justify-self: start; }
 @media (max-width: 600px) {
   .toolContent { padding: 0; }
 }

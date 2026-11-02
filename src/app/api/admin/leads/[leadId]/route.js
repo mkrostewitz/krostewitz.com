@@ -1,15 +1,16 @@
-import {NextResponse} from "next/server";
+import {after, NextResponse} from "next/server";
 
 import {
   getCurrentAdminUser,
   isSameOriginRequest,
   unauthorizedResponse,
 } from "../../../../lib/adminAuth";
-import {LeadValidationError, updateAdminLead, deleteAdminLead} from "../../../../lib/leads";
+import {LeadValidationError, updateAdminLead, deleteAdminLead, processApolloSyncQueue} from "../../../../lib/leads";
 
 import {OutreachValidationError} from "../../../../lib/leadOutreach.mjs";
 
 export const runtime = "nodejs";
+export const maxDuration = 90;
 
 function errorResponse(error) {
   if (error instanceof LeadValidationError || error instanceof OutreachValidationError) {
@@ -34,6 +35,10 @@ export async function PATCH(request, context) {
     if (!body || typeof body !== "object" || Array.isArray(body)) throw new OutreachValidationError("Enter valid lead details.");
     const lead = await updateAdminLead(leadId, body, user);
 
+    if (lead.apollo?.status === "pending") after(async () => {
+      try { await processApolloSyncQueue(leadId); }
+      catch { console.error("Apollo background sync interrupted; the queued job will be retried."); }
+    });
     return NextResponse.json({lead});
   } catch (error) {
     return errorResponse(error);

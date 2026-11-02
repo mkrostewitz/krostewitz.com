@@ -4,6 +4,10 @@ import { Dialog, DialogContent, Typography, Alert } from "@mui/material";
 import { LeadIconButton, LeadButton, LeadCheckbox, LeadField, LeadScope } from "./LeadUi";
 import { useState } from 'react';
 import { Download, FileSpreadsheet, Upload, X } from 'lucide-react';
+import {useLeadRequirements} from "./LeadRequirements";
+import {LEAD_REQUIREMENT_FIELDS} from "../../lib/leadRequirements.mjs";
+import LeadContactType from "./LeadContactType";
+import LeadTagsAutocomplete from "./LeadTagsAutocomplete";
 import { csvRows, spreadsheetLeads } from '../../lib/leadImport.mjs';
 import { useSnackbar } from './LeadSnackbar';
 import outreach from './outreach.module.css';
@@ -14,6 +18,7 @@ export default function ImportLeadModal({
   const {
     showSnackbar
   } = useSnackbar();
+  const {requiredFields} = useLeadRequirements();
   const [entries, setEntries] = useState([]);
   const [selected, setSelected] = useState([]);
   const [results, setResults] = useState([]);
@@ -175,6 +180,17 @@ export default function ImportLeadModal({
                   lastName: event.target.value
                 }
               })} label={<>Last name</>}></LeadField>
+              {requiredFields.filter(key => !['firstName', 'lastName'].includes(key)).map(key => {
+                const list = ['leadTypes', 'products', 'applications', 'industries'].includes(key);
+                const value = key === 'leadTypes' ? entry.leadTypes : key.split('.').reduce((current, part) => current?.[part], entry.contact);
+                const change = next => edit(entry.row, key === 'leadTypes' ? {leadTypes: next} : {contact: {
+                  ...entry.contact,
+                  ...(key.startsWith('address.') ? {address: {...entry.contact.address, [key.split('.')[1]]: next}} : {[key]: next})
+                }});
+                if (key === 'leadTypes') return <LeadContactType key={key} required value={value || []} onChange={change} />;
+                return list ? <LeadTagsAutocomplete key={key} label={LEAD_REQUIREMENT_FIELDS[key]} required value={value || []} options={[]} allowCreate onChange={change} />
+                  : <LeadField key={key} label={LEAD_REQUIREMENT_FIELDS[key]} required value={value || ''} onChange={event => change(event.target.value)} />;
+              })}
               <LeadField value={entry.activityText} onChange={event => edit(entry.row, {
                 activityText: event.target.value
               })} label={<>Activity</>}></LeadField>
