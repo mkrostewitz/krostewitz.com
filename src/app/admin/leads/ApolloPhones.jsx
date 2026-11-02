@@ -19,6 +19,13 @@ export default function ApolloPhones({
     const abort = new AbortController();
     let timer;
     const deadline = Date.now() + 5 * 60000;
+    // End the pending state even if a production request never returns or Apollo
+    // asks us to wait longer than the polling window.
+    const watchdog = setTimeout(() => {
+      setState(current => ({...current, pending: false, error: "The phone lookup has not completed after five minutes. Check again to retrieve the same lookup without starting a new one."}));
+      abort.abort();
+      clearTimeout(timer);
+    }, 5 * 60000);
     async function check() {
       try {
         const params = new URLSearchParams({
@@ -27,13 +34,15 @@ export default function ApolloPhones({
         });
         const response = await fetch(`/api/admin/leads/enrich/phone?${params}`, {
           cache: "no-store",
-          signal: abort.signal
+          signal: AbortSignal.any([abort.signal, AbortSignal.timeout(25000)])
         });
-        const data = await response.json();
+        const data = await response.json().catch(() => null);
+        if (!data) throw new Error("The phone lookup returned an unreadable response. Check again.");
         if (!response.ok) throw new Error(data.error || "Unable to check phone enrichment.");
         if (abort.signal.aborted) return;
         if (data.pending) {
           if (Date.now() >= deadline) {
+            clearTimeout(watchdog);
             setState(current => ({
               ...current,
               pending: false,
@@ -46,23 +55,27 @@ export default function ApolloPhones({
             pending: true,
             error: ""
           }));
-          timer = setTimeout(check, data.retryAfter * 1000);
-        } else setState({
-          pending: false,
-          phones: data.phones
-        });
+          const delay = Number(data.retryAfter);
+          timer = setTimeout(check, Math.min(Number.isFinite(delay) && delay > 0 ? Math.max(5, delay) * 1000 : 10000, Math.max(0, deadline - Date.now())));
+        } else {
+          if (!Array.isArray(data.phones)) throw new Error("The phone lookup returned an unreadable result. Check again.");
+          clearTimeout(watchdog);
+          setState({pending: false, phones: data.phones});
+        }
       } catch (error) {
+        clearTimeout(watchdog);
         if (!abort.signal.aborted) setState(current => ({
           ...current,
           pending: false,
-          error: error.message
+          error: error.name === "TimeoutError" ? "Checking the phone lookup timed out. Check again to retrieve the same lookup." : error.message
         }));
       }
     }
-    timer = setTimeout(check, attempt ? 0 : 10000);
+    timer = setTimeout(check, 0);
     return () => {
       abort.abort();
       clearTimeout(timer);
+      clearTimeout(watchdog);
     };
   }, [result.phoneRequestId, result.phonePersonId, attempt]);
   return <div className={ui.enrichmentPhones}>

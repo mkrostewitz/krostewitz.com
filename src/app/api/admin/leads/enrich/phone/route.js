@@ -4,6 +4,7 @@ import {getApolloApiKey} from "../../../../../lib/apolloSettings";
 import {ApolloEnrichmentError} from "../../../../../lib/apolloEnrichment.mjs";
 import {pollApolloPhone} from "../../../../../lib/apolloPhone.mjs";
 export const runtime = "nodejs";
+export const maxDuration = 30;
 const reply = (body, status = 200) => NextResponse.json(body, {status, headers: {"Cache-Control": "no-store"}});
 export async function GET(request) {
   if (!await getCurrentAdminUser()) return unauthorizedResponse();

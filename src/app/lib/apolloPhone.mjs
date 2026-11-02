@@ -34,6 +34,9 @@ export async function pollApolloPhone({requestId, personId, apiKey, fetchImpl = 
     : "Unable to retrieve the phone result. Try checking again.");
   if (data?.request_type !== "phone" || !Array.isArray(data.webhook_result?.people)) throw new ApolloEnrichmentError("Apollo did not return a readable phone result. Try checking again.");
   const person = data.webhook_result.people.find((item) => item.id === personId);
+  if (data.webhook_result.status === "failed") throw new ApolloEnrichmentError("Apollo could not complete this phone lookup.");
+  if (!person) throw new ApolloEnrichmentError("Apollo returned no result for the requested person. Check again or review the lookup in Apollo.");
+  if (["pending", "processing", "queued"].includes(person.status)) return {pending: true, retryAfter: 10};
   if (person?.status === "failed") throw new ApolloEnrichmentError("Apollo could not complete this phone lookup.");
   return {pending: false, phones: normalizeApolloPhones(person)};
 }
