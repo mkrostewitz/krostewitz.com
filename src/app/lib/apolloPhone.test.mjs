@@ -33,5 +33,16 @@ test("pending polling respects delay; terminal errors and mismatched people do n
   assert.deepEqual(await run({status: 404, ok: false, json: async () => ({error_code: "result_pending", retry_after_seconds: 25})}), {pending: true, retryAfter: 25});
   await assert.rejects(run({status: 404, ok: false, json: async () => ({error_code: "request_id_unknown"})}), /unavailable or expired/);
   await assert.rejects(run({status: 403, ok: false, json: async () => ({})}), /webhook_result\/show/);
-  assert.deepEqual(await run({ok: true, json: async () => ({request_type: "phone", webhook_result: {people: [{id: "other", phone_numbers: [{raw_number: "+49123456789"}]}]}})}), {pending: false, phones: []});
+  await assert.rejects(run({ok: true, json: async () => ({request_type: "phone", webhook_result: {people: [{id: "other", phone_numbers: [{raw_number: "+49123456789"}]}]}})}), /requested person/);
+});
+
+test('phone polling distinguishes processing, failure, empty completion, and available numbers', async () => {
+  const run = payload => pollApolloPhone({requestId, personId, apiKey: 'test', fetchImpl: async () => ({ok: true, json: async () => ({request_type: 'phone', webhook_result: payload})})});
+  for (const status of ['pending', 'processing', 'queued']) assert.deepEqual(await run({people: [{id: personId, status}]}), {pending: true, retryAfter: 10});
+  await assert.rejects(run({status: 'failed', people: []}), /could not complete/);
+  await assert.rejects(run({people: [{id: personId, status: 'failed'}]}), /could not complete/);
+  assert.deepEqual(await run({people: [{id: personId, status: 'success', phone_numbers: []}]}), {pending: false, phones: []});
+  const result = await run({people: [{id: personId, status: 'success', phone_numbers: [{sanitized_number: '+49123456789', type_cd: 'mobile'}]}]});
+  assert.equal(result.pending, false);
+  assert.equal(result.phones[0].number, '+49123456789');
 });
