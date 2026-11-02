@@ -1,6 +1,6 @@
 "use client";
 
-import { Autocomplete, TextField, Paper, Typography, Alert, Link, MenuItem } from "@mui/material";
+import { Autocomplete, TextField, Paper, Typography, Alert, Link, MenuItem, Box } from "@mui/material";
 import { LeadField, LeadButton, LeadAccordion, LeadScope } from "./LeadUi";
 import { LEAD_STATUS_OPTIONS, CLOSED_STATUSES } from "../../lib/leadStatuses.mjs";
 import { useEffect, useId, useMemo, useState } from "react";
@@ -15,6 +15,7 @@ import ContactResearch from "./ContactResearch";
 import ApolloEnrichment from "./ApolloEnrichment";
 import ApolloOutreach from "./ApolloOutreach";
 import LeadSource from "./LeadSource";
+import LinkedInProfileButton from "./LinkedInProfileButton";
 import CompanyFields from "./CompanyFields";
 import { researchCategories } from "../../lib/contactResearch.mjs";
 import LeadMap from "./LeadMap";
@@ -213,7 +214,13 @@ export default function OutreachForm({
                   {linkedin.error}
                 </small>}
               </>}></LeadField>;
-    return field;
+    if (key !== "linkedinUrl") return field;
+    return <Box key={key} sx={{ display: "flex", alignItems: "flex-start", gap: 1, minWidth: 0 }}>
+      {field}
+      <Box sx={{ pt: 1 }}>
+        <LinkedInProfileButton value={contact.linkedinUrl} />
+      </Box>
+    </Box>;
   }
   const actions = <div className={outreach.dialogActions}>
       {onDelete && <LeadButton type="button" disabled={saving || preparing} onClick={onDelete} variant="outlined" color="error">Delete lead</LeadButton>}
