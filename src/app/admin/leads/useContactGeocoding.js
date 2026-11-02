@@ -1,7 +1,7 @@
 "use client";
 
 import {useCallback, useEffect, useRef, useState} from "react";
-import {useSnackbar} from "../../components/snackbar/SnackbarProvider";
+import {useSnackbar} from "./LeadSnackbar";
 import {formatAddress, geocodeAddress, hasAddressCoordinates} from "../../lib/leadAddress.mjs";
 
 export default function useContactGeocoding(contact, setContact) {

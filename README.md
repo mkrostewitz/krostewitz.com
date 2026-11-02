@@ -215,3 +215,8 @@ Run `npm run migrate:cv-timeline` with the target database's usual `MONGO_DB_URI
 To move your edited timeline to production, export/import the **`cv_timeline` collection**, preserving document IDs and `order`, alongside deploying this code. Replace the target collection rather than merging it, so removed entries stay removed. Also migrate the `site_content` document `_id: "cv_timeline_settings"` to preserve revision and initialization state (required for an intentionally empty timeline). Import before serving traffic. PDF metadata remains in its existing storage. Saves update individual documents; multi-entry changes are not a MongoDB transaction.
 
 Public timeline requests bypass caching, so saved changes appear on the next page load. Bundled/legacy translations remain an outage fallback. No server restart or rebuild is needed for timeline edits.
+
+
+### Material UI leads workspace
+
+The leads workspace uses the shared AdminMuiProvider theme, Material UI tables, dialogs, form controls, autocomplete, accordions, and snackbar alerts. LeadUi provides shared controls and disabled-state handling. Mapbox retains its own map controls.
