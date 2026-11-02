@@ -100,3 +100,12 @@ test("first activity suggests contacted without inferring a later pipeline stage
   }
   assert.equal(suggestedFollowUp({status: "pending"}, {occurredOn: "2026-10-30"}), "2026-11-04");
 });
+
+test('salutation is stored separately from names and omitted legacy updates preserve it', () => {
+  const contact = normalizeContact({firstName: 'Ada', salutation: '  Prof.  Dr. '});
+  assert.equal(contact.salutation, 'Prof. Dr.');
+  assert.equal(contact.name, 'Ada');
+  assert.equal(Object.hasOwn(normalizeContact({name: 'Ada'}), 'salutation'), false);
+  assert.equal(normalizeContact({name: 'Ada', salutation: ''}).salutation, '');
+  for (const salutation of [null, {}, 'a'.repeat(51), 'Dr.\n']) assert.throws(() => normalizeContact({name: 'Ada', salutation}), /salutation/);
+});

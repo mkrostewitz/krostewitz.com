@@ -1,4 +1,9 @@
+import {validateRequiredLeadFields, validateApolloRequiredFields, getLeadSettings} from "./leadSettings";
+import {assertRequiredLeadFields} from "./leadRequirements.mjs";
+import {ApolloEnrichmentError} from "./apolloEnrichment.mjs";
+import {saveLeadSource} from "./leadSource.mjs";
 import "server-only";
+import {apolloQueuePatch, dueApolloSync, runApolloSync} from "./apolloSyncQueue.mjs";
 
 import {LEAD_STATUSES, normalizeLeadStatus} from "./leadStatuses.mjs";
 export {LEAD_STATUSES} from "./leadStatuses.mjs";
@@ -58,6 +63,7 @@ async function ensureLeadIndexes(db) {
     const leads = getLeadsCollection(db);
     indexPromise = Promise.all([
       leads.createIndex({createdAt: -1}),
+      leads.createIndex({"apollo.status": 1, "apollo.nextAttemptAt": 1}),
       leads.createIndex({status: 1, followUpOn: 1}),
       leads.createIndex({"contact.linkedinUrl": 1}, {sparse: true}),
       leads.createIndex({status: 1, createdAt: -1}),
@@ -558,10 +564,12 @@ export function serializeLead(document) {
 
   return {
     id: String(document._id),
+    apollo: document.apollo || null,
     status: normalizeLeadStatus(document.status),
     leadType: getLeadTypes(document)[0] || "",
     leadTypes: getLeadTypes(document),
     ...contactNames({...contact, name: contact.name || document.name || ""}),
+    salutation: contact.salutation || "",
     nameNeedsReview: !Object.hasOwn(contact, "firstName") && !Object.hasOwn(contact, "lastName") && Boolean(contact.name || document.name),
     email: contact.email || document.email || "",
     phone: contact.phone || document.phone || "",
@@ -572,9 +580,11 @@ export function serializeLead(document) {
     linkedinUrl: contact.linkedinUrl || "",
     website: contact.website || "",
     detailsSource: contact.detailsSource || "",
+    contactSource: contact.source || "",
     research: contact.research || null,
     industries: contact.industries,
     products: contact.products,
+    applications: contact.applications,
     preferredChannel: document.preferredChannel || (source.type === "manual" ? "linkedin" : "email"),
     followUpOn: document.followUpOn || null,
     followUpTask: document.followUpTask || "",
@@ -937,6 +947,7 @@ export async function createAdminLead(input = {}, user) {
   }
   const contact = normalizeContact(input.contact);
   const leadTypes = normalizeLeadTypes(Object.hasOwn(input, "leadTypes") ? input.leadTypes : getLeadTypes(input));
+  await validateRequiredLeadFields(contact, leadTypes);
   const fields = outreachFields({
     status,
     preferredChannel: input.preferredChannel || "linkedin",
@@ -970,6 +981,7 @@ export async function createAdminLead(input = {}, user) {
     createdAt: now, updatedAt: now, updatedBy: user?.email || null,
   };
   await saveContactCategories(db, contact);
+  if (Object.hasOwn(contact, "source")) contact.source = await saveLeadSource(db, contact.source);
   const result = await leads.insertOne(document);
   return serializeLead({...document, _id: result.insertedId});
 }
@@ -1009,6 +1021,15 @@ export async function updateAdminLead(leadId, input = {}, user) {
   }
 
   const leads = getLeadsCollection(db);
+  const currentLead = await leads.findOne({_id});
+  if (!currentLead) throw new LeadValidationError("Lead not found.", 404);
+  const nextContact = {...currentLead.contact};
+  for (const [key, value] of Object.entries(setUpdate)) {
+    if (key.startsWith("contact.")) nextContact[key.slice(8)] = value;
+  }
+  const nextTypes = Object.hasOwn(input, "leadTypes") ? normalizeLeadTypes(input.leadTypes)
+    : Object.hasOwn(input, "leadType") ? getLeadTypes(input) : getLeadTypes(currentLead);
+  await validateRequiredLeadFields(nextContact, nextTypes);
   const updateOperations = {$set: setUpdate};
   if (Object.keys(pushUpdate).length > 0) {
     updateOperations.$push = pushUpdate;
@@ -1024,7 +1045,7 @@ export async function updateAdminLead(leadId, input = {}, user) {
   }
 
   const categories = {};
-  for (const field of ["industries", "products"]) {
+  for (const field of ["industries", "products", "applications"]) {
     if (Object.hasOwn(setUpdate, `contact.${field}`)) categories[field] = setUpdate[`contact.${field}`];
   }
   if (Object.keys(categories).length) {
@@ -1032,6 +1053,9 @@ export async function updateAdminLead(leadId, input = {}, user) {
     await saveContactCategories(db, categories);
     for (const [field, values] of Object.entries(categories)) setUpdate[`contact.${field}`] = values;
   }
+  if (Object.hasOwn(setUpdate, "contact.source")) setUpdate["contact.source"] = await saveLeadSource(db, setUpdate["contact.source"]);
+  const linked = await leads.findOne({_id}, {projection: {"apollo.contactId": 1}});
+  if (linked?.apollo?.contactId) Object.assign(setUpdate, apolloQueuePatch(now));
   const result = await leads.updateOne({_id}, updateOperations);
 
   if (result.matchedCount === 0) {
@@ -1045,6 +1069,112 @@ export async function updateAdminLead(leadId, input = {}, user) {
   }
 
   return serializeLead(lead);
+}
+
+export async function getAdminLeadApolloStatus(leadId, {refresh = false} = {}) {
+  const leads = getLeadsCollection(await getDb());
+  const _id = toObjectId(leadId);
+  const lead = await leads.findOne({_id}, {projection: {apollo: 1}});
+  if (!lead) throw new LeadValidationError("Lead not found.", 404);
+  const apollo = lead.apollo;
+  if (!apollo?.contactId) return apollo || null;
+  const now = new Date();
+  if (!refresh && now.getTime() - new Date(apollo.progressAttemptAt || 0).getTime() < 60000) return apollo;
+  // Claim a short read lease so multiple open tabs do not duplicate remote requests.
+  const claim = await leads.updateOne({_id, "apollo.contactId": apollo.contactId,
+    $or: [{"apollo.progressReadUntil": {$exists: false}}, {"apollo.progressReadUntil": {$lt: now}}]},
+    {$set: {"apollo.progressReadUntil": new Date(now.getTime() + 60000), "apollo.progressAttemptAt": now.toISOString()}});
+  if (!claim.matchedCount) return apollo;
+  const patch = {};
+  try {
+    const {getApolloApiKey} = await import("./apolloSettings");
+    const {getApolloProgress} = await import("./apolloProgress.mjs");
+    const {getApolloSettings} = await import("./apolloSettings");
+    const settings = await getApolloSettings();
+    patch["apollo.progress"] = await getApolloProgress({contactId: apollo.contactId, apiKey: await getApolloApiKey(), emailAccountId: settings.emailAccountId});
+    patch["apollo.progressError"] = "";
+  } catch (error) {
+    patch["apollo.progressError"] = error instanceof ApolloEnrichmentError ? error.message : "Unable to refresh Apollo progress. Try again shortly.";
+  }
+  await leads.updateOne({_id, "apollo.contactId": apollo.contactId}, {$set: patch, $unset: {"apollo.progressReadUntil": ""}});
+  return (await leads.findOne({_id}, {projection: {apollo: 1}}))?.apollo || null;
+}
+
+async function sendStoredLeadToApollo(args) {
+  await validateApolloRequiredFields(args.contact, args.categories);
+  const {getApolloApiKey, getApolloSettings, getApolloSourceFieldId, getApolloTagsFieldId, getApolloCompanyFieldId, getApolloSalutationFieldId} = await import("./apolloSettings");
+  const {sendLeadToApollo} = await import("./apolloOutreach.mjs");
+  const apiKey = await getApolloApiKey();
+  const settings = await getApolloSettings();
+  const {getApolloSender} = await import("./apolloSender.mjs");
+  const sendingAccount = args.enroll ? await getApolloSender({emailAccountId: settings.emailAccountId, apiKey}) : null;
+  const sourceFieldId = Object.hasOwn(args.contact, "source") ? await getApolloSourceFieldId(apiKey) : null;
+  const salutationFieldId = Object.hasOwn(args.contact, "salutation") ? await getApolloSalutationFieldId(apiKey) : null;
+  const tagsFieldId = await getApolloTagsFieldId(apiKey);
+  const companyFieldIds = {};
+  for (const key of ["products", "applications"]) {
+    if (Object.hasOwn(args.contact, key)) companyFieldIds[key] = await getApolloCompanyFieldId(apiKey, key);
+  }
+  return sendLeadToApollo({...args, salutationFieldId, sourceFieldId, tagsFieldId, companyFieldIds, settings, sendingAccount, apiKey});
+}
+
+export async function syncAdminLeadToApollo(leadId, enroll = false, sequenceId = "") {
+  const result = await runApolloSync({leads: getLeadsCollection(await getDb()), filter: {_id: toObjectId(leadId)},
+    send: sendStoredLeadToApollo, enroll, sequenceId});
+  if (!result) throw new LeadValidationError("Lead not found or Apollo sync is already running. Try again shortly.", 409);
+  return result;
+}
+
+// Share the sync lease so sequence changes cannot race a background sync or enrollment.
+export async function manageAdminLeadSequence(leadId, input, user) {
+  const {validateSequenceAction, performSequenceAction, changeApolloMembership} = await import("./apolloSequenceActions.mjs");
+  validateSequenceAction(input);
+  const leads = getLeadsCollection(await getDb());
+  const _id = toObjectId(leadId);
+  const lock = crypto.randomUUID();
+  const now = new Date();
+  const lead = await leads.findOneAndUpdate({_id, $or: [{apolloSyncUntil: {$exists: false}}, {apolloSyncUntil: {$lt: now}}]},
+    {$set: {apolloSyncLock: lock, apolloSyncUntil: new Date(now.getTime() + 300000)}}, {returnDocument: "after"});
+  if (!lead) throw new LeadValidationError("Lead not found or an Apollo action is running. Try again shortly.", 409);
+  const owned = {_id, apolloSyncLock: lock};
+  try {
+    if (!lead.apollo?.contactId) throw new LeadValidationError("Link this contact to Apollo first.", 400);
+    const {getApolloApiKey, getApolloSettings} = await import("./apolloSettings");
+    const {getApolloProgress} = await import("./apolloProgress.mjs");
+    const apiKey = await getApolloApiKey({requireEnabled: false});
+    const settings = await getApolloSettings();
+    if (input.action === "move" && (!settings.available || !settings.listEnabled || !settings.sequenceEnabled || !settings.emailAccountId)) {
+      throw new LeadValidationError("Configure Apollo sequence enrollment before moving contacts.", 400);
+    }
+    if (input.action === "move" && !lead.contact?.email?.trim()) throw new LeadValidationError("Add an email before moving this contact to an email sequence.", 400);
+    const contactId = lead.apollo.contactId;
+    const read = async () => {
+      const progress = await getApolloProgress({contactId, apiKey, emailAccountId: settings.emailAccountId});
+      await leads.updateOne(owned, {$set: {"apollo.progress": progress, "apollo.progressError": "", "apollo.progressAttemptAt": new Date().toISOString()}});
+      return progress;
+    };
+    const result = await performSequenceAction({...input, read,
+      change: action => changeApolloMembership({apiKey, contactId, sequenceId: input.sequenceId, action}),
+      sync: (enroll, sequenceId = "") => sendStoredLeadToApollo({contact: lead.contact, categories: getLeadTypes(lead), contactId, enroll, sequenceId}),
+    });
+    const patch = {"apollo.lastSequenceAction": {...input, message: result.message, attemptedAt: new Date().toISOString(), updatedBy: user.email}};
+    if (result.enrollment) patch["apollo.lastEnrollment"] = {sequenceId: input.targetSequenceId, status: result.enrollment.sequenceStatus, message: result.enrollment.message, attemptedAt: new Date().toISOString()};
+    if (!result.progress) patch["apollo.progressAttemptAt"] = null;
+    await leads.updateOne(owned, {$set: patch});
+    return {message: result.message, apollo: (await leads.findOne({_id}, {projection: {apollo: 1}}))?.apollo};
+  } catch (error) {
+    await leads.updateOne(owned, {$set: {"apollo.progressAttemptAt": null, "apollo.progressError": error.message}});
+    throw error;
+  } finally {
+    await leads.updateOne(owned, {$unset: {apolloSyncLock: "", apolloSyncUntil: ""}});
+  }
+}
+
+// One durable job per invocation bounds runtime; the scheduler drains/retries the queue.
+export async function processApolloSyncQueue(leadId) {
+  return runApolloSync({leads: getLeadsCollection(await getDb()),
+    filter: {...dueApolloSync(), ...(leadId ? {_id: toObjectId(leadId)} : {})},
+    send: sendStoredLeadToApollo, background: true});
 }
 
 export async function deleteAdminLead(leadId) {
@@ -1066,11 +1196,13 @@ export async function importAdminLeads(entries, user, dryRun = true) {
   const identities = new Set(existing.map(row => importIdentity(row.contact || {})));
   const emails = new Set(existing.map(row => String(row.contact?.email || '').toLowerCase()).filter(Boolean));
   const profiles = new Set(existing.map(row => row.contact?.linkedinUrl).filter(Boolean));
+  const {requiredFields} = await getLeadSettings();
   const results = [];
   const leads = [];
   for (const entry of entries) {
     try {
       const input = normalizeImportEntry(entry);
+      assertRequiredLeadFields(input.contact, getLeadTypes(entry), requiredFields);
       const identity = importIdentity(input.contact);
       if (identities.has(identity) || (input.contact.email && emails.has(input.contact.email)) || (input.contact.linkedinUrl && profiles.has(input.contact.linkedinUrl))) {
         results.push({row: entry.row, status: 'duplicate', message: 'Existing or repeated contact — skipped.'});
@@ -1079,7 +1211,7 @@ export async function importAdminLeads(entries, user, dryRun = true) {
       if (!dryRun) {
         const now = new Date();
         const document = {
-          contact: input.contact, status: 'pending',
+          contact: input.contact, leadTypes: normalizeLeadTypes(getLeadTypes(entry)), status: 'pending',
           source: {type: 'manual', label: 'Personal outreach', context: {importedFrom: 'Excel', row: entry.row}},
           request: {type: 'general', message: ''},
           preferredChannel: input.preferredChannel, followUpOn: input.followUpOn, followUpTask: '',

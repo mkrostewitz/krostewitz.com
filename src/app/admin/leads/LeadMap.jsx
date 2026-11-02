@@ -1,7 +1,7 @@
 "use client";
 
-import {useSnackbar} from "../../components/snackbar/SnackbarProvider";
-import SnackbarError from "../../components/snackbar/SnackbarError";
+import {useSnackbar} from "./LeadSnackbar";
+import {Alert} from "@mui/material";
 import mapboxgl from "mapbox-gl";
 import {useEffect, useMemo, useRef, useState} from "react";
 import styles from "../admin.module.css";
@@ -261,7 +261,7 @@ export default function LeadMap({activeLeadId, leads, onSelectLead = () => {}, g
 
   if (!token) {
     return (
-      <SnackbarError message="Map unavailable. Configure NEXT_PUBLIC_MAPBOX_TOKEN." />
+      <Alert severity="info">Map unavailable. Configure NEXT_PUBLIC_MAPBOX_TOKEN.</Alert>
     );
   }
 

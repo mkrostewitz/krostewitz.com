@@ -43,3 +43,9 @@ export function normalizeLeadTypes(values) {
 export async function saveLeadTypes(collection, values) {
   return Promise.all(normalizeLeadTypes(values).map((value) => saveLeadType(collection, value)));
 }
+
+export function normalizeSingleLeadType(values) {
+  const types = normalizeLeadTypes(values);
+  if (types.length > 1) throw new OutreachValidationError("Choose one contact type before saving or syncing this lead.");
+  return types;
+}

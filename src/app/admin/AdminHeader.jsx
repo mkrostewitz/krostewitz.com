@@ -28,6 +28,7 @@ const ADMIN_NAV_ITEMS = [
     href: "/admin/github-portfolio",
     label: "GitHub Portfolio",
   },
+  {active: "integrations", href: "/admin/integrations", label: "Integrations"},
   {active: "aiSettings", href: "/admin/ai-settings", label: "Agent Settings"},
   {active: "leads", href: "/admin/leads", label: "Leads"},
   {active: "cv", href: "/admin/cv", label: "CV"},

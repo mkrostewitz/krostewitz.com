@@ -1,4 +1,4 @@
-export const CATEGORY_FIELDS = ["industries", "products"];
+export const CATEGORY_FIELDS = ["industries", "products", "applications"];
 
 export async function getContactCategoryCatalog(db) {
   const entries = await Promise.all(CATEGORY_FIELDS.map(async (field) => {

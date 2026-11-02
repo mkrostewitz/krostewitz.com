@@ -1,84 +1,122 @@
 "use client";
 
-import {useEffect, useRef, useState} from "react";
-import {createPortal} from "react-dom";
-import {CLOSED_STATUSES, localDay, suggestedFollowUp} from "../../lib/leadOutreach.mjs";
+import { Dialog, DialogContent, Typography, MenuItem } from "@mui/material";
+import { LeadField, LeadButton, LeadScope } from "./LeadUi";
+import { useState } from "react";
+import { CLOSED_STATUSES, localDay, suggestedFollowUp } from "../../lib/leadOutreach.mjs";
 import styles from "../admin.module.css";
 import outreach from "./outreach.module.css";
-
 const ACTIVITIES = {
-  call: {label: "Phone call", type: "call", channel: "phone"},
-  linkedin_message: {label: "LinkedIn message", type: "message_sent", channel: "linkedin"},
-  connection_requested: {label: "LinkedIn connection request", type: "connection_requested", channel: "linkedin"},
-  connection_accepted: {label: "LinkedIn connection accepted", type: "connection_accepted", channel: "linkedin"},
-  followed: {label: "Followed on LinkedIn", type: "followed", channel: "linkedin"},
-  email: {label: "Email", type: "email_sent", channel: "email"},
-  meeting: {label: "Meeting", type: "meeting", channel: "other"},
-  note: {label: "Note", type: "note", channel: "other"},
+  call: {
+    label: "Phone call",
+    type: "call",
+    channel: "phone"
+  },
+  linkedin_message: {
+    label: "LinkedIn message",
+    type: "message_sent",
+    channel: "linkedin"
+  },
+  connection_requested: {
+    label: "LinkedIn connection request",
+    type: "connection_requested",
+    channel: "linkedin"
+  },
+  connection_accepted: {
+    label: "LinkedIn connection accepted",
+    type: "connection_accepted",
+    channel: "linkedin"
+  },
+  followed: {
+    label: "Followed on LinkedIn",
+    type: "followed",
+    channel: "linkedin"
+  },
+  email: {
+    label: "Email",
+    type: "email_sent",
+    channel: "email"
+  },
+  meeting: {
+    label: "Meeting",
+    type: "meeting",
+    channel: "other"
+  },
+  note: {
+    label: "Note",
+    type: "note",
+    channel: "other"
+  }
 };
-
-export default function ActivityModal({lead, saving, onSave, onClose, draft = false, initialAction}) {
-  const dialog = useRef(null);
-  const [kind, setKind] = useState(() => Object.keys(ACTIVITIES).find((key) => ACTIVITIES[key].type === initialAction?.type && ACTIVITIES[key].channel === initialAction?.channel) || "call");
+export default function ActivityModal({
+  lead,
+  saving,
+  onSave,
+  onClose,
+  draft = false,
+  initialAction
+}) {
+  const [kind, setKind] = useState(() => Object.keys(ACTIVITIES).find(key => ACTIVITIES[key].type === initialAction?.type && ACTIVITIES[key].channel === initialAction?.channel) || "call");
   const [occurredOn, setOccurredOn] = useState(() => initialAction?.occurredOn || localDay());
   const [text, setText] = useState(initialAction?.text || "");
   const [override, setOverride] = useState(null);
-  const suggestion = suggestedFollowUp(lead, {occurredOn});
+  const suggestion = suggestedFollowUp(lead, {
+    occurredOn
+  });
   const followUpOn = override === null ? suggestion || "" : override;
   const closed = CLOSED_STATUSES.includes(lead.status);
-
-  useEffect(() => {
-    const element = dialog.current;
-    element.showModal();
-    return () => element.close();
-  }, []);
-
   async function submit(event) {
     event.preventDefault();
-    const {type, channel} = ACTIVITIES[kind];
+    const {
+      type,
+      channel
+    } = ACTIVITIES[kind];
     const result = await onSave({
-      action: {type, channel, occurredOn, text},
-      followUpOn: closed ? null : followUpOn || null,
+      action: {
+        type,
+        channel,
+        occurredOn,
+        text
+      },
+      followUpOn: closed ? null : followUpOn || null
     });
     if (result) onClose();
   }
+  return <Dialog aria-labelledby="activity-title" open maxWidth="sm" onClose={() => {
+    if (!saving) onClose();
+  }}><DialogContent sx={{
+      display: "grid",
+      gap: 2
+    }}>
 
-  return createPortal(
-    <dialog ref={dialog} className={outreach.activityModal} aria-labelledby="activity-title"
-      onCancel={(event) => {event.preventDefault(); if (!saving) onClose();}}
-      onKeyDown={(event) => {if (event.key === "Escape") event.stopPropagation();}}>
+
       <form onSubmit={submit} className={outreach.form}>
-        <h2 id="activity-title">{initialAction ? "Edit activity" : "Add activity"}</h2>
-        {draft && <p className={styles.muted}>This activity will be saved together with the new lead.</p>}
-        <p className={styles.muted}>{lead.name || lead.email}</p>
-        <fieldset className={outreach.fieldset} disabled={saving}>
-          <label className={styles.field}>Activity
-            <select aria-label="Activity" value={kind} onChange={(event) => setKind(event.target.value)}>
-              {Object.entries(ACTIVITIES).map(([value, activity]) => <option key={value} value={value}>{activity.label}</option>)}
-            </select>
-          </label>
-          <label className={styles.field}>Activity date
-            <input type="date" required max={localDay()} value={occurredOn} onChange={(event) => setOccurredOn(event.target.value)} />
-          </label>
-          <label className={styles.field}>Note {kind !== "note" && "(optional)"}
-            <textarea rows={4} required={kind === "note"} maxLength={4000} value={text} onChange={(event) => setText(event.target.value)} placeholder="What happened, and what should happen next?" />
-          </label>
+        <Typography id="activity-title" component="h2" variant="h6">{initialAction ? "Edit activity" : "Add activity"}</Typography>
+        {draft && <Typography className={styles.muted} component="p" variant="body2">This activity will be saved together with the new lead.</Typography>}
+        <Typography className={styles.muted} component="p" variant="body2">{lead.name || lead.email}</Typography>
+        <LeadScope disabled={saving}>
+          <LeadField aria-label="Activity" value={kind} onChange={event => setKind(event.target.value)} label={<>Activity
+            </>} select={true}>
+              {Object.entries(ACTIVITIES).map(([value, activity]) => <MenuItem key={value} value={value}>{activity.label}</MenuItem>)}
+            </LeadField>
+          <LeadField type="date" required max={localDay()} value={occurredOn} onChange={event => setOccurredOn(event.target.value)} label={<>Activity date
+            </>}></LeadField>
+          <LeadField rows={4} required={kind === "note"} maxLength={4000} value={text} onChange={event => setText(event.target.value)} placeholder="What happened, and what should happen next?" label={<>Note {kind !== "note" && "(optional)"}
+            </>} multiline={true}></LeadField>
           {!closed && <>
-            <label className={styles.field}>Next follow-up date
-              <input type="date" value={followUpOn} onChange={(event) => setOverride(event.target.value)} />
-            </label>
-            <p className={styles.muted}>Suggested: {suggestion || "add an activity date"}, five days after the latest activity. Older activities do not move this suggestion backwards.</p>
+            <LeadField type="date" value={followUpOn} onChange={event => setOverride(event.target.value)} label={<>Next follow-up date
+              </>}></LeadField>
+            <Typography className={styles.muted} component="p" variant="body2">Suggested: {suggestion || "add an activity date"}, five days after the latest activity. Older activities do not move this suggestion backwards.</Typography>
             <div className={styles.buttonRow}>
-              <button type="button" className={styles.secondaryButton} onClick={() => setOverride(null)}>Use suggested date</button>
-              <button type="button" className={styles.secondaryButton} onClick={() => setOverride(lead.followUpOn || "")}>Keep current reminder</button>
+              <LeadButton type="button" onClick={() => setOverride(null)} variant="outlined">Use suggested date</LeadButton>
+              <LeadButton type="button" onClick={() => setOverride(lead.followUpOn || "")} variant="outlined">Keep current reminder</LeadButton>
             </div>
           </>}
           <div className={styles.buttonRow}>
-            <button className={styles.button} type="submit">{saving ? "Saving…" : draft ? "Use activity" : "Save activity"}</button>
-            <button className={styles.secondaryButton} type="button" onClick={onClose}>Cancel</button>
+            <LeadButton type="submit" variant="contained">{saving ? "Saving…" : draft ? "Use activity" : "Save activity"}</LeadButton>
+            <LeadButton type="button" onClick={onClose} variant="outlined">Cancel</LeadButton>
           </div>
-        </fieldset>
+        </LeadScope>
       </form>
-    </dialog>, document.body
-  );
+    </DialogContent></Dialog>;
 }

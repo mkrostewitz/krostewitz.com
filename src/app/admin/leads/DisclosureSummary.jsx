@@ -1,12 +1,16 @@
-import {ChevronRight} from "lucide-react";
-import styles from "./outreach.module.css";
+import { Stack } from "@mui/material";
 
-export default function DisclosureSummary({children, className = ""}) {
-  return (
-    <summary className={`${styles.disclosureSummary} ${className}`}>
-      <ChevronRight className={styles.disclosureChevron} size={18} strokeWidth={2}
-        aria-hidden="true" focusable="false" />
-      <span className={styles.disclosureLabel}>{children}</span>
-    </summary>
-  );
+// The surrounding LeadAccordion supplies the accessible summary button.
+export default function DisclosureSummary({
+  children
+}) {
+  return <Stack spacing={.5} sx={{
+    "& small": {
+      color: "text.secondary",
+      fontSize: ".8rem"
+    },
+    "& strong": {
+      fontWeight: 600
+    }
+  }}>{children}</Stack>;
 }

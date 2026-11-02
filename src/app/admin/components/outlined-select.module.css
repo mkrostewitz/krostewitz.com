@@ -1,0 +1,19 @@
+.field { position: relative; display: grid; gap: 7px; min-width: 0; }
+.label { color: var(--text-secondary); font-size: .82rem; font-weight: 500; line-height: 1.4; }
+.trigger { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-width: 0; min-height: 48px; padding: 11px 14px; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--surface); color: var(--foreground); font: inherit; font-size: .9rem; font-weight: 400; line-height: 1.5; text-align: left; cursor: pointer; transition: border-color .15s, box-shadow .15s; }
+.trigger > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.trigger svg { flex-shrink: 0; color: var(--text-muted); }
+.trigger:hover:not(:disabled) { border-color: var(--text-secondary); }
+.trigger:focus-visible, .trigger[aria-expanded="true"] { outline: 0; border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.trigger:disabled { opacity: .5; cursor: not-allowed; }
+.trigger[aria-invalid="true"] { border-color: #d55f67; }
+.placeholder { color: var(--text-muted); }
+.menu { position: absolute; top: calc(100% + 5px); left: 0; width: 100%; min-width: 0; max-height: 280px; overflow-y: auto; overscroll-behavior: contain; z-index: 30; margin: 0; padding: 6px; list-style: none; background: var(--surface); color: var(--foreground); border: 1px solid var(--border-muted); border-radius: 8px; box-shadow: 0 8px 28px rgb(0 0 0 / .25); }
+.option { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border-radius: 5px; font-size: .875rem; font-weight: 400; line-height: 1.5; cursor: pointer; overflow-wrap: anywhere; }
+.option > span { min-width: 0; }
+.option small { display: block; color: var(--text-muted); font-size: .75rem; }
+.option svg { flex-shrink: 0; color: var(--accent); }
+.option[aria-selected="true"], .active:not([aria-disabled="true"]) { background: var(--accent-soft); }
+.option[aria-disabled="true"] { opacity: .45; cursor: not-allowed; }
+.validation { position: absolute; width: 1px; height: 1px; clip-path: inset(50%); overflow: hidden; opacity: 0; pointer-events: none; }
+.error { color: #d55f67; font-size: .75rem; }

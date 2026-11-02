@@ -118,6 +118,18 @@ Required environment for post media and AI features:
 - `OPENAI_API_KEY` for AI-assisted post editing
 - `OPENAI_POSTS_MODEL`, defaulting to `gpt-5.5`
 
+## Apollo lead email enrichment
+
+In **Admin → Leads**, new and existing lead forms include **Enrich contact**. Enter a LinkedIn personal profile URL, or a first name, last name and company. The lookup sends these identity fields to Apollo's [People Enrichment API](https://docs.apollo.io/reference/people-enrichment). Review the matched person, match confidence and email status, then choose **Use this email** (or **Replace email with Apollo result**) and save the lead. Changing the identity clears the lookup result. Existing emails are only replaced when you apply the result.
+
+Apollo is optional and **disabled by default**. Configure it under **Admin → Integrations → Apollo contact enrichment**: enter a key, switch on enrichment, and save. Lead forms show a disabled Enrich contact button with an Integrations setup link while Apollo is disabled or unconfigured; the server rejects lookups while disabled. Other lead and AI features do not require Apollo.
+
+The key needs access to `api/v1/people/match`. Saved settings live in `site_content`, document `_id: "apollo_settings"`; keys use AES-256-GCM encryption with the server's `AUTH_SECRET` (at least 32 characters). Keep that secret stable or replace the saved Apollo key after rotating it. Settings responses expose only configuration status, never the key. A blank key field preserves the saved key; the removal checkbox explicitly deletes it and disables the integration. Apollo credentials are configured only through Integrations and stored encrypted in the database; there is no environment-key fallback. The endpoint `/api/admin/leads/enrich` requires an authenticated admin and a same-origin POST.
+
+Lookups may consume Apollo credits even when a person is matched without an email. By default this integration requests work emails with personal email reveal, phone reveal and waterfall enrichment disabled. Select Include phone number on a lead to request direct/mobile numbers with additional credits; native polling retrieves results without a webhook. A match does not guarantee an email; unavailable or masked addresses are never filled in. Apollo's email status is displayed for review and does not mark an inbound lead as email-verified. Email lookups alone do not send emails or create Apollo contacts.
+
+Run the mocked integration checks with `node --test src/app/lib/apolloEnrichment.test.mjs`.
+
 ## GitHub portfolio
 
 The portfolio section loads repository metadata from `/api/github/projects`.
@@ -215,3 +227,89 @@ Run `npm run migrate:cv-timeline` with the target database's usual `MONGO_DB_URI
 To move your edited timeline to production, export/import the **`cv_timeline` collection**, preserving document IDs and `order`, alongside deploying this code. Replace the target collection rather than merging it, so removed entries stay removed. Also migrate the `site_content` document `_id: "cv_timeline_settings"` to preserve revision and initialization state (required for an intentionally empty timeline). Import before serving traffic. PDF metadata remains in its existing storage. Saves update individual documents; multi-entry changes are not a MongoDB transaction.
 
 Public timeline requests bypass caching, so saved changes appear on the next page load. Bundled/legacy translations remain an outage fallback. No server restart or rebuild is needed for timeline edits.
+
+### Optional Apollo list and sequence actions
+
+In **Admin → Integrations**, enable **Add to an Apollo list**, choose an existing contact list or create one, and save settings. List creation immediately creates an empty list in Apollo; saving settings selects the destination. In a lead form, apply the enriched email (or enter an existing email), open **Add to Apollo**, and click **Add to [list name]**. Existing configurations without a list ID retain the legacy `website_leads` destination until a list is selected. Selected lists are resolved by ID before sending, so renamed lists still work and deleted lists require reselection. Save the lead first. The action saves current contact details and tags locally, sends name, company, email, phone, job title, website, location and LinkedIn URL, and persists the Apollo contact ID. Existing contacts are updated by ID; later email changes retain that link. Saving a linked lead queues an automatic update; enrichment alone does not send changes.
+
+To allow enrollment, enable **Allow optional sequence enrollment** and choose an existing Apollo sequence and connected sending email account from the dropdowns. Save your API key before enabling sequence enrollment. Options load using the encrypted saved key, including while enrichment is disabled; Refresh reloads them and Load more sequences fetches subsequent pages. In each lead form, explicitly select **Also enroll this contact** before sending. This may initiate emails according to the sequence's status and schedule. Apollo's default verification, ownership and existing-sequence restrictions remain enabled. Already-enrolled contacts are reported without restarting their sequence. Partial results distinguish list membership from enrollment; after a timeout or unconfirmed response, check Apollo before retrying. This is an on-demand admin action, not an automatic public-form signup workflow.
+
+Additional key permissions: `api/v1/labels/index` to browse lists, `api/v1/labels/create` to create lists, `api/v1/contacts/bulk_create`, `api/v1/contacts/update`, `api/v1/labels/add_entity_ids_to_label_names`, and (only for enrollment) `api/v1/emailer_campaigns/add_contact_ids`. Settings are saved in the existing encrypted-credential integration; both new actions default to disabled. Sequence templates and sender accounts are managed in Apollo.
+
+The sequence and sender dropdowns additionally require `api/v1/emailer_campaigns/search` and `api/v1/email_accounts/index`. The admin-only options endpoint returns only IDs, display labels and availability status; mailbox credentials and signatures are never returned to the browser. Saved selections remain intact during lookup errors.
+
+Phone enrichment additionally requires `api/v1/webhook_result/show`. The form polls for up to five minutes, respecting Apollo’s retry delay; Check again retrieves the existing lookup without requesting a new paid enrichment. Closing the form or changing identity stops polling. Phone numbers are reviewed and applied separately, never automatically replacing a saved phone. Save the lead to persist the selected number.
+
+### Background Apollo updates
+
+Saving an already linked lead records its changes and a pending sync in MongoDB together, then responds immediately. Next.js `after()` starts the sync after the save response. A Netlify scheduler runs every minute to pick up due retries and interrupted jobs; it uses a scoped HMAC derived from the existing `AUTH_SECRET`, with no additional secret to configure. On other hosts, POST `/api/admin/leads/apollo/scheduled` once per minute with `Authorization: Bearer <apolloSchedulerToken(AUTH_SECRET)>` (helper in `src/app/lib/apolloSyncQueue.mjs`). Local development also processes due work while the lead form polls its sync status.
+
+The worker locks one lead, uses its stored Apollo contact ID, and never enrolls it in a sequence. Saves during a sync remain queued. Network errors, timeouts, HTTP 429 and server errors retry with backoff, up to five attempts; permission and validation errors require correction. List/tag assignment has a 30-second timeout. The form displays pending, retrying, synced or failed status without blocking local saves. Initial Add to Apollo and explicit sequence enrollment remain interactive; ambiguous creation or enrollment is never automatically replayed. Failed jobs can be retried by saving the linked lead again.
+
+### Apollo category rules
+
+Outreach uses the lead form’s Contact type (`leadTypes`) as categories. The server creates or reuses the custom contact field **Contact Type** and syncs all tags as semicolon-separated text (for example `Recruiter; Interim Firm`). Changes replace the full value, including clearing it when all tags are removed. Only the selected destination list is assigned; old category-list memberships are left intact. In Apollo, combine the `website_leads` list filter with **Custom fields → Contact Type → Contains → Recruiter** to select prospects for a sequence. Add Contact Type as a table column to review it. Field setup uses the same fields/index and fields/create permissions as Website Source.
+
+Under Integrations, choose one sending account and map categories (for example Recruiter, Interim Firm, Manufacturer) to existing Apollo sequences. Reorder rules using the arrow buttons: the first matching category wins and only one sequence is selected. The existing sequence setting becomes the optional fallback. Without a matching rule or fallback, list/label addition still works but enrollment is unavailable. The lead form previews the selected sequence; enrollment remains an explicit per-contact choice. Server-side routing uses saved settings and the submitted form tags, so unsaved tag edits are included in this action. The Add to Apollo action also persists those contact and tag edits locally.
+
+The category sequence editor displays a separate dropdown for every known category, combining the category catalog, current/legacy lead tags and saved rules. Assignments are independent; unassigned rows are not saved as rules. Clearing one category leaves other category sequences unchanged.
+
+### Reusable Material UI admin forms
+
+Apollo Integrations is the first Material UI form. `admin/components/forms/AdminMuiProvider.jsx` supplies Next.js App Router style caching and a theme synchronized with the existing light/dark toggle, without a global CSS reset. Wrap new Material UI admin forms in this provider.
+
+`admin/components/forms/FormFields.jsx` provides `FormField`, searchable `FormSelect`, `FormToggle`, `FormButton`, and labeled `FormIconButton`. `FormScope` propagates disabled state through nested controls and portaled dialogs. Required selectors validate a selected option rather than arbitrary search text. Apollo list creation uses a dialog with its own submit handler; it selects the created list while leaving the parent settings save explicit.
+
+### Lead Source for Apollo personalization
+
+The lead form’s Contact details section includes **Contact type** and a single-value **Source** autocomplete. Type a new source or select a previously saved choice. Saving/Create lead and Add to Apollo remember choices in `lead_sources` (case-insensitive), persist the selected value as `contact.source`, and queue updates for linked contacts. Clearing a value clears the Apollo custom field; it does not delete the shared suggestion. This is separate from the lead’s inbound/manual source metadata and the optional source URL.
+
+Apollo reserves **Source** as a read-only system field, so the integration uses a single-line custom contact field named **Website Source**. It discovers or creates that field, caches its ID in Apollo integration settings, and sends values via `typed_custom_fields` before sequence enrollment. Field setup requires `api/v1/fields/index` and `api/v1/fields/create`; contact updates require `api/v1/contacts/update`. Replacing the API key resets the field mapping for the new workspace.
+
+In Apollo, add **Website Source** as a contact column. In a sequence email, write “I found you through ” and insert **Website Source** from the `{ }` custom-variable menu. Preview with a contact that has a saved source. Use Apollo’s advanced conditional fallback if you want “LinkedIn” when the source is empty; `{{Source/LinkedIn}}` is not the field token generated by this integration. Do not infer sources for existing leads automatically.
+
+### Company details and Apollo sequence variables
+
+The standalone **Company Details** card expands to show Products, Applications, website, source link and address. Products and Applications accept multiple reusable values. Products share the existing research selections; saving research does not erase manually entered applications. Both catalogs persist choices for later leads.
+
+Apollo custom contact fields **Company Products** and **Company Applications** hold comma-separated values. Linked lead saves sync changes in the background, including clearing removed values. Add to Apollo verifies these custom field values before optional sequence enrollment. Old records without these properties do not clear Apollo values. Field mappings are cached alongside Source and Contact Type and reset when the API key changes.
+
+In Apollo’s sequence editor, use the `{ }` custom-variable menu to insert **Company Products** or **Company Applications** and preview against a populated contact. These are contact fields even though they describe the company, so each lead can have relevant product/application selections.
+
+### Leads Material UI
+
+The entire leads workspace uses the shared `AdminMuiProvider` theme. Tables, filters, multivalue and single-value autocomplete, form controls, expandable cards, create/edit/import/delete/activity dialogs, alerts and notifications use Material UI. The Mapbox map retains its mapping controls. `LeadUi.jsx` provides shared controls and disabled-state context so controls rendered in portals respect saving state. Dialog focus trapping, Escape/backdrop dismissal and scroll locking are managed by MUI; the lead form’s actions are portaled into fixed dialog footers. CSS modules retain layout and research/map presentation styles.
+
+### Required lead fields
+
+Open **Leads → Required fields** to select mandatory contact and company information. Local defaults require salutation, first name, company, street, city, country, lead source, and contact type; email is optional locally. Apollo-only defaults require email and company. Products and Applications can also be required when used in sequence variables. A contact name remains a base requirement even if every configurable field is disabled.
+
+The configuration is stored in `site_content/lead_settings`. Admin create/update, import preview/commit, and the shared Apollo sender enforce it on the server; the form shows missing fields and import review exposes the selected requirements. Existing and inbound public-form leads remain visible without a migration, but must be completed before admin saving or Apollo sync/enrollment. Background jobs fail without retry when required information is missing; completing and saving a linked lead queues a new sync. These checks do not stop sequences already running or actions performed directly in Apollo.
+
+### Managing sequence membership
+
+In a lead’s **Apollo sync & sequences** card, each current sequence has **Pause future emails**, **Remove from sequence**, and **Move to selected sequence** actions. Choose a destination in Selected sequence, then use Move on the old sequence. The confirmation names both sequences. Moves use saved lead details; save edits first. Pause uses Apollo’s contact-specific `stop` mode and verifies a paused/stopped membership. Resume is available directly in Apollo. Already sent emails cannot be recalled.
+
+These actions require `api/v1/emailer_campaigns/remove_or_stop_contact_ids` plus contact/progress read permissions. They use the linked contact ID and the same lease as sync/enrollment. Pause/remove bypass mandatory-field validation so incomplete data never prevents stopping outreach. Move validates and syncs details before removal, verifies the old membership is removed, then enrolls in the destination. An unconfirmed removal blocks enrollment; failed destination enrollment is reported as partial completion without automatically restarting the old sequence. Actions are never retried automatically. Other memberships and the contact’s list membership are preserved.
+
+### Contact types, sources, and default sequences
+
+Use **Contact types & sources** on Leads or in Apollo Integrations to create reusable choices without creating a contact. Names are saved immediately in the existing case-insensitive `leadTypes` / `lead_sources` catalogs and become available in lead autocompletes. In Apollo Integrations, assign **Sequence per source** and **Sequence per contact type**, then click **Save settings** to persist the rules.
+
+Default routing priority is explicit sequence choice, matching Source, first matching contact-type rule, then fallback. Source matches use the contact’s editable Source value (Apollo Website Source), not the inbound/manual metadata. Source rules are stored separately as `sourceSequenceRules`; existing contact-type rules remain compatible. Adding choices or changing defaults does not enroll contacts or move existing memberships automatically.
+
+### Salutation
+
+Lead Contact details includes a **Salutation** autocomplete (Mr., Ms., Mrs., Mx., Dr., Prof., Prof. Dr., or a custom title). It is stored separately as `contact.salutation`, required by default, and included in import review and server-side lead guards. Existing required-field configurations gain this default once; saving Required fields records the explicit configuration so it can subsequently be deselected. Existing contacts are not assigned an inferred title.
+
+Apollo sync discovers or creates a custom contact field named **Salutation**, sends the chosen title, and verifies it before enrollment. Select Salutation from Apollo’s custom-variable picker for sequence personalization. Clearing an explicitly supplied value clears the custom field if the requirement is disabled; legacy updates that omit salutation preserve it. The field is provisioned on the next eligible contact sync.
+
+
+### Separate local and Apollo requirements
+
+**Leads → Required fields** has two checkbox columns: **Save lead** and **Apollo sync**. Local create/update and import enforce only Save lead requirements. Apollo manual sync, background sync, enrollment, and sequence moves enforce the union of both columns. Pause and remove remain available without complete contact data. The lead form’s asterisks indicate local requirements; the Apollo card lists any missing Apollo requirements separately.
+
+When upgrading existing settings, email becomes optional locally while the previous requirements are preserved in the Apollo column. Saving the new settings records the split explicitly, including empty selections. Administrators may subsequently require email locally again or disable the Apollo-only email requirement. Email sequence enrollment always needs an email; moves check that before removing the old membership. If email is optional for sync, an empty local email does not overwrite a known Apollo email. Email-less creation links only an unambiguous returned identity; otherwise it asks for review in Apollo.
+
+
+Contact type now accepts one value per lead. The autocomplete replaces the current choice; import review uses the same control. Existing leads with multiple distinct types retain their stored values and display a warning until one is selected. Local save/import and Apollo sync guards reject unresolved multiple types. The `leadTypes` array is retained for storage compatibility, with zero or one value on new saves. Contact-type list filters can still select multiple types to find leads across categories.
