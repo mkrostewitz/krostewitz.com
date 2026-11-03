@@ -1,9 +1,10 @@
 "use client";
 
 import { Autocomplete, TextField, Paper, Typography, Alert, Link, MenuItem, Box } from "@mui/material";
-import { LeadField, LeadButton, LeadAccordion, LeadScope } from "./LeadUi";
+import { LeadField, LeadButton, LeadIconButton, LeadAccordion, LeadScope } from "./LeadUi";
 import { LEAD_STATUS_OPTIONS, CLOSED_STATUSES } from "../../lib/leadStatuses.mjs";
 import { useEffect, useId, useMemo, useState } from "react";
+import { Unlink } from "lucide-react";
 import { createPortal } from "react-dom";
 import { ACTIVITY_TYPES, CHANNELS, CONTACT_FIELDS, addDays, localDay, suggestedFollowUp, suggestedActivityStatus } from "../../lib/leadOutreach.mjs";
 import { useSnackbar } from "./LeadSnackbar";
@@ -90,18 +91,31 @@ export default function OutreachForm({
   }));
   const [companyBase, setCompanyBase] = useState(() => companyDetails(lead || {}));
   const [companyId, setCompanyId] = useState(lead?.companyId || null);
-  function selectCompany(value) {
+  const [companyNameBase, setCompanyNameBase] = useState(lead?.company || "");
+  function selectCompany(value, reason) {
+    if (reason === "createOption" && companyId) {
+      setContact(current => ({...current, company: value || ""}));
+      return;
+    }
     const company = value || "";
     const saved = companies.find(item => companyKey(item.name) === companyKey(company));
     setCompanyId(saved?.id || null);
     if (saved) {
       const details = companyDetails(saved);
       setCompanyBase(details);
+      setCompanyNameBase(saved.name);
       setContact(current => ({...current, company: saved.name, ...details}));
     } else {
       setCompanyBase(companyDetails(contact));
       setContact(current => ({...current, company}));
     }
+  }
+  function unlinkCompany() {
+    const empty = companyDetails();
+    setCompanyId(null);
+    setCompanyBase(empty);
+    setCompanyNameBase("");
+    setContact(current => ({...current, company: "", ...empty}));
   }
   const linkedin = linkedinProfileState(contact.linkedinUrl);
   const linkedinHelpId = useId();
@@ -150,6 +164,7 @@ export default function OutreachForm({
       return await onSave({
         ...patch,
         companyId,
+        companyNameBase,
         companyDetailsBase: companyBase,
         leadTypes: tags,
         contact: await prepareContact({
@@ -195,16 +210,16 @@ export default function OutreachForm({
       onChange={(_, value) => setContact(current => ({...current, salutation: value || ""}))}
       renderInput={params => <TextField {...params} label="Salutation" required={requiredFields.includes("salutation")} helperText="Select or enter a title, e.g. Mr., Ms., or Dr." slotProps={{...params.slotProps, htmlInput: {...params.slotProps.htmlInput, maxLength: 50, autoComplete: "honorific-prefix"}}} />} />;
 
-    if (key === "company") return <Autocomplete key={key} freeSolo options={companyNames} inputValue={contact.company} value={companyId ? contact.company : null} disabled={saving || preparing} onInputChange={(_, value) => {
-      if (companyKey(value) !== companyKey(contact.company)) setCompanyId(null);
-      setContact(current => ({...current, company: value}));
-    }} onChange={(_, value) => selectCompany(value)} renderInput={params => <TextField {...params} label="Company" required={requiredFields.includes("company")} slotProps={{
-      ...params.slotProps,
-      htmlInput: {
-        ...params.slotProps.htmlInput,
-        maxLength: 200
-      }
-    }} />} />;
+    if (key === "company") return <Box key={key} sx={{display: "flex", alignItems: "flex-start", gap: 1, minWidth: 0}}>
+      <Autocomplete sx={{minWidth: 0, flex: 1}} freeSolo disableClearable={Boolean(companyId)} options={companyNames} inputValue={contact.company} value={null} disabled={saving || preparing}
+        onInputChange={(_, value, reason) => {
+          if (reason === "input" || reason === "clear") setContact(current => ({...current, company: value}));
+        }} onChange={(_, value, reason) => selectCompany(value, reason)}
+        renderInput={params => <TextField {...params} label="Company" required={requiredFields.includes("company") || Boolean(companyId)}
+          helperText={companyId ? "Editing this name renames the linked company for all its contacts." : "Type a new company name or select an existing company to inherit its details."}
+          slotProps={{...params.slotProps, htmlInput: {...params.slotProps.htmlInput, maxLength: 200}}} />} />
+      {companyId && <LeadIconButton type="button" aria-label="Unlink company" title="Unlink company and clear its details from this form" disabled={saving || preparing} onClick={unlinkCompany} sx={{mt: 1}}><Unlink size={20} /></LeadIconButton>}
+    </Box>;
     const field = <LeadField sx={{ minWidth: 0, flex: 1 }} required={requiredFields.includes(key) || (key === "firstName" && !contact.lastName.trim())} autoComplete={key === "firstName" ? "given-name" : key === "lastName" ? "family-name" : undefined} type={key === "email" ? "email" : key === "phone" ? "tel" : ["website", "detailsSource"].includes(key) ? "url" : "text"} maxLength={["linkedinUrl", "website", "detailsSource"].includes(key) ? 2000 : 200} placeholder={key === "linkedinUrl" ? "https://www.linkedin.com/in/…" : undefined} aria-invalid={key === "linkedinUrl" ? Boolean(linkedin.error) : undefined} aria-describedby={key === "linkedinUrl" && linkedin.error ? linkedinHelpId : undefined} onPaste={key === "linkedinUrl" ? event => {
       const target = event.currentTarget;
       const pasted = target.value.slice(0, target.selectionStart) + event.clipboardData.getData("text") + target.value.slice(target.selectionEnd);

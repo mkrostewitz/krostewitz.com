@@ -9,15 +9,17 @@ export function serializeCompany(company) {
 
 // Resolve without writing so lead validation runs before a shared company is changed.
 export async function prepareLeadCompany(companies, contact, input = {}, current = {}) {
-  const key = companyKey(contact.company);
-  if (!key) return null;
-  const id = Object.hasOwn(input, 'companyId') ? input.companyId
-    : companyKey(current.contact?.company) === key ? current.companyId : null;
+  let key = companyKey(contact.company);
+  const id = Object.hasOwn(input, 'companyId') ? input.companyId : current.companyId;
+  if (!key) {
+    if (id) throw new OutreachValidationError('Enter a company name or unlink the company.');
+    return null;
+  }
   let existing;
   if (id) {
     if (!/^[a-f0-9]{24}$/i.test(String(id))) throw new OutreachValidationError('Select a valid company.');
     existing = await companies.findOne({_id: new ObjectId(String(id))});
-    if (!existing || existing.key !== key) throw new OutreachValidationError('The selected company changed. Reselect the company before saving.');
+    if (!existing) throw new OutreachValidationError('The selected company no longer exists. Reselect the company before saving.');
   } else {
     existing = await companies.findOne({key});
     // Legacy leads are migrated explicitly by selecting a saved company, never by name alone.
@@ -25,7 +27,15 @@ export async function prepareLeadCompany(companies, contact, input = {}, current
   }
   const details = mergeCompanyDetails(existing?.details, contact,
     input.companyDetailsBase || (current.companyId ? current.contact : null));
-  Object.assign(contact, details, {company: existing?.name || contact.company.trim().replace(/\s+/g, ' ')});
+  const nameBase = input.companyNameBase ?? current.contact?.company;
+  const name = existing && nameBase !== undefined && contact.company === nameBase
+    ? existing.name : contact.company.trim().replace(/\s+/g, ' ');
+  key = companyKey(name);
+  if (existing && key !== existing.key) {
+    const duplicate = await companies.findOne({key});
+    if (duplicate && String(duplicate._id) !== String(existing._id)) throw new OutreachValidationError('A company with this name already exists. Select it to move this contact, or use a different name.');
+  }
+  Object.assign(contact, details, {company: name});
   return {existing, key, name: contact.company};
 }
 
@@ -43,8 +53,14 @@ export async function saveLeadCompany(companies, prepared, contact, now, user) {
     }
     return document;
   }
-  const saved = await companies.findOneAndUpdate({_id: prepared.existing._id, revision: prepared.existing.revision},
-    {$set: patch, $inc: {revision: 1}}, {returnDocument: 'after'});
+  let saved;
+  try {
+    saved = await companies.findOneAndUpdate({_id: prepared.existing._id, revision: prepared.existing.revision},
+      {$set: patch, $inc: {revision: 1}}, {returnDocument: 'after'});
+  } catch (error) {
+    if (error.code === 11000) throw new OutreachValidationError('A company with this name already exists. Select it or use a different name.');
+    throw error;
+  }
   if (!saved) throw new OutreachValidationError('Company details changed while saving. Reselect the company and retry.');
   return saved;
 }
