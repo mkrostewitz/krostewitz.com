@@ -123,3 +123,12 @@ test('inherited legacy locations survive a null structured address', () => {
   assert.equal(normalizeContact({name: 'Ada', address: null, location: 'Berlin'}).location, 'Berlin');
   assert.equal(normalizeContact({name: 'Ada', address: {}, location: 'Berlin'}).location, '');
 });
+
+test('profile photos persist, can be cleared, and omitted updates preserve existing photos', () => {
+  assert.equal(normalizeContact({name: 'Ada', photoUrl: 'https://example.com/photo.jpg'}).photoUrl, 'https://example.com/photo.jpg');
+  assert.equal(normalizeContact({name: 'Ada', photoUrl: ''}).photoUrl, '');
+  assert.equal(Object.hasOwn(normalizeContact({name: 'Ada'}), 'photoUrl'), false);
+  for (const photoUrl of ['javascript:alert(1)', 'http://example.com/photo.jpg', 'https://user:pass@example.com/photo.jpg', 'x'.repeat(8001)]) {
+    assert.throws(() => normalizeContact({name: 'Ada', photoUrl}), /profile photo/);
+  }
+});

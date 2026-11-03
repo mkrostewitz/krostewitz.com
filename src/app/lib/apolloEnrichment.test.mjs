@@ -73,3 +73,16 @@ test("enrichment readiness matches server validation and names missing fields", 
   assert.match(apolloEnrichmentIssue(invalid), /personal profile URL/);
   assert.throws(() => apolloIdentity(invalid), {message: apolloEnrichmentIssue(invalid)});
 });
+
+test('photo enrichment is available without an email and ignores unsafe URLs', async () => {
+  const photo = 'https://media.example.com/profile.jpg?signature=' + 'a'.repeat(2500);
+  const result = await enrichWithApollo({contact, apiKey: 'test', fetchImpl: async () => ({ok: true,
+    json: async () => ({person: {...success.person, email: null, photo_url: photo}})})});
+  assert.equal(result.email, '');
+  assert.equal(result.photoUrl, photo);
+  assert.equal(normalizeContact({...contact, photoUrl: result.photoUrl}).photoUrl, photo);
+  for (const photo_url of [undefined, '', 'javascript:alert(1)', 'data:image/png;base64,abc', 'http://example.com/photo.jpg', 'https://user:pass@example.com/photo.jpg', {}]) {
+    assert.equal(parseApolloResult({person: {...success.person, photo_url}}).photoUrl, '');
+  }
+  assert.equal(parseApolloResult({match_confidence: 'none', person: {...success.person, photo_url: photo}}).photoUrl, undefined);
+});

@@ -348,3 +348,19 @@ export async function uploadCvAsset(file, language, user) {
     size: body.byteLength,
   };
 }
+
+export async function uploadLeadPhoto(file, user) {
+  if (!file || typeof file.arrayBuffer !== 'function' || file.type !== 'image/jpeg') throw new UploadError('Upload a cropped JPG photo.');
+  if (!file.size || file.size > 2 * 1024 * 1024) throw new UploadError('The cropped photo must be smaller than 2 MB.');
+  const body = Buffer.from(await file.arrayBuffer());
+  if (body[0] !== 0xff || body[1] !== 0xd8 || body[2] !== 0xff) throw new UploadError('The file is not a valid JPG photo.');
+  const key = `lead-photos/${crypto.randomUUID()}.jpg`;
+  const url = await putPublicObject({key, body, contentType: 'image/jpeg', metadata: {uploadedBy: user?.email || 'admin', purpose: 'lead-photo'}});
+  return {type: 'image', url, key, mimeType: 'image/jpeg', size: body.byteLength};
+}
+
+export function allowedLeadPhotoHost(hostname) {
+  const trusted = ['media.licdn.com', 'images.apollo.io', 'assets.apollo.io', 'lh3.googleusercontent.com'];
+  try {trusted.push(new URL(getSpacesConfig().publicUrl).hostname);} catch { /* Remote Apollo photos work without upload storage configured. */ }
+  return trusted.includes(hostname.toLowerCase());
+}

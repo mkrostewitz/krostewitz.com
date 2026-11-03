@@ -1,3 +1,4 @@
+import {normalizeLeadPhotoUrl} from "./leadPhoto.mjs";
 import {normalizeLeadSource} from "./leadSource.mjs";
 import {normalizeLinkedinProfileUrl} from "./linkedinProfile.mjs";
 import {CLOSED_STATUSES} from "./leadStatuses.mjs";
@@ -19,7 +20,7 @@ export const ACTIVITY_TYPES = {
   meeting: "Meeting",
 };
 export const CHANNELS = {linkedin: "LinkedIn", email: "Email", phone: "Phone", other: "Other"};
-export const CONTACT_FIELDS = ["salutation", "gender", "firstName", "lastName", "company", "role", "location", "email", "phone", "linkedinUrl", "website", "detailsSource", "source"];
+export const CONTACT_FIELDS = ["salutation", "gender", "photoUrl", "firstName", "lastName", "company", "role", "location", "email", "phone", "linkedinUrl", "website", "detailsSource", "source"];
 
 
 export class OutreachValidationError extends Error {
@@ -57,6 +58,10 @@ export function normalizeContact(input = {}) {
     try { contact.source = normalizeLeadSource(input.source); }
     catch (error) { throw new OutreachValidationError(error.message); }
   } else delete contact.source;
+  if (Object.hasOwn(input, "photoUrl")) {
+    try { contact.photoUrl = normalizeLeadPhotoUrl(input.photoUrl); }
+    catch (error) { throw new OutreachValidationError(error.message); }
+  } else delete contact.photoUrl;
   Object.assign(contact, contactNames(input));
   if (Object.hasOwn(input, "research")) contact.research = normalizeResearch(input.research);
   for (const field of CATEGORY_FIELDS) if (Object.hasOwn(input, field)) contact[field] = normalizeCategories(input[field]);

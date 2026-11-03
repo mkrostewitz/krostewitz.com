@@ -5,19 +5,21 @@ import { LeadButton, LeadIconButton, LeadCheckbox } from "./LeadUi";
 import { useEffect, useId, useRef, useState } from "react";
 import { Check, CircleHelp, Mail, Sparkles } from "lucide-react";
 import { apolloEnrichmentIssue } from "../../lib/apolloEnrichment.mjs";
+import LeadAvatar from "./LeadAvatar";
 import ApolloPhones from "./ApolloPhones";
 import outreach from "./outreach.module.css";
 export default function ApolloEnrichment({
   contact,
   onApply,
   onApplyPhone,
+  onApplyPhoto,
   settings
 }) {
   const requirementsId = useId();
   const identityIssue = apolloEnrichmentIssue(contact);
   const ready = !identityIssue;
   const unavailableReason = !settings ? "Checking enrichment availability…" : settings.error || (!settings.available ? "Configure and enable Apollo in Integrations to enrich contacts." : "");
-  const [includePhone, setIncludePhone] = useState(true);
+  const [includePhone, setIncludePhone] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState(null);
@@ -102,6 +104,11 @@ export default function ApolloEnrichment({
             <LeadButton type="button" disabled={contact.email === result.email} onClick={() => onApply(result.email)} variant="outlined">{contact.email === result.email ? "Email applied" : contact.email ? "Replace email" : "Use this email"}</LeadButton>
           </div>
         </> : <Typography className={outreach.enrichmentNote} component="p" variant="body2">Contact found, but Apollo did not return an available work email.</Typography>}
+        {result.photoUrl && <div className={outreach.enrichmentResultFooter}>
+          <LeadAvatar name={result.name} photoUrl={result.photoUrl} size={56} />
+          <Typography className={outreach.enrichmentNote} component="p" variant="body2">{contact.photoUrl === result.photoUrl ? "Photo applied. Save the lead to keep it." : "Review the photo before applying it to this lead."}</Typography>
+          <LeadButton type="button" disabled={contact.photoUrl === result.photoUrl} onClick={() => onApplyPhoto(result.photoUrl)} variant="outlined">{contact.photoUrl === result.photoUrl ? "Photo applied" : contact.photoUrl ? "Replace photo" : "Use this photo"}</LeadButton>
+        </div>}
         {result.phoneRequested && <ApolloPhones result={result} phone={contact.phone} onApply={onApplyPhone} />}
       </>}
     </div>}

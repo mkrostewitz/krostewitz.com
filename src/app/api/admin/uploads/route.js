@@ -9,6 +9,7 @@ import {
   UploadError,
   uploadPostAsset,
   uploadSiteAsset,
+  uploadLeadPhoto,
 } from "../../../lib/storage";
 
 export const runtime = "nodejs";
@@ -26,7 +27,7 @@ export async function POST(request) {
     const file = formData.get("file");
     const purpose = String(formData.get("purpose") || "");
     const asset =
-      purpose === "site-branding"
+      purpose === "lead-photo" ? await uploadLeadPhoto(file, user) : purpose === "site-branding"
         ? await uploadSiteAsset(file, formData.get("kind"), user)
         : await uploadPostAsset(file, user);
 

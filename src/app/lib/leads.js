@@ -573,6 +573,7 @@ export function serializeLead(document) {
     ...contactNames({...contact, name: contact.name || document.name || ""}),
     salutation: contact.salutation || "",
     gender: contact.gender || "",
+    photoUrl: contact.photoUrl || "",
     companyId: document.companyId ? String(document.companyId) : null,
     companyDetailsUpdatedAt: toIsoDate(document.companyDetailsUpdatedAt),
     nameNeedsReview: !Object.hasOwn(contact, "firstName") && !Object.hasOwn(contact, "lastName") && Boolean(contact.name || document.name),

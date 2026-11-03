@@ -1,3 +1,4 @@
+import {normalizeLeadPhotoUrl} from "./leadPhoto.mjs";
 import {normalizeApolloPhones, parseApolloJson} from "./apolloPhone.mjs";
 import {normalizeLinkedinProfileUrl} from "./linkedinProfile.mjs";
 
@@ -43,7 +44,10 @@ export function parseApolloResult(data) {
   const candidate = text(person.email).toLowerCase();
   // Apollo can return a masked placeholder instead of a revealed address.
   const email = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(candidate) && !candidate.includes("*") && !candidate.endsWith("@domain.com") ? candidate : "";
+  let photoUrl = "";
+  try { photoUrl = normalizeLeadPhotoUrl(person.photo_url); } catch { /* Ignore unusable provider photos without losing the contact match. */ }
   return {
+    photoUrl,
     matched: true, email, matchConfidence: confidence,
     emailStatus: text(person.email_status) || "unknown",
     name: text(person.name), company: text(person.organization?.name), title: text(person.title),

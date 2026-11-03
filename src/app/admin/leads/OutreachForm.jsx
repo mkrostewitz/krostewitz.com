@@ -13,6 +13,7 @@ import DisclosureSummary from "./DisclosureSummary";
 import outreach from "./outreach.module.css";
 import ActivityModal from "./ActivityModal";
 import ContactResearch from "./ContactResearch";
+import LeadPhotoEditor from "./LeadPhotoEditor";
 import ApolloEnrichment from "./ApolloEnrichment";
 import ApolloOutreach from "./ApolloOutreach";
 import LeadSource from "./LeadSource";
@@ -282,8 +283,17 @@ export default function OutreachForm({
           <Typography component="h3" variant="subtitle1">Contact details</Typography>
           <Typography className={styles.muted} component="p" variant="body2">Complete the fields marked *. Additional Apollo requirements are shown in Apollo sync & sequences.</Typography>
         </div>
+        <div className={outreach.contactIdentity}>
+          <div className={outreach.contactPortrait}>
+            <LeadPhotoEditor name={[contact.firstName, contact.lastName].filter(Boolean).join(" ")} photoUrl={contact.photoUrl}
+              disabled={saving || preparing} onChange={photoUrl => setContact(current => ({...current, photoUrl}))} />
+          </div>
+          <div className={outreach.grid}>
+            {["firstName", "lastName", "salutation", "gender"].map(renderContactField)}
+          </div>
+        </div>
         <div className={outreach.grid}>
-          {["salutation", "firstName", "lastName", "gender", "company", "role", "email", "phone", "linkedinUrl"].map(renderContactField)}
+          {["company", "role", "email", "phone", "linkedinUrl"].map(renderContactField)}
         </div>
 
         {lead?.nameNeedsReview && <Typography className={styles.muted} component="p" variant="body2">Check the first and last name; the existing full name was split automatically.</Typography>}
@@ -341,7 +351,7 @@ export default function OutreachForm({
             <Typography className={styles.muted} component="p" variant="body2">Open a tool to find details, research this lead, or send it to Apollo.</Typography>
           </div>
           <LeadAccordion>
-            <DisclosureSummary><strong>1. Find email &amp; phone</strong><small>Look up contact details with Apollo and review the results.</small></DisclosureSummary>
+            <DisclosureSummary><strong>1. Find email, phone &amp; photo</strong><small>Look up contact details with Apollo and review the results.</small></DisclosureSummary>
             <div className={outreach.toolContent}>
         <ApolloEnrichment key={JSON.stringify([contact.firstName, contact.lastName, contact.company, contact.linkedinUrl])} settings={apolloSettings} contact={{
                 firstName: contact.firstName,
@@ -349,8 +359,9 @@ export default function OutreachForm({
                 company: contact.company,
                 linkedinUrl: contact.linkedinUrl,
                 email: contact.email,
-                phone: contact.phone
-              }} onApplyPhone={phone => setContact(current => ({
+                phone: contact.phone,
+                photoUrl: contact.photoUrl
+              }} onApplyPhoto={photoUrl => setContact(current => ({...current, photoUrl}))} onApplyPhone={phone => setContact(current => ({
                 ...current,
                 phone
               }))} onApply={email => setContact(current => ({
