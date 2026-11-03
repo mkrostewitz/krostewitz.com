@@ -17,7 +17,7 @@ import ApolloOutreach from "./ApolloOutreach";
 import LeadSource from "./LeadSource";
 import LinkedInProfileButton from "./LinkedInProfileButton";
 import CompanyFields from "./CompanyFields";
-import { researchCategories } from "../../lib/contactResearch.mjs";
+import { researchCategories, companyCategories } from "../../lib/contactResearch.mjs";
 import LeadMap from "./LeadMap";
 import useContactGeocoding from "./useContactGeocoding";
 import LeadContactType from "./LeadContactType";
@@ -77,9 +77,11 @@ export default function OutreachForm({
   const [contact, setContact] = useState(() => ({
     ...Object.fromEntries(CONTACT_FIELDS.map(key => [key, lead?.[key] || ""])),
     source: lead?.contactSource || "",
-    industries: lead?.industries ?? researchCategories(lead?.research).industries,
-    products: lead?.products ?? researchCategories(lead?.research).products,
-    applications: lead?.applications || [],
+    ...companyCategories({
+      applications: lead?.applications,
+      industries: lead?.industries ?? researchCategories(lead?.research).industries,
+      products: lead?.products ?? researchCategories(lead?.research).products
+    }),
     ...(lead?.address ? {
       address: normalizeAddress(lead.address)
     } : {})
@@ -255,11 +257,12 @@ export default function OutreachForm({
           }))} />
         </Paper>
         <LeadAccordion>
-          <DisclosureSummary><strong>Company Details</strong><small>Products, applications, website &amp; address</small></DisclosureSummary>
+          <DisclosureSummary><strong>Company Details</strong><small>Products, industry &amp; applications, website &amp; address</small></DisclosureSummary>
           <div className={outreach.toolContent}>
             <CompanyFields contact={contact} disabled={saving || preparing} onChange={(key, values) => setContact(current => ({
               ...current,
-              [key]: values
+              [key]: values,
+              ...(key === "applications" ? {industries: values} : {})
             }))} />
             <div className={outreach.grid}>
               {["website", "detailsSource"].map(renderContactField)}

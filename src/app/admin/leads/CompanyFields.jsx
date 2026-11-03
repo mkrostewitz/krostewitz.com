@@ -28,14 +28,14 @@ export default function CompanyFields({
       categories
     }) => setCatalog({
       products: normalizeCategories(categories.products),
-      applications: normalizeCategories(categories.applications)
+      applications: normalizeCategories([...(categories.applications || []), ...(categories.industries || [])])
     })).catch(failure => {
       if (failure.name !== "AbortError") setError(true);
     });
     return () => abort.abort();
   }, []);
   return <>
-    {["products", "applications"].map(key => <LeadTagsAutocomplete required={requiredFields.includes(key)} key={key} label={key === "products" ? "Products" : "Applications"} value={normalizeCategories(contact[key])} options={catalog[key]} allowCreate disabled={disabled} onChange={values => onChange(key, values)} help={`Select or enter ${key}. Saved values sync to Apollo’s Company ${key === "products" ? "Products" : "Applications"} field for sequence personalization.`} />)}
-    {error && <Alert role="status" severity="info">Saved suggestions could not be loaded. You can still enter products and applications.</Alert>}
+    {["products", "applications"].map(key => <LeadTagsAutocomplete required={requiredFields.includes(key)} key={key} label={key === "products" ? "Products" : "Industry & applications"} value={normalizeCategories(contact[key])} options={catalog[key]} allowCreate disabled={disabled} onChange={values => onChange(key, values)} help={`Select or enter ${key === "products" ? "products" : "industries and applications"}. Saved values sync to Apollo’s Company ${key === "products" ? "Products" : "Applications"} field for sequence personalization.`} />)}
+    {error && <Alert role="status" severity="info">Saved suggestions could not be loaded. You can still enter products, industries and applications.</Alert>}
   </>;
 }

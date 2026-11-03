@@ -2,8 +2,9 @@
 
 import { Tooltip, Link, Alert, Typography } from "@mui/material";
 import { LeadButton, LeadIconButton, LeadCheckbox } from "./LeadUi";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { Check, CircleHelp, Mail, Sparkles } from "lucide-react";
+import { apolloEnrichmentIssue } from "../../lib/apolloEnrichment.mjs";
 import ApolloPhones from "./ApolloPhones";
 import outreach from "./outreach.module.css";
 export default function ApolloEnrichment({
@@ -12,6 +13,10 @@ export default function ApolloEnrichment({
   onApplyPhone,
   settings
 }) {
+  const requirementsId = useId();
+  const identityIssue = apolloEnrichmentIssue(contact);
+  const ready = !identityIssue;
+  const unavailableReason = !settings ? "Checking enrichment availability…" : settings.error || (!settings.available ? "Configure and enable Apollo in Integrations to enrich contacts." : "");
   const [includePhone, setIncludePhone] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -19,7 +24,7 @@ export default function ApolloEnrichment({
   const controller = useRef(null);
   useEffect(() => () => controller.current?.abort(), []);
   async function run() {
-    if (controller.current || !settings?.available) return;
+    if (controller.current || !ready || !settings?.available || settings.error) return;
     const abort = new AbortController();
     controller.current = abort;
     setBusy(true);
@@ -47,16 +52,19 @@ export default function ApolloEnrichment({
       setBusy(false);
     }
   }
-  const ready = contact.linkedinUrl.trim() || contact.firstName.trim() && contact.lastName.trim() && contact.company.trim();
   return <section aria-label="Contact enrichment" aria-busy={busy}>
     <div className={outreach.enrichmentActions}>
-      <LeadButton type="button" disabled={busy || !ready || !settings?.available} onClick={run} variant="outlined" startIcon={<Sparkles size={16} aria-hidden="true" />}>
+      <LeadButton type="button" disabled={busy || !ready || Boolean(unavailableReason)} aria-describedby={requirementsId} onClick={run} variant="outlined" startIcon={<Sparkles size={16} aria-hidden="true" />}>
         {busy ? "Enriching contact…" : "Enrich contact"}
       </LeadButton>
-      <Tooltip title={!settings ? "Checking enrichment availability…" : settings.error || (!settings.available ? "Configure and enable Apollo in Integrations to enrich contacts." : !ready ? "Enter a LinkedIn profile URL, or first name, last name and company." : "Find contact details with Apollo, review the match, and save the lead. Lookups may use Apollo credits.")}>
+      <Tooltip title={unavailableReason || identityIssue || "Find contact details with Apollo, review the match, and save the lead. Lookups may use Apollo credits."}>
         <span><LeadIconButton aria-label="About contact enrichment"><CircleHelp size={19} /></LeadIconButton></span>
       </Tooltip>
       {settings && !settings.available && !settings.error && <Link className={outreach.enrichmentSetupLink} href="/admin/integrations" target="_blank" rel="noreferrer">Set up Apollo ↗</Link>}
+    </div>
+    <div id={requirementsId} aria-live="polite">
+      {identityIssue && <Typography component="p" variant="body2">{identityIssue}</Typography>}
+      {unavailableReason && <Typography component="p" variant="body2">{unavailableReason}</Typography>}
     </div>
     {settings?.available && <LeadCheckbox checked={includePhone} disabled={busy} onChange={event => setIncludePhone(event.target.checked)} label={<>
 
