@@ -8,7 +8,7 @@ import {normalizeContact} from "./leadOutreach.mjs";
 
 export const APOLLO_LEAD_LIST = "website_leads";
 
-export async function sendLeadToApollo({contact, settings, apiKey, sendingAccount = null, enroll = false, sequenceId = "", categories = [], contactId = null, sourceFieldId = null, salutationFieldId = null, tagsFieldId = null, companyFieldIds = {}, onContactLinked = async () => {}, fetchImpl = fetch}) {
+export async function sendLeadToApollo({contact, settings, apiKey, sendingAccount = null, enroll = false, sequenceId = "", categories = [], contactId = null, sourceFieldId = null, salutationFieldId = null, genderFieldId = null, tagsFieldId = null, companyFieldIds = {}, onContactLinked = async () => {}, fetchImpl = fetch}) {
   if (!settings?.available || !settings.listEnabled) throw new ApolloEnrichmentError("Enable the Apollo list action in Integrations first.", 403);
   if (contactId && !/^[a-f0-9]{24}$/i.test(contactId)) throw new ApolloEnrichmentError("Invalid Apollo contact ID.", 400);
   let listName = settings.listName || APOLLO_LEAD_LIST;
@@ -37,6 +37,10 @@ export async function sendLeadToApollo({contact, settings, apiKey, sendingAccoun
   if (Object.hasOwn(normalized, "salutation")) {
     if (!/^[a-f0-9]{24}$/i.test(salutationFieldId || "")) throw new ApolloEnrichmentError("Apollo Salutation field is not configured.", 400);
     fields.typed_custom_fields = {...fields.typed_custom_fields, [salutationFieldId]: normalized.salutation};
+  }
+  if (Object.hasOwn(normalized, "gender")) {
+    if (!/^[a-f0-9]{24}$/i.test(genderFieldId || "")) throw new ApolloEnrichmentError("Apollo Gender field is not configured.", 400);
+    fields.typed_custom_fields = {...fields.typed_custom_fields, [genderFieldId]: normalized.gender};
   }
   if (tagsFieldId) {
     if (!/^[a-f0-9]{24}$/i.test(tagsFieldId)) throw new ApolloEnrichmentError("Apollo Contact Type field is not configured.", 400);

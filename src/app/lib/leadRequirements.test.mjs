@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {DEFAULT_REQUIRED_LEAD_FIELDS, normalizeRequiredLeadFields, missingLeadFields, assertRequiredLeadFields, requiredFieldsFromSettings} from './leadRequirements.mjs';
+import {DEFAULT_REQUIRED_LEAD_FIELDS, normalizeRequiredLeadFields, missingLeadFields, assertRequiredLeadFields, requiredFieldsFromSettings, leadRequirementSettings, assertApolloRequiredFields} from './leadRequirements.mjs';
 
 const contact = {salutation: 'Dr.', firstName: 'Alex', email: 'alex@example.com', company: 'Example', address: {street: 'Main Street', city: 'Berlin', country: 'Germany'}, source: 'LinkedIn'};
 test('defaults require sequence essentials and accept a complete lead', () => {
@@ -54,4 +54,16 @@ test('multiple contact types must be resolved explicitly even if the field is op
   assert.throws(() => assertApolloRequiredFields(contact, ['Manufacturer', 'Process automation'], {requiredFields: [], apolloRequiredFields: []}), /Choose one contact type/);
   assert.doesNotThrow(() => assertRequiredLeadFields(contact, ['Manufacturer', 'manufacturer'], []));
   assert.doesNotThrow(() => assertRequiredLeadFields(contact, [], []));
+});
+
+test('Gender can be required independently for saving or Apollo sync', () => {
+  assert.deepEqual(missingLeadFields({gender: ''}, [], ['gender']), ['gender']);
+  assert.deepEqual(missingLeadFields({gender: 'Female'}, [], ['gender']), []);
+  const settings = leadRequirementSettings({requiredFields: [], apolloRequiredFields: ['gender'], separateApolloRequirements: true, salutationRequirementConfigured: true});
+  assert.deepEqual(settings.requiredFields, []);
+  assert.deepEqual(settings.apolloRequiredFields, ['gender']);
+  assert.doesNotThrow(() => assertRequiredLeadFields(contact, [], settings.requiredFields));
+  assert.throws(() => assertApolloRequiredFields(contact, [], settings), /Apollo sync: Gender/);
+  assert.doesNotThrow(() => assertApolloRequiredFields({...contact, gender: 'Female'}, [], settings));
+  assert.doesNotThrow(() => assertApolloRequiredFields(contact, [], {...settings, apolloRequiredFields: []}));
 });

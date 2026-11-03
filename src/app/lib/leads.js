@@ -570,6 +570,7 @@ export function serializeLead(document) {
     leadTypes: getLeadTypes(document),
     ...contactNames({...contact, name: contact.name || document.name || ""}),
     salutation: contact.salutation || "",
+    gender: contact.gender || "",
     nameNeedsReview: !Object.hasOwn(contact, "firstName") && !Object.hasOwn(contact, "lastName") && Boolean(contact.name || document.name),
     email: contact.email || document.email || "",
     phone: contact.phone || document.phone || "",
@@ -1102,7 +1103,7 @@ export async function getAdminLeadApolloStatus(leadId, {refresh = false} = {}) {
 
 async function sendStoredLeadToApollo(args) {
   await validateApolloRequiredFields(args.contact, args.categories);
-  const {getApolloApiKey, getApolloSettings, getApolloSourceFieldId, getApolloTagsFieldId, getApolloCompanyFieldId, getApolloSalutationFieldId} = await import("./apolloSettings");
+  const {getApolloApiKey, getApolloSettings, getApolloSourceFieldId, getApolloTagsFieldId, getApolloCompanyFieldId, getApolloSalutationFieldId, getApolloGenderFieldId} = await import("./apolloSettings");
   const {sendLeadToApollo} = await import("./apolloOutreach.mjs");
   const apiKey = await getApolloApiKey();
   const settings = await getApolloSettings();
@@ -1110,12 +1111,13 @@ async function sendStoredLeadToApollo(args) {
   const sendingAccount = args.enroll ? await getApolloSender({emailAccountId: settings.emailAccountId, apiKey}) : null;
   const sourceFieldId = Object.hasOwn(args.contact, "source") ? await getApolloSourceFieldId(apiKey) : null;
   const salutationFieldId = Object.hasOwn(args.contact, "salutation") ? await getApolloSalutationFieldId(apiKey) : null;
+  const genderFieldId = Object.hasOwn(args.contact, "gender") ? await getApolloGenderFieldId(apiKey) : null;
   const tagsFieldId = await getApolloTagsFieldId(apiKey);
   const companyFieldIds = {};
   for (const key of ["products", "applications"]) {
     if (Object.hasOwn(args.contact, key)) companyFieldIds[key] = await getApolloCompanyFieldId(apiKey, key);
   }
-  return sendLeadToApollo({...args, salutationFieldId, sourceFieldId, tagsFieldId, companyFieldIds, settings, sendingAccount, apiKey});
+  return sendLeadToApollo({...args, genderFieldId, salutationFieldId, sourceFieldId, tagsFieldId, companyFieldIds, settings, sendingAccount, apiKey});
 }
 
 export async function syncAdminLeadToApollo(leadId, enroll = false, sequenceId = "") {

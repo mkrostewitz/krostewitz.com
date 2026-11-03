@@ -109,3 +109,12 @@ test('salutation is stored separately from names and omitted legacy updates pres
   assert.equal(normalizeContact({name: 'Ada', salutation: ''}).salutation, '');
   for (const salutation of [null, {}, 'a'.repeat(51), 'Dr.\n']) assert.throws(() => normalizeContact({name: 'Ada', salutation}), /salutation/);
 });
+
+test('gender is optional, normalized, and validated without inferring from names', () => {
+  assert.equal(Object.hasOwn(normalizeContact({name: 'Ada'}), 'gender'), false);
+  assert.equal(normalizeContact({name: 'Ada', gender: ' Female '}).gender, 'Female');
+  assert.equal(normalizeContact({name: 'Ada', gender: ''}).gender, '');
+  for (const gender of [null, {}, 'x'.repeat(51), 'Female\nOther']) {
+    assert.throws(() => normalizeContact({name: 'Ada', gender}), /gender/);
+  }
+});
