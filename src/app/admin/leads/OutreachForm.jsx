@@ -26,6 +26,7 @@ import { linkedinProfileState, normalizeLinkedinProfileUrl } from "../../lib/lin
 import {useLeadRequirements} from "./LeadRequirements";
 import {missingLeadFields, assertRequiredLeadFields, LEAD_REQUIREMENT_FIELDS} from "../../lib/leadRequirements.mjs";
 import AddressFields from "./AddressFields";
+import {companyKey, companyDetails} from "../../lib/leadCompanies.mjs";
 import { formatAddress, normalizeAddress } from "../../lib/leadAddress.mjs";
 const LABELS = {
   firstName: "First name",
@@ -48,6 +49,7 @@ export default function OutreachForm({
   footerTarget,
   children,
   companyNames = [],
+  companies = [],
   leadTypes = []
 }) {
   const {
@@ -86,6 +88,21 @@ export default function OutreachForm({
       address: normalizeAddress(lead.address)
     } : {})
   }));
+  const [companyBase, setCompanyBase] = useState(() => companyDetails(lead || {}));
+  const [companyId, setCompanyId] = useState(lead?.companyId || null);
+  function selectCompany(value) {
+    const company = value || "";
+    const saved = companies.find(item => companyKey(item.name) === companyKey(company));
+    setCompanyId(saved?.id || null);
+    if (saved) {
+      const details = companyDetails(saved);
+      setCompanyBase(details);
+      setContact(current => ({...current, company: saved.name, ...details}));
+    } else {
+      setCompanyBase(companyDetails(contact));
+      setContact(current => ({...current, company}));
+    }
+  }
   const linkedin = linkedinProfileState(contact.linkedinUrl);
   const linkedinHelpId = useId();
   const {
@@ -132,6 +149,8 @@ export default function OutreachForm({
       assertRequiredLeadFields(contact, tags, requiredFields);
       return await onSave({
         ...patch,
+        companyId,
+        companyDetailsBase: companyBase,
         leadTypes: tags,
         contact: await prepareContact({
           ...contact,
@@ -176,13 +195,10 @@ export default function OutreachForm({
       onChange={(_, value) => setContact(current => ({...current, salutation: value || ""}))}
       renderInput={params => <TextField {...params} label="Salutation" required={requiredFields.includes("salutation")} helperText="Select or enter a title, e.g. Mr., Ms., or Dr." slotProps={{...params.slotProps, htmlInput: {...params.slotProps.htmlInput, maxLength: 50, autoComplete: "honorific-prefix"}}} />} />;
 
-    if (key === "company") return <Autocomplete key={key} freeSolo options={companyNames} inputValue={contact.company} value={contact.company || null} disabled={saving || preparing} onInputChange={(_, value) => setContact(current => ({
-      ...current,
-      company: value
-    }))} onChange={(_, value) => setContact(current => ({
-      ...current,
-      company: value || ""
-    }))} renderInput={params => <TextField {...params} label="Company" required={requiredFields.includes("company")} slotProps={{
+    if (key === "company") return <Autocomplete key={key} freeSolo options={companyNames} inputValue={contact.company} value={companyId ? contact.company : null} disabled={saving || preparing} onInputChange={(_, value) => {
+      if (companyKey(value) !== companyKey(contact.company)) setCompanyId(null);
+      setContact(current => ({...current, company: value}));
+    }} onChange={(_, value) => selectCompany(value)} renderInput={params => <TextField {...params} label="Company" required={requiredFields.includes("company")} slotProps={{
       ...params.slotProps,
       htmlInput: {
         ...params.slotProps.htmlInput,
@@ -265,6 +281,8 @@ export default function OutreachForm({
         <LeadAccordion>
           <DisclosureSummary><strong>Company Details</strong><small>Products, industry &amp; applications, website &amp; address</small></DisclosureSummary>
           <div className={outreach.toolContent}>
+            <Typography variant="body2" color="text.secondary">Select a saved company to inherit its website, products, industry &amp; applications, and address. Saving updates the company record and all leads linked to it.</Typography>
+            <Typography variant="body2" color="text.secondary">{companyId ? "Linked to a saved company." : companies.some(item => companyKey(item.name) === companyKey(contact.company)) ? "This lead is not linked yet. Reselect the company name to inherit its saved details, then save this lead." : "Saving this lead will create a company record from these details."}</Typography>
             <CompanyFields contact={contact} disabled={saving || preparing} onChange={(key, values) => setContact(current => ({
               ...current,
               [key]: values,

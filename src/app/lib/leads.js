@@ -1,3 +1,4 @@
+import {prepareLeadCompany, saveLeadCompany, syncCompanyDetails, serializeCompany, hydrateCompanyLeads} from "./leadCompanySync.mjs";
 import {validateRequiredLeadFields, validateApolloRequiredFields, getLeadSettings} from "./leadSettings";
 import {assertRequiredLeadFields} from "./leadRequirements.mjs";
 import {ApolloEnrichmentError} from "./apolloEnrichment.mjs";
@@ -63,6 +64,7 @@ async function ensureLeadIndexes(db) {
     const leads = getLeadsCollection(db);
     indexPromise = Promise.all([
       leads.createIndex({createdAt: -1}),
+      leads.createIndex({companyId: 1}),
       leads.createIndex({"apollo.status": 1, "apollo.nextAttemptAt": 1}),
       leads.createIndex({status: 1, followUpOn: 1}),
       leads.createIndex({"contact.linkedinUrl": 1}, {sparse: true}),
@@ -571,6 +573,8 @@ export function serializeLead(document) {
     ...contactNames({...contact, name: contact.name || document.name || ""}),
     salutation: contact.salutation || "",
     gender: contact.gender || "",
+    companyId: document.companyId ? String(document.companyId) : null,
+    companyDetailsUpdatedAt: toIsoDate(document.companyDetailsUpdatedAt),
     nameNeedsReview: !Object.hasOwn(contact, "firstName") && !Object.hasOwn(contact, "lastName") && Boolean(contact.name || document.name),
     email: contact.email || document.email || "",
     phone: contact.phone || document.phone || "",
@@ -778,7 +782,7 @@ export async function getAdminLeads(filters = {}) {
     .limit(limit)
     .toArray();
 
-  return leads.map(serializeLead);
+  return (await hydrateCompanyLeads(db.collection("companies"), leads)).map(serializeLead);
 }
 
 function getMaintenanceLimit(value) {
@@ -948,6 +952,9 @@ export async function createAdminLead(input = {}, user) {
   }
   const contact = normalizeContact(input.contact);
   const leadTypes = normalizeLeadTypes(Object.hasOwn(input, "leadTypes") ? input.leadTypes : getLeadTypes(input));
+  const db = await getDb();
+  const leads = getLeadsCollection(db);
+  const preparedCompany = await prepareLeadCompany(db.collection("companies"), contact, input);
   await validateRequiredLeadFields(contact, leadTypes);
   const fields = outreachFields({
     status,
@@ -960,9 +967,7 @@ export async function createAdminLead(input = {}, user) {
     ...normalizeActivity(input.action, now),
     id: crypto.randomUUID(), createdAt: now, createdBy: user?.email || null,
   } : null;
-  const db = await getDb();
   await ensureLeadIndexes(db);
-  const leads = getLeadsCollection(db);
   const identities = [];
   if (contact.email) identities.push({"contact.email": contact.email});
   if (contact.linkedinUrl) identities.push({"contact.linkedinUrl": contact.linkedinUrl});
@@ -983,8 +988,11 @@ export async function createAdminLead(input = {}, user) {
   };
   await saveContactCategories(db, contact);
   if (Object.hasOwn(contact, "source")) contact.source = await saveLeadSource(db, contact.source);
+  const company = await saveLeadCompany(db.collection("companies"), preparedCompany, contact, now, user);
+  document.companyId = company?._id || null;
   const result = await leads.insertOne(document);
-  return serializeLead({...document, _id: result.insertedId});
+  await syncCompanyDetails(leads, company, now, user);
+  return serializeLead(await leads.findOne({_id: result.insertedId}));
 }
 
 export async function updateAdminLead(leadId, input = {}, user) {
@@ -1028,6 +1036,11 @@ export async function updateAdminLead(leadId, input = {}, user) {
   for (const [key, value] of Object.entries(setUpdate)) {
     if (key.startsWith("contact.")) nextContact[key.slice(8)] = value;
   }
+  const preparedCompany = input.contact
+    ? await prepareLeadCompany(db.collection("companies"), nextContact, input, currentLead) : null;
+  if (preparedCompany) {
+    for (const [field, value] of Object.entries(nextContact)) setUpdate[`contact.${field}`] = value;
+  }
   const nextTypes = Object.hasOwn(input, "leadTypes") ? normalizeLeadTypes(input.leadTypes)
     : Object.hasOwn(input, "leadType") ? getLeadTypes(input) : getLeadTypes(currentLead);
   await validateRequiredLeadFields(nextContact, nextTypes);
@@ -1052,17 +1065,21 @@ export async function updateAdminLead(leadId, input = {}, user) {
   if (Object.keys(categories).length) {
     if (!await leads.findOne({_id}, {projection: {_id: 1}})) throw new LeadValidationError("Lead not found.", 404);
     await saveContactCategories(db, categories);
+    Object.assign(nextContact, categories);
     for (const [field, values] of Object.entries(categories)) setUpdate[`contact.${field}`] = values;
   }
   if (Object.hasOwn(setUpdate, "contact.source")) setUpdate["contact.source"] = await saveLeadSource(db, setUpdate["contact.source"]);
   const linked = await leads.findOne({_id}, {projection: {"apollo.contactId": 1}});
   if (linked?.apollo?.contactId) Object.assign(setUpdate, apolloQueuePatch(now));
+  const company = await saveLeadCompany(db.collection("companies"), preparedCompany, nextContact, now, user);
+  if (input.contact) setUpdate.companyId = company?._id || null;
   const result = await leads.updateOne({_id}, updateOperations);
 
   if (result.matchedCount === 0) {
     throw new LeadValidationError("Lead not found.", 404);
   }
 
+  await syncCompanyDetails(leads, company, now, user);
   const lead = await leads.findOne({_id});
 
   if (!lead) {
@@ -1102,6 +1119,10 @@ export async function getAdminLeadApolloStatus(leadId, {refresh = false} = {}) {
 }
 
 async function sendStoredLeadToApollo(args) {
+  if (args.companyId) {
+    const [resolved] = await hydrateCompanyLeads((await getDb()).collection("companies"), [{companyId: args.companyId, contact: args.contact}]);
+    args = {...args, contact: resolved.contact};
+  }
   await validateApolloRequiredFields(args.contact, args.categories);
   const {getApolloApiKey, getApolloSettings, getApolloSourceFieldId, getApolloTagsFieldId, getApolloCompanyFieldId, getApolloSalutationFieldId, getApolloGenderFieldId} = await import("./apolloSettings");
   const {sendLeadToApollo} = await import("./apolloOutreach.mjs");
@@ -1157,7 +1178,7 @@ export async function manageAdminLeadSequence(leadId, input, user) {
     };
     const result = await performSequenceAction({...input, read,
       change: action => changeApolloMembership({apiKey, contactId, sequenceId: input.sequenceId, action}),
-      sync: (enroll, sequenceId = "") => sendStoredLeadToApollo({contact: lead.contact, categories: getLeadTypes(lead), contactId, enroll, sequenceId}),
+      sync: (enroll, sequenceId = "") => sendStoredLeadToApollo({companyId: lead.companyId, contact: lead.contact, categories: getLeadTypes(lead), contactId, enroll, sequenceId}),
     });
     const patch = {"apollo.lastSequenceAction": {...input, message: result.message, attemptedAt: new Date().toISOString(), updatedBy: user.email}};
     if (result.enrollment) patch["apollo.lastEnrollment"] = {sequenceId: input.targetSequenceId, status: result.enrollment.sequenceStatus, message: result.enrollment.message, attemptedAt: new Date().toISOString()};
@@ -1194,7 +1215,7 @@ export async function importAdminLeads(entries, user, dryRun = true) {
   const collection = getLeadsCollection(db);
   await ensureLeadIndexes(db);
   await collection.createIndex({importKey: 1}, {unique: true, partialFilterExpression: {importKey: {$type: 'string'}}});
-  const existing = await collection.find({}, {projection: {contact: 1}}).toArray();
+  const existing = await collection.find({}, {projection: {contact: 1, updatedAt: 1, companyDetailsUpdatedAt: 1}}).toArray();
   const identities = new Set(existing.map(row => importIdentity(row.contact || {})));
   const emails = new Set(existing.map(row => String(row.contact?.email || '').toLowerCase()).filter(Boolean));
   const profiles = new Set(existing.map(row => row.contact?.linkedinUrl).filter(Boolean));
@@ -1222,7 +1243,7 @@ export async function importAdminLeads(entries, user, dryRun = true) {
           createdAt: now, updatedAt: now, updatedBy: user?.email || null,
         };
         const inserted = await collection.insertOne(document);
-        leads.push(serializeLead({...document, _id: inserted.insertedId}));
+        leads.push(serializeLead(await collection.findOne({_id: inserted.insertedId})));
       }
       identities.add(identity);
       if (input.contact.email) emails.add(input.contact.email);
@@ -1234,4 +1255,15 @@ export async function importAdminLeads(entries, user, dryRun = true) {
     }
   }
   return {results, leads};
+}
+
+export async function getAdminCompanies() {
+  return (await (await getDb()).collection("companies").find({}).sort({name: 1}).toArray()).map(serializeCompany);
+}
+
+export async function getAdminCompanyLeads(companyId) {
+  if (!companyId) return [];
+  const db = await getDb();
+  const leads = await getLeadsCollection(db).find({companyId: toObjectId(companyId)}).toArray();
+  return (await hydrateCompanyLeads(db.collection("companies"), leads)).map(serializeLead);
 }

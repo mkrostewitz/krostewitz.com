@@ -5,7 +5,7 @@ import {
   isSameOriginRequest,
   unauthorizedResponse,
 } from "../../../../lib/adminAuth";
-import {LeadValidationError, updateAdminLead, deleteAdminLead, processApolloSyncQueue} from "../../../../lib/leads";
+import {getAdminCompanyLeads, getAdminCompanies, LeadValidationError, updateAdminLead, deleteAdminLead, processApolloSyncQueue} from "../../../../lib/leads";
 
 import {OutreachValidationError} from "../../../../lib/leadOutreach.mjs";
 
@@ -39,7 +39,7 @@ export async function PATCH(request, context) {
       try { await processApolloSyncQueue(leadId); }
       catch { console.error("Apollo background sync interrupted; the queued job will be retried."); }
     });
-    return NextResponse.json({lead});
+    return NextResponse.json({lead, companyLeads: await getAdminCompanyLeads(lead.companyId), companies: await getAdminCompanies()});
   } catch (error) {
     return errorResponse(error);
   }

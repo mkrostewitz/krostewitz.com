@@ -1,7 +1,7 @@
 import {NextResponse} from "next/server";
 
 import {getCurrentAdminUser, isSameOriginRequest, unauthorizedResponse} from "../../../lib/adminAuth";
-import {createAdminLead, getAdminLeads, getAdminLeadTypes, LeadValidationError} from "../../../lib/leads";
+import {createAdminLead, getAdminCompanyLeads, getAdminCompanies, getAdminLeads, getAdminLeadTypes, LeadValidationError} from "../../../lib/leads";
 
 import {OutreachValidationError} from "../../../lib/leadOutreach.mjs";
 
@@ -29,7 +29,7 @@ export async function GET(request) {
       offset: searchParams.get("offset") || "",
     });
 
-    return NextResponse.json({leads, leadTypes: await getAdminLeadTypes()});
+    return NextResponse.json({leads, companies: await getAdminCompanies(), leadTypes: await getAdminLeadTypes()});
   } catch (error) {
     return errorResponse(error);
   }
@@ -43,7 +43,7 @@ export async function POST(request) {
     const body = await request.json().catch(() => null);
     if (!body || typeof body !== "object" || Array.isArray(body)) throw new OutreachValidationError("Enter valid lead details.");
     const lead = await createAdminLead(body, user);
-    return NextResponse.json({lead}, {status: 201});
+    return NextResponse.json({lead, companyLeads: await getAdminCompanyLeads(lead.companyId), companies: await getAdminCompanies()}, {status: 201});
   } catch (error) {
     return errorResponse(error);
   }
