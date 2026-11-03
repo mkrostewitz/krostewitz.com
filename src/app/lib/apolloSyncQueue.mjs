@@ -39,7 +39,7 @@ export async function runApolloSync({leads, filter, send, enroll = false, sequen
     await leads.updateOne(snapshot, {$set: {"apollo.status": "syncing", "apollo.attempts": attempts}});
     let result;
     try {
-      result = await send({contact: locked.contact, categories: getLeadTypes(locked), contactId: locked.apollo?.contactId,
+      result = await send({companyId: locked.companyId, contact: locked.contact, categories: getLeadTypes(locked), contactId: locked.apollo?.contactId,
         enroll: background ? false : enroll,
         sequenceId: background || !enroll ? "" : sequenceId,
         onContactLinked: async (contactId) => {

@@ -61,9 +61,9 @@ export function normalizeContact(input = {}) {
   if (Object.hasOwn(input, "research")) contact.research = normalizeResearch(input.research);
   for (const field of CATEGORY_FIELDS) if (Object.hasOwn(input, field)) contact[field] = normalizeCategories(input[field]);
   if (Object.hasOwn(input, "address")) {
-    try { contact.address = normalizeAddress(input.address); }
+    try { contact.address = input.address === null ? null : normalizeAddress(input.address); }
     catch (error) { throw new OutreachValidationError(error.message); }
-    contact.location = formatAddress(contact.address);
+    if (contact.address) contact.location = formatAddress(contact.address);
   }
   if (!contact.name) throw new OutreachValidationError("Contact name is required.");
   contact.email = contact.email.toLowerCase();

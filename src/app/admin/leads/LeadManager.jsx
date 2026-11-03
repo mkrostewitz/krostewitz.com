@@ -111,6 +111,7 @@ export default function LeadManager({
     const timer = setInterval(() => setToday(localDay()), 60000);
     return () => clearInterval(timer);
   }, []);
+  const [companies, setCompanies] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isGeolocating, setIsGeolocating] = useState(false);
@@ -147,7 +148,7 @@ export default function LeadManager({
   }, [leads, statusFilter, sourceFilter, search, followUpFilter, tagFilter, today]);
   const companyGroups = useMemo(() => groupLeadsByCompany(visibleLeads), [visibleLeads]);
   // All database pages are loaded above; filters must not narrow autocomplete choices.
-  const companyNames = useMemo(() => leadCompanySuggestions(leads), [leads]);
+  const companyNames = useMemo(() => leadCompanySuggestions([...companies.map(company => ({company: company.name})), ...leads]), [leads, companies]);
   const overdueCount = leads.filter(lead => followUpState(lead, today) === "overdue").length;
   const todayCount = leads.filter(lead => followUpState(lead, today) === "today").length;
   const dueCount = overdueCount + todayCount;
@@ -174,7 +175,7 @@ export default function LeadManager({
           });
           const data = await response.json().catch(() => ({}));
           if (!response.ok) throw new Error(data.error || "Unable to load leads.");
-          if (!cancelled) setLeadTypes(data.leadTypes || []);
+          if (!cancelled) {setLeadTypes(data.leadTypes || []); setCompanies(data.companies || []);}
           const page = data.leads || [];
           nextLeads.push(...page);
           if (page.length < 300) break;
@@ -239,7 +240,9 @@ export default function LeadManager({
         throw new Error(data.error || "Unable to update lead.");
       }
       rememberLeadTypes(getLeadTypes(data.lead));
-      setLeads(current => current.map(lead => lead.id === leadId ? data.lead : lead));
+      if (data.companies) setCompanies(data.companies);
+      const updated = new Map([...(data.companyLeads || []), data.lead].map(lead => [lead.id, lead]));
+      setLeads(current => current.map(lead => updated.get(lead.id) || lead));
       if (!leadMatchesCurrentFilters(data.lead)) {
         setActiveLeadId(current => current === leadId ? "" : current);
         setIsDetailsOpen(false);
@@ -316,7 +319,9 @@ export default function LeadManager({
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || "Unable to create lead.");
       rememberLeadTypes(getLeadTypes(data.lead));
-      setLeads(current => [data.lead, ...current]);
+      if (data.companies) setCompanies(data.companies);
+      const updated = new Map((data.companyLeads || []).map(lead => [lead.id, lead]));
+      setLeads(current => [data.lead, ...current.map(lead => updated.get(lead.id) || lead)]);
       setStatusFilter("");
       setSourceFilter("");
       setSearch("");
@@ -366,7 +371,7 @@ export default function LeadManager({
         setSourceFilter('');
         setFollowUpFilter('');
       }} />}
-        {isCreating && <CreateLeadModal leadTypes={leadTypes} companyNames={companyNames} saving={savingLeadId === "new"} onSave={createLead} onClose={() => setIsCreating(false)} />}
+        {isCreating && <CreateLeadModal leadTypes={leadTypes} companyNames={companyNames} companies={companies} saving={savingLeadId === "new"} onSave={createLead} onClose={() => setIsCreating(false)} />}
 
         <div className={styles.leadWorkspace}>
           <section className={`${styles.postListPanel} ${outreach.listPanel}`}>
@@ -591,7 +596,7 @@ export default function LeadManager({
 
                 </LeadAccordion>}
 
-                <OutreachForm leadTypes={leadTypes} companyNames={companyNames} key={`${activeLead.id}:${activeLead.updatedAt}`} lead={activeLead} footerTarget={footerTarget} onCancel={() => setIsDetailsOpen(false)} onDelete={() => setDeleteTarget(activeLead)} saving={savingLeadId === activeLead.id} onSave={patch => updateLead(activeLead.id, patch, "Lead updated.")}>
+                <OutreachForm leadTypes={leadTypes} companyNames={companyNames} companies={companies} key={`${activeLead.id}:${activeLead.updatedAt}`} lead={activeLead} footerTarget={footerTarget} onCancel={() => setIsDetailsOpen(false)} onDelete={() => setDeleteTarget(activeLead)} saving={savingLeadId === activeLead.id} onSave={patch => updateLead(activeLead.id, patch, "Lead updated.")}>
 
 
                 <div className={styles.leadActionSection}>

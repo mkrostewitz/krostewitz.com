@@ -10,6 +10,7 @@ export default function CreateLeadModal({
   onSave,
   onClose,
   companyNames,
+  companies,
   leadTypes
 }) {
   const [footerTarget, setFooterTarget] = useState(null);
@@ -20,7 +21,7 @@ export default function CreateLeadModal({
       <div><Typography variant="h6" id="create-lead-title">Add new lead</Typography><Typography variant="body2" color="text.secondary">Start with a contact. Add the context as you go.</Typography></div>
       <LeadIconButton disabled={saving} aria-label="Close new lead" onClick={onClose}><X size={18} /></LeadIconButton>
     </Stack></DialogTitle>
-    <DialogContent dividers><OutreachForm footerTarget={footerTarget} leadTypes={leadTypes} companyNames={companyNames} saving={saving} onSave={onSave} onCancel={onClose} /></DialogContent>
+    <DialogContent dividers><OutreachForm footerTarget={footerTarget} leadTypes={leadTypes} companyNames={companyNames} companies={companies} saving={saving} onSave={onSave} onCancel={onClose} /></DialogContent>
     <DialogActions ref={setFooterTarget} sx={{
       p: 2
     }} />

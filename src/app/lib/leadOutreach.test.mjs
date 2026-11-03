@@ -118,3 +118,8 @@ test('gender is optional, normalized, and validated without inferring from names
     assert.throws(() => normalizeContact({name: 'Ada', gender}), /gender/);
   }
 });
+
+test('inherited legacy locations survive a null structured address', () => {
+  assert.equal(normalizeContact({name: 'Ada', address: null, location: 'Berlin'}).location, 'Berlin');
+  assert.equal(normalizeContact({name: 'Ada', address: {}, location: 'Berlin'}).location, '');
+});
