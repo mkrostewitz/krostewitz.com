@@ -3,6 +3,7 @@
 import { Dialog, DialogTitle, DialogContent, DialogActions, Chip, Paper, Table, TableBody, TableCell, TableHead, TableRow, TableContainer, Stack, Typography, MenuItem } from "@mui/material";
 import { LeadButton, LeadField, LeadAccordion, LeadIconButton } from "./LeadUi";
 import { LEAD_STATUS_OPTIONS } from "../../lib/leadStatuses.mjs";
+import LeadAvatar from "./LeadAvatar";
 import { groupLeadsByCompany, leadCompanySuggestions } from "../../lib/leadCompanies.mjs";
 import { LocateFixed, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -475,6 +476,7 @@ export default function LeadManager({
                       }}>
                       <TableCell component="th" scope="row"><Stack spacing={.75}>
                         <Stack direction="row" spacing={1} sx={{alignItems: "center"}}>
+                          <LeadAvatar name={leadTitle(lead)} photoUrl={lead.photoUrl} />
                           <LeadButton variant="text" onClick={() => openLeadDetails(lead.id)} sx={{
                               justifyContent: "flex-start",
                               p: 0,
