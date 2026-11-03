@@ -12,7 +12,7 @@ export default function ApolloEnrichment({
   onApplyPhone,
   settings
 }) {
-  const [includePhone, setIncludePhone] = useState(false);
+  const [includePhone, setIncludePhone] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState(null);
@@ -50,8 +50,7 @@ export default function ApolloEnrichment({
   const ready = contact.linkedinUrl.trim() || contact.firstName.trim() && contact.lastName.trim() && contact.company.trim();
   return <section aria-label="Contact enrichment" aria-busy={busy}>
     <div className={outreach.enrichmentActions}>
-      <LeadButton type="button" disabled={busy || !ready || !settings?.available} onClick={run} variant="outlined">
-        <Sparkles size={16} aria-hidden="true" />
+      <LeadButton type="button" disabled={busy || !ready || !settings?.available} onClick={run} variant="outlined" startIcon={<Sparkles size={16} aria-hidden="true" />}>
         {busy ? "Enriching contact…" : "Enrich contact"}
       </LeadButton>
       <Tooltip title={!settings ? "Checking enrichment availability…" : settings.error || (!settings.available ? "Configure and enable Apollo in Integrations to enrich contacts." : !ready ? "Enter a LinkedIn profile URL, or first name, last name and company." : "Find contact details with Apollo, review the match, and save the lead. Lookups may use Apollo credits.")}>
