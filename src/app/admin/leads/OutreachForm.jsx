@@ -13,7 +13,7 @@ import DisclosureSummary from "./DisclosureSummary";
 import outreach from "./outreach.module.css";
 import ActivityModal from "./ActivityModal";
 import ContactResearch from "./ContactResearch";
-import LeadAvatar from "./LeadAvatar";
+import LeadPhotoEditor from "./LeadPhotoEditor";
 import ApolloEnrichment from "./ApolloEnrichment";
 import ApolloOutreach from "./ApolloOutreach";
 import LeadSource from "./LeadSource";
@@ -283,12 +283,17 @@ export default function OutreachForm({
           <Typography component="h3" variant="subtitle1">Contact details</Typography>
           <Typography className={styles.muted} component="p" variant="body2">Complete the fields marked *. Additional Apollo requirements are shown in Apollo sync & sequences.</Typography>
         </div>
-        <Box sx={{display: "flex", alignItems: "center", gap: 2}}>
-          <LeadAvatar name={[contact.firstName, contact.lastName].filter(Boolean).join(" ")} photoUrl={contact.photoUrl} size={56} />
-          {contact.photoUrl && <LeadButton variant="text" onClick={() => setContact(current => ({...current, photoUrl: ""}))}>Remove photo</LeadButton>}
-        </Box>
+        <div className={outreach.contactIdentity}>
+          <div className={outreach.contactPortrait}>
+            <LeadPhotoEditor name={[contact.firstName, contact.lastName].filter(Boolean).join(" ")} photoUrl={contact.photoUrl}
+              disabled={saving || preparing} onChange={photoUrl => setContact(current => ({...current, photoUrl}))} />
+          </div>
+          <div className={outreach.grid}>
+            {["firstName", "lastName", "salutation", "gender"].map(renderContactField)}
+          </div>
+        </div>
         <div className={outreach.grid}>
-          {["salutation", "firstName", "lastName", "gender", "company", "role", "email", "phone", "linkedinUrl"].map(renderContactField)}
+          {["company", "role", "email", "phone", "linkedinUrl"].map(renderContactField)}
         </div>
 
         {lead?.nameNeedsReview && <Typography className={styles.muted} component="p" variant="body2">Check the first and last name; the existing full name was split automatically.</Typography>}

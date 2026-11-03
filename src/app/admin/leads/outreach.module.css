@@ -131,3 +131,19 @@
 @media (max-width: 600px) {
   .toolContent { padding: 0; }
 }
+
+.contactIdentity {
+  display: grid;
+  grid-template-columns: 144px minmax(0, 1fr);
+  align-items: start;
+  gap: 1.5rem;
+}
+.contactPortrait {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .5rem;
+}
+@media (max-width: 720px) {
+  .contactIdentity { grid-template-columns: minmax(0, 1fr); }
+}
