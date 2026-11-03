@@ -2,7 +2,7 @@ import {normalizeSingleLeadType} from "./leadTypes.mjs";
 import {OutreachValidationError} from './leadOutreach.mjs';
 
 export const LEAD_REQUIREMENT_FIELDS = {
-  salutation: 'Salutation', firstName: 'First name', lastName: 'Last name', email: 'Email', phone: 'Phone',
+  salutation: 'Salutation', gender: 'Gender', firstName: 'First name', lastName: 'Last name', email: 'Email', phone: 'Phone',
   company: 'Company name', role: 'Job title', linkedinUrl: 'LinkedIn profile',
   source: 'Lead source', leadTypes: 'Contact type', website: 'Company website',
   'address.street': 'Street', 'address.houseNumber': 'House / building number',

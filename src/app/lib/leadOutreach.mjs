@@ -19,7 +19,7 @@ export const ACTIVITY_TYPES = {
   meeting: "Meeting",
 };
 export const CHANNELS = {linkedin: "LinkedIn", email: "Email", phone: "Phone", other: "Other"};
-export const CONTACT_FIELDS = ["salutation", "firstName", "lastName", "company", "role", "location", "email", "phone", "linkedinUrl", "website", "detailsSource", "source"];
+export const CONTACT_FIELDS = ["salutation", "gender", "firstName", "lastName", "company", "role", "location", "email", "phone", "linkedinUrl", "website", "detailsSource", "source"];
 
 
 export class OutreachValidationError extends Error {
@@ -49,6 +49,10 @@ export function normalizeContact(input = {}) {
     if (typeof input.salutation !== "string" || input.salutation.length > 50 || /[\r\n\u0000]/.test(input.salutation)) throw new OutreachValidationError("Enter a salutation of up to 50 characters.");
     contact.salutation = input.salutation.normalize("NFKC").trim().replace(/\s+/g, " ");
   } else delete contact.salutation;
+  if (Object.hasOwn(input, "gender")) {
+    if (typeof input.gender !== "string" || input.gender.length > 50 || /[\r\n\u0000]/.test(input.gender)) throw new OutreachValidationError("Enter a gender of up to 50 characters.");
+    contact.gender = input.gender.normalize("NFKC").trim().replace(/\s+/g, " ");
+  } else delete contact.gender;
   if (Object.hasOwn(input, "source")) {
     try { contact.source = normalizeLeadSource(input.source); }
     catch (error) { throw new OutreachValidationError(error.message); }

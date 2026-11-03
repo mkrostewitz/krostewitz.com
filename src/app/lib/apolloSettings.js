@@ -16,7 +16,7 @@ export async function saveApolloSettings(input, user) {
   let patch;
   try { patch = apolloSettingsPatch(input, process.env.AUTH_SECRET); }
   catch (error) { throw new ApolloEnrichmentError(error.message, 400); }
-  if (patch.apiKeyEncrypted !== undefined) { patch.salutationFieldId = ""; patch.sourceFieldId = ""; patch.tagsFieldId = ""; patch.productsFieldId = ""; patch.applicationsFieldId = ""; }
+  if (patch.apiKeyEncrypted !== undefined) { patch.salutationFieldId = ""; patch.genderFieldId = ""; patch.sourceFieldId = ""; patch.tagsFieldId = ""; patch.productsFieldId = ""; patch.applicationsFieldId = ""; }
   const records = await collection();
   const existing = await records.findOne({_id: ID});
   const next = {...existing, ...patch};
@@ -53,6 +53,7 @@ export async function getApolloApiKey({requireEnabled = true} = {}) {
 }
 
 
+export const getApolloGenderFieldId = (apiKey) => getApolloCustomFieldId(apiKey, "genderFieldId", "Gender", 50);
 export const getApolloSalutationFieldId = (apiKey) => getApolloCustomFieldId(apiKey, "salutationFieldId", "Salutation", 50);
 export const getApolloSourceFieldId = (apiKey) => getApolloCustomFieldId(apiKey, "sourceFieldId", "Website Source", 200);
 export const getApolloTagsFieldId = (apiKey) => getApolloCustomFieldId(apiKey, "tagsFieldId", "Contact Type", 6000);

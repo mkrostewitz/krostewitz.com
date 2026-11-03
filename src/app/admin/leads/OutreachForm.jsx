@@ -164,6 +164,12 @@ export default function OutreachForm({
     void savePatch(patch);
   }
   function renderContactField(key) {
+    if (key === "gender") return <Autocomplete key={key} freeSolo options={["Male", "Female", "Non-binary", "Prefer not to say"]}
+      inputValue={contact.gender} value={contact.gender || null} disabled={saving || preparing}
+      onInputChange={(_, value) => setContact(current => ({...current, gender: value}))}
+      onChange={(_, value) => setContact(current => ({...current, gender: value || ""}))}
+      renderInput={params => <TextField {...params} label="Gender" required={requiredFields.includes("gender")} helperText="Select or enter a value for email greetings; leave blank if unknown." slotProps={{...params.slotProps, htmlInput: {...params.slotProps.htmlInput, maxLength: 50}}} />} />;
+
     if (key === "salutation") return <Autocomplete key={key} freeSolo options={["Mr.", "Ms.", "Mrs.", "Mx.", "Dr.", "Prof.", "Prof. Dr."]}
       inputValue={contact.salutation} value={contact.salutation || null} disabled={saving || preparing}
       onInputChange={(_, value) => setContact(current => ({...current, salutation: value}))}
@@ -246,7 +252,7 @@ export default function OutreachForm({
           <Typography className={styles.muted} component="p" variant="body2">Complete the fields marked *. Additional Apollo requirements are shown in Apollo sync & sequences.</Typography>
         </div>
         <div className={outreach.grid}>
-          {["salutation", "firstName", "lastName", "company", "role", "email", "phone", "linkedinUrl"].map(renderContactField)}
+          {["salutation", "firstName", "lastName", "gender", "company", "role", "email", "phone", "linkedinUrl"].map(renderContactField)}
         </div>
 
         {lead?.nameNeedsReview && <Typography className={styles.muted} component="p" variant="body2">Check the first and last name; the existing full name was split automatically.</Typography>}

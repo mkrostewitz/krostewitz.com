@@ -330,3 +330,20 @@ test('email-less creation links only an unambiguous identity', async () => {
     if (ambiguous) assert.match(result.message, /unambiguous/);
   }
 });
+
+test('Gender sync supports setting and clearing, and requires confirmation', async () => {
+  const genderFieldId = '507f1f77bcf86cd799439056';
+  for (const gender of ['Female', '']) {
+    const calls = [];
+    const result = await sendLeadToApollo({contact: {...contact, gender}, contactId: id, genderFieldId, settings,
+      fetchImpl: mock([{contact: {id, typed_custom_fields: {[genderFieldId]: gender}}}, list], calls)});
+    assert.equal(result.detailsUpdated, true);
+    assert.equal(calls[0].body.typed_custom_fields[genderFieldId], gender);
+  }
+  await assert.rejects(sendLeadToApollo({contact: {...contact, gender: 'Female'}, settings}), /Gender field/);
+  const unconfirmed = [];
+  const failed = await sendLeadToApollo({contact: {...contact, gender: 'Female'}, contactId: id, genderFieldId, settings, enroll: true,
+    fetchImpl: mock([{contact: {id, typed_custom_fields: {}}}], unconfirmed)});
+  assert.equal(failed.detailsUpdated, false);
+  assert.equal(unconfirmed.length, 1);
+});
