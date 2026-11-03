@@ -3,7 +3,7 @@
 import { Link, Typography, Alert } from "@mui/material";
 import { LeadField, LeadButton } from "./LeadUi";
 import { useEffect, useRef, useState } from "react";
-import { normalizeResearch, researchIdentity, researchFactSections, researchCategories, researchFactText, setResearchFact, refreshResearch } from "../../lib/contactResearch.mjs";
+import { normalizeResearch, researchIdentity, researchFactSections, researchCategories, companyCategories, researchFactText, setResearchFact, refreshResearch } from "../../lib/contactResearch.mjs";
 import LeadTagsAutocomplete from "./LeadTagsAutocomplete";
 import { normalizeCategories } from "../../lib/contactCategories.mjs";
 import styles from "../admin.module.css";
@@ -43,7 +43,7 @@ export default function ContactResearch({
       if (!response.ok) throw new Error("Saved categories could not be loaded. You can still add tags.");
       const data = await response.json();
       setCatalog({
-        industries: normalizeCategories(data.categories.industries),
+        industries: normalizeCategories([...(data.categories.industries || []), ...(data.categories.applications || [])]),
         products: normalizeCategories(data.categories.products)
       });
     }).catch(error => {
@@ -88,10 +88,7 @@ export default function ContactResearch({
       if (!result) throw new Error("Research returned no readable result. Please try again.");
       onChange(refreshResearch(research, result));
       const suggested = researchCategories(result);
-      onCategoriesChange({
-        industries: normalizeCategories([...(contact.industries || []), ...suggested.industries]),
-        products: normalizeCategories([...(contact.products || []), ...suggested.products])
-      });
+      onCategoriesChange(companyCategories(contact, suggested));
     } catch (failure) {
       if (failure.name !== "AbortError") setError(failure.message || "Unable to research this contact.");
     } finally {
@@ -146,8 +143,9 @@ export default function ContactResearch({
       {["industries", "products"].map(field => {
         const fact = sections?.find(section => section.title === "Company")?.facts.find(item => item.label.toLowerCase() === field);
         return <div key={field}>
-          <LeadTagsAutocomplete label={field === "industries" ? "Industries" : "Products"} value={normalizeCategories(contact[field])} options={catalog[field]} allowCreate disabled={busy} onChange={tags => onCategoriesChange({
-            [field]: normalizeCategories(tags)
+          <LeadTagsAutocomplete label={field === "industries" ? "Industry & applications" : "Products"} value={normalizeCategories(contact[field === "industries" ? "applications" : field])} options={catalog[field]} allowCreate disabled={busy} onChange={tags => onCategoriesChange({
+            [field]: normalizeCategories(tags),
+            ...(field === "industries" ? {applications: normalizeCategories(tags)} : {})
           })} />
           {fact && <div className={outreach.categorySources}>{research.citations.map((citation, index) => citation.start >= fact.start && citation.end <= fact.end ? <Link key={index} href={citation.url} title={citation.title} aria-label={`Source ${index + 1}: ${citation.title}`} target="_blank" rel="noopener noreferrer">[{index + 1}]</Link> : null)}</div>}
         </div>;

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {normalizeCategories, saveContactCategories} from './contactCategories.mjs';
-import {researchCategories, normalizeResearch} from './contactResearch.mjs';
+import {researchCategories, companyCategories, normalizeResearch} from './contactResearch.mjs';
 import {normalizeContact} from './leadOutreach.mjs';
 
 test('category suggestions remove citations and unavailable facts', () => {
@@ -44,4 +44,20 @@ test("applications normalize like products without adding missing fields to old 
   assert.deepEqual(contact.products, ["Sensors"]);
   assert.equal(Object.hasOwn(normalizeContact({firstName: "Test"}), "applications"), false);
   assert.deepEqual(normalizeContact({firstName: "Test", applications: []}).applications, []);
+});
+
+
+test('research industries populate applications while preserving existing company selections', () => {
+  const research = normalizeResearch({text: 'Company\nIndustries: Industrial automation; Sensors and controls\nProducts: Sensors\nPerson\nIdentity: Confirmed', citations: []});
+  const contact = companyCategories({applications: ['Quality control'], products: ['Software']}, researchCategories(research));
+  assert.deepEqual(contact.applications, ['Quality control', 'Industrial automation', 'Sensors and controls']);
+  assert.deepEqual(contact.products, ['Software', 'Sensors']);
+  assert.deepEqual(normalizeContact({firstName: "Ada", ...contact}).applications, contact.applications);
+  assert.deepEqual(companyCategories(contact, researchCategories(research)), contact);
+});
+
+test('existing industry selections fill the combined field and cleared selections stay cleared', () => {
+  assert.deepEqual(companyCategories({industries: ['Automation'], applications: []}).applications, ['Automation']);
+  assert.deepEqual(companyCategories({industries: ['Automation'], applications: ['automation', 'Robotics']}).applications, ['Automation', 'Robotics']);
+  assert.deepEqual(companyCategories({industries: [], applications: []}).applications, []);
 });

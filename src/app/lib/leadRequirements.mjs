@@ -8,7 +8,7 @@ export const LEAD_REQUIREMENT_FIELDS = {
   'address.street': 'Street', 'address.houseNumber': 'House / building number',
   'address.postalCode': 'Postal code', 'address.city': 'City',
   'address.region': 'State / region', 'address.country': 'Country',
-  industries: 'Industries', products: 'Products', applications: 'Applications',
+  industries: 'Industries', products: 'Products', applications: 'Industry & applications',
 };
 export const DEFAULT_REQUIRED_LEAD_FIELDS = ['salutation', 'firstName', 'company', 'address.street', 'address.city', 'address.country', 'source', 'leadTypes'];
 

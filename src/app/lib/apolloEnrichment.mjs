@@ -16,9 +16,20 @@ export function apolloIdentity(contact = {}) {
   catch (error) { throw new ApolloEnrichmentError(error.message, 400); }
   const identity = {first_name: field("firstName"), last_name: field("lastName"), organization_name: field("company"), linkedin_url: linkedinUrl};
   if (!linkedinUrl && !(identity.first_name && identity.last_name && identity.organization_name)) {
-    throw new ApolloEnrichmentError("Add a LinkedIn profile URL or a first name, last name and company to find an email.", 400);
+    const missing = [["first_name", "First name"], ["last_name", "Last name"], ["organization_name", "Company"]]
+      .filter(([key]) => !identity[key]).map(([, label]) => label);
+    throw new ApolloEnrichmentError(`To enrich this contact, add a LinkedIn personal profile URL or complete: ${missing.join(", ")}.`, 400);
   }
   return Object.fromEntries(Object.entries(identity).filter(([, value]) => value));
+}
+
+export function apolloEnrichmentIssue(contact) {
+  try {
+    apolloIdentity(contact);
+    return "";
+  } catch (error) {
+    return error.message;
+  }
 }
 
 export function parseApolloResult(data) {

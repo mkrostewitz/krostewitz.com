@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {apolloIdentity, enrichWithApollo, parseApolloResult} from "./apolloEnrichment.mjs";
+import {apolloIdentity, apolloEnrichmentIssue, enrichWithApollo, parseApolloResult} from "./apolloEnrichment.mjs";
 import {normalizeContact} from "./leadOutreach.mjs";
 
 const contact = {firstName: "Max", lastName: "Mustermann", company: "Beispiel GmbH", linkedinUrl: "linkedin.com/in/max-muster?trk=example"};
@@ -56,4 +56,20 @@ test("provider errors are actionable without leaking response bodies or credenti
   await assert.rejects(enrichWithApollo({contact, apiKey: "test", fetchImpl: async () => {throw new DOMException("secret", "TimeoutError");}}), /took too long/);
   await assert.rejects(enrichWithApollo({contact, apiKey: "test", fetchImpl: async () => {throw new Error("secret");}}), /Unable to reach Apollo/);
   await assert.rejects(enrichWithApollo({contact, apiKey: "test", fetchImpl: async () => ({ok: true, json: async () => {throw new Error("invalid JSON");}})}), /unreadable/);
+});
+
+
+test("enrichment readiness matches server validation and names missing fields", () => {
+  assert.equal(apolloEnrichmentIssue({}), 'To enrich this contact, add a LinkedIn personal profile URL or complete: First name, Last name, Company.');
+  assert.equal(apolloEnrichmentIssue({firstName: 'Max', lastName: '  ', company: 'Example'}), 'To enrich this contact, add a LinkedIn personal profile URL or complete: Last name.');
+  for (const identity of [
+    {firstName: 'Max', lastName: 'Mustermann', company: 'Example'},
+    {linkedinUrl: 'linkedin.com/in/max'}
+  ]) {
+    assert.equal(apolloEnrichmentIssue(identity), '');
+    assert.doesNotThrow(() => apolloIdentity(identity));
+  }
+  const invalid = {...contact, linkedinUrl: 'https://www.linkedin.com/company/example'};
+  assert.match(apolloEnrichmentIssue(invalid), /personal profile URL/);
+  assert.throws(() => apolloIdentity(invalid), {message: apolloEnrichmentIssue(invalid)});
 });

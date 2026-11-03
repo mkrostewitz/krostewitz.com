@@ -19,7 +19,7 @@ test('deselected fields are optional, including an explicitly empty configuratio
 });
 test('custom sequence fields can be required independently', () => {
   assert.deepEqual(missingLeadFields({...contact, products: ['Widget'], applications: []}, [], ['products', 'applications', 'address.postalCode']), ['applications', 'address.postalCode']);
-  assert.throws(() => assertRequiredLeadFields(contact, [], ['products', 'applications']), /Products, Applications/);
+  assert.throws(() => assertRequiredLeadFields(contact, [], ['products', 'applications']), /Products, Industry & applications/);
 });
 test('settings reject unknown fields and invalid payloads and deduplicate', () => {
   for (const input of [null, {}, 'company', ['unknown'], ['__proto__'], [1]]) assert.throws(() => normalizeRequiredLeadFields(input), /Choose valid/);
