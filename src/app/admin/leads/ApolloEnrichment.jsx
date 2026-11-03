@@ -17,7 +17,7 @@ export default function ApolloEnrichment({
   const identityIssue = apolloEnrichmentIssue(contact);
   const ready = !identityIssue;
   const unavailableReason = !settings ? "Checking enrichment availability…" : settings.error || (!settings.available ? "Configure and enable Apollo in Integrations to enrich contacts." : "");
-  const [includePhone, setIncludePhone] = useState(true);
+  const [includePhone, setIncludePhone] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState(null);
