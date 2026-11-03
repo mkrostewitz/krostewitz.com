@@ -81,10 +81,59 @@ test('invalid selection and concurrent writes cannot overwrite the company silen
   const contact = {company: 'Acme', website: 'https://example.com'};
   const company = await saveLeadCompany(companies, await prepareLeadCompany(companies, contact), contact, now, user);
   await assert.rejects(prepareLeadCompany(companies, {...contact}, {companyId: 'invalid'}), /valid company/);
-  await assert.rejects(prepareLeadCompany(companies, {company: 'Other'}, {companyId: String(company._id)}), /Reselect/);
+  await assert.rejects(prepareLeadCompany(companies, {company: 'Other'}, {companyId: String(new ObjectId())}), /Reselect/);
   const selected = {companyId: String(company._id), companyDetailsBase: company.details};
   const one = await prepareLeadCompany(companies, {...contact}, selected);
   const two = await prepareLeadCompany(companies, {...contact}, selected);
   await saveLeadCompany(companies, one, {...contact, website: ''}, now, user);
   await assert.rejects(saveLeadCompany(companies, two, contact, now, user), /changed while saving/);
+});
+
+test('renaming preserves the company ID and propagates the name to linked leads', async () => {
+  const companies = companiesStore();
+  const original = {company: 'Acme', website: 'https://example.com'};
+  const company = await saveLeadCompany(companies, await prepareLeadCompany(companies, original), original, now, user);
+  const contact = {...original, company: 'Acme International'};
+  const prepared = await prepareLeadCompany(companies, contact, {companyNameBase: 'Acme'}, {companyId: company._id, contact: original});
+  const renamed = await saveLeadCompany(companies, prepared, contact, now, user);
+  assert.equal(String(renamed._id), String(company._id));
+  assert.equal(companies.rows.length, 1);
+  assert.equal(renamed.key, 'acme international');
+  const leads = leadsStore([{_id: 'linked', companyId: company._id, contact: original, apollo: {contactId: 'remote'}}]);
+  await syncCompanyDetails(leads, renamed, now, user);
+  assert.equal(leads.writes[0].updateOne.update.$set['contact.company'], 'Acme International');
+  assert.equal(leads.writes[0].updateOne.update.$set['apollo.status'], 'pending');
+  const stale = {...original};
+  await prepareLeadCompany(companies, stale, {companyId: String(company._id), companyNameBase: 'Acme'});
+  assert.equal(stale.company, 'Acme International');
+});
+
+test('explicit unlink allows a new company, and selecting an existing company inherits it', async () => {
+  const companies = companiesStore();
+  const original = {company: 'Acme', website: 'https://example.com'};
+  const company = await saveLeadCompany(companies, await prepareLeadCompany(companies, original), original, now, user);
+  const current = {companyId: company._id, contact: original};
+  assert.equal(await prepareLeadCompany(companies, {company: ''}, {companyId: null}, current), null);
+  await assert.rejects(prepareLeadCompany(companies, {company: ''}, {}, current), /unlink/);
+  const contact = {company: 'New Company'};
+  const saved = await saveLeadCompany(companies, await prepareLeadCompany(companies, contact, {companyId: null}, current), contact, now, user);
+  assert.notEqual(String(saved._id), String(company._id));
+  const selected = {company: 'Acme'};
+  const prepared = await prepareLeadCompany(companies, selected, {companyId: String(company._id)}, {companyId: saved._id, contact});
+  assert.equal(String(prepared.existing._id), String(company._id));
+  assert.equal(selected.website, original.website);
+});
+
+test('rename collisions are rejected before writing and at the unique-index boundary', async () => {
+  const companies = companiesStore();
+  for (const name of ['Acme', 'Other']) {
+    const contact = {company: name};
+    await saveLeadCompany(companies, await prepareLeadCompany(companies, contact), contact, now, user);
+  }
+  const company = companies.rows[0];
+  await assert.rejects(prepareLeadCompany(companies, {company: ' OTHER '}, {companyId: String(company._id)}), /already exists/);
+  const contact = {company: 'New Name'};
+  const prepared = await prepareLeadCompany(companies, contact, {companyId: String(company._id)});
+  companies.findOneAndUpdate = async () => {throw Object.assign(new Error('duplicate'), {code: 11000});};
+  await assert.rejects(saveLeadCompany(companies, prepared, contact, now, user), /already exists/);
 });
