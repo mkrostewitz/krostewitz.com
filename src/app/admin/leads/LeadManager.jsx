@@ -367,63 +367,6 @@ export default function LeadManager({
         setFollowUpFilter('');
       }} />}
         {isCreating && <CreateLeadModal leadTypes={leadTypes} companyNames={companyNames} saving={savingLeadId === "new"} onSave={createLead} onClose={() => setIsCreating(false)} />}
-        <div className={outreach.filters}>
-          <LeadField type="search" value={search} onChange={event => setSearch(event.target.value)} placeholder="Name, company, email, phone…" label={<>Search Contacts - Companies</>}></LeadField>
-          <LeadTagsAutocomplete label="Contact type" value={tagFilter} options={leadTypes} onChange={setTagFilter} help="Matches any selected contact type. Clear to show all leads." />
-          <LeadField value={statusFilter} onChange={event => setStatusFilter(event.target.value)} label={<>Status</>} select={true}>
-            {STATUS_OPTIONS.map(option => <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>)}
-          </LeadField>
-          <LeadField aria-label="Follow-up" value={followUpFilter} onChange={event => setFollowUpFilter(event.target.value)} label={<>Follow-up</>} select={true}>
-            <MenuItem value="">All follow-ups</MenuItem><MenuItem value="due">Due today & overdue</MenuItem><MenuItem value="overdue">Overdue</MenuItem><MenuItem value="today">Today</MenuItem><MenuItem value="upcoming">Upcoming</MenuItem><MenuItem value="unscheduled">No follow-up scheduled</MenuItem>
-          </LeadField>
-          <LeadField aria-label="Source" value={sourceFilter} onChange={event => setSourceFilter(event.target.value)} label={<>Source</>} select={true}>{SOURCE_OPTIONS.map(option => <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>)}</LeadField>
-        </div>
-        <div className={styles.leadStats} aria-label="Lead status filters">
-          {[{
-          value: "",
-          label: "total",
-          count: counts.total
-        }, {
-          value: "pending",
-          label: "pending",
-          count: counts.pending || 0
-        }, {
-          value: "won",
-          label: "won",
-          count: counts.won || 0
-        }, {
-          value: "lost",
-          label: "lost",
-          count: counts.lost || 0
-        }].map(chip => <LeadButton key={chip.value || "total"} type="button" aria-pressed={statusFilter === chip.value && !followUpFilter} onClick={() => {
-          setStatusFilter(chip.value);
-          setFollowUpFilter("");
-        }} variant="outlined">
-
-              {chip.count} {chip.label}
-            </LeadButton>)}
-          {[{
-          value: "overdue",
-          label: "Overdue",
-          count: overdueCount
-        }, {
-          value: "today",
-          label: "Due today",
-          count: todayCount
-        }].map(chip => <LeadButton key={chip.value} type="button" aria-pressed={followUpFilter === chip.value} onClick={() => {
-          setFollowUpFilter(followUpFilter === chip.value ? "" : chip.value);
-          setStatusFilter("");
-          setSourceFilter("");
-          setSearch("");
-        }} variant="outlined">
-            {chip.count} {chip.label}</LeadButton>)}
-          <LeadButton type="button" aria-pressed={followUpFilter === "due"} onClick={() => {
-          setFollowUpFilter("due");
-          setStatusFilter("");
-          setSourceFilter("");
-          setSearch("");
-        }} variant="outlined">{dueCount} follow-ups due</LeadButton>
-        </div>
 
         <div className={styles.leadWorkspace}>
           <section className={`${styles.postListPanel} ${outreach.listPanel}`}>
@@ -448,6 +391,64 @@ export default function LeadManager({
 
 
             </section>
+            <div className={outreach.filters}>
+              <LeadField type="search" value={search} onChange={event => setSearch(event.target.value)} placeholder="Name, company, email, phone…" label={<>Search Contacts - Companies</>}></LeadField>
+              <LeadTagsAutocomplete label="Contact type" value={tagFilter} options={leadTypes} onChange={setTagFilter} help="Matches any selected contact type. Clear to show all leads." />
+              <LeadField value={statusFilter} onChange={event => setStatusFilter(event.target.value)} label={<>Status</>} select={true}>
+                {STATUS_OPTIONS.map(option => <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>)}
+              </LeadField>
+              <LeadField aria-label="Follow-up" value={followUpFilter} onChange={event => setFollowUpFilter(event.target.value)} label={<>Follow-up</>} select={true}>
+                <MenuItem value="">All follow-ups</MenuItem><MenuItem value="due">Due today & overdue</MenuItem><MenuItem value="overdue">Overdue</MenuItem><MenuItem value="today">Today</MenuItem><MenuItem value="upcoming">Upcoming</MenuItem><MenuItem value="unscheduled">No follow-up scheduled</MenuItem>
+              </LeadField>
+              <LeadField aria-label="Source" value={sourceFilter} onChange={event => setSourceFilter(event.target.value)} label={<>Source</>} select={true}>{SOURCE_OPTIONS.map(option => <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>)}</LeadField>
+            </div>
+            <div className={styles.leadStats} aria-label="Lead status filters">
+              {[{
+              value: "",
+              label: "total",
+              count: counts.total
+            }, {
+              value: "pending",
+              label: "pending",
+              count: counts.pending || 0
+            }, {
+              value: "won",
+              label: "won",
+              count: counts.won || 0
+            }, {
+              value: "lost",
+              label: "lost",
+              count: counts.lost || 0
+            }].map(chip => <LeadButton key={chip.value || "total"} type="button" aria-pressed={statusFilter === chip.value && !followUpFilter} onClick={() => {
+              setStatusFilter(chip.value);
+              setFollowUpFilter("");
+            }} variant="outlined">
+
+                  {chip.count} {chip.label}
+                </LeadButton>)}
+              {[{
+              value: "overdue",
+              label: "Overdue",
+              count: overdueCount
+            }, {
+              value: "today",
+              label: "Due today",
+              count: todayCount
+            }].map(chip => <LeadButton key={chip.value} type="button" aria-pressed={followUpFilter === chip.value} onClick={() => {
+              setFollowUpFilter(followUpFilter === chip.value ? "" : chip.value);
+              setStatusFilter("");
+              setSourceFilter("");
+              setSearch("");
+            }} variant="outlined">
+                {chip.count} {chip.label}</LeadButton>)}
+              <LeadButton type="button" aria-pressed={followUpFilter === "due"} onClick={() => {
+              setFollowUpFilter("due");
+              setStatusFilter("");
+              setSourceFilter("");
+              setSearch("");
+            }} variant="outlined">{dueCount} follow-ups due</LeadButton>
+            </div>
+
             <div className={outreach.listSummary}>
               <strong>{visibleLeads.length} contact{visibleLeads.length === 1 ? "" : "s"} <span>in {companyGroups.length} group{companyGroups.length === 1 ? "" : "s"}</span></strong>
               <span>Earliest follow-up first within each company</span>

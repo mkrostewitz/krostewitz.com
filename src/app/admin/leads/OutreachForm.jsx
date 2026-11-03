@@ -299,7 +299,7 @@ export default function OutreachForm({
             <Typography className={styles.muted} component="p" variant="body2">Open a tool to find details, research this lead, or send it to Apollo.</Typography>
           </div>
           <LeadAccordion>
-            <DisclosureSummary><strong>Find email &amp; phone</strong><small>Look up contact details with Apollo and review the results.</small></DisclosureSummary>
+            <DisclosureSummary><strong>1. Find email &amp; phone</strong><small>Look up contact details with Apollo and review the results.</small></DisclosureSummary>
             <div className={outreach.toolContent}>
         <ApolloEnrichment key={JSON.stringify([contact.firstName, contact.lastName, contact.company, contact.linkedinUrl])} settings={apolloSettings} contact={{
                 firstName: contact.firstName,
@@ -318,18 +318,18 @@ export default function OutreachForm({
             </div>
           </LeadAccordion>
           <LeadAccordion>
-            <DisclosureSummary><strong>Apollo sync & sequences</strong><small>Sync contact details, view sequence progress, and manage enrollment.</small></DisclosureSummary>
-            <div className={outreach.toolContent}>
-              {apolloSettings?.available && apolloSettings.listEnabled ? <ApolloOutreach key={lead?.id || "new"} leadId={lead?.id} apollo={lead?.apollo} contact={contact} categories={tags} settings={apolloSettings} /> : <Typography className={styles.muted} component="p" variant="body2">{!apolloSettings ? "Loading Apollo settings…" : apolloSettings.error || <>Enable the list action in <Link href="/admin/integrations">Integrations → Apollo</Link> to send contacts.</>}</Typography>}
-            </div>
-          </LeadAccordion>
-          <LeadAccordion>
-            <DisclosureSummary><strong>Research company &amp; person</strong><small>{research ? "Review saved research or refresh it with AI." : "Find company facts, experience, and sources with AI."}</small></DisclosureSummary>
+            <DisclosureSummary><strong>2. Research company &amp; person</strong><small>{research ? "Review saved research or refresh it with AI." : "Find company facts, experience, and sources with AI."}</small></DisclosureSummary>
             <div className={outreach.toolContent}>
         <ContactResearch contact={contact} value={research} onChange={setResearch} onCategoriesChange={categories => setContact(current => ({
                 ...current,
                 ...categories
               }))} />
+            </div>
+          </LeadAccordion>
+          <LeadAccordion>
+            <DisclosureSummary><strong>3. Apollo sync &amp; sequencing</strong><small>Sync contact details, view sequence progress, and manage enrollment.</small></DisclosureSummary>
+            <div className={outreach.toolContent}>
+              {apolloSettings?.available && apolloSettings.listEnabled ? <ApolloOutreach key={lead?.id || "new"} leadId={lead?.id} apollo={lead?.apollo} contact={contact} categories={tags} settings={apolloSettings} /> : <Typography className={styles.muted} component="p" variant="body2">{!apolloSettings ? "Loading Apollo settings…" : apolloSettings.error || <>Enable the list action in <Link href="/admin/integrations">Integrations → Apollo</Link> to send contacts.</>}</Typography>}
             </div>
           </LeadAccordion>
         </section>
