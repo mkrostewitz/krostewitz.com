@@ -16,12 +16,16 @@ export default function BlogCarousel({children}) {
   useEffect(() => {
     if (!loops || paused || interacting) return;
     const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    if (!viewport.current || !group.current) return;
+    let disposed = false;
     let frame;
     let previous;
     let position = viewport.current.scrollLeft;
     function tick(time) {
       const element = viewport.current;
-      const width = group.current.offsetWidth;
+      const content = group.current;
+      if (disposed || !element || !content) return;
+      const width = content.offsetWidth;
       if (previous && !motion.matches && !document.hidden && width) {
         position += Math.min(time - previous, 50) * 0.025;
         position %= width;
@@ -31,16 +35,21 @@ export default function BlogCarousel({children}) {
       frame = requestAnimationFrame(tick);
     }
     frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
+    return () => {
+      disposed = true;
+      cancelAnimationFrame(frame);
+    };
   }, [loops, paused, interacting]);
 
   function move(direction) {
     setPaused(true);
     const element = viewport.current;
-    const width = group.current.offsetWidth;
+    const content = group.current;
+    if (!element || !content?.firstElementChild) return;
+    const width = content.offsetWidth;
     if (loops && direction < 0 && element.scrollLeft < 1) element.scrollLeft = width;
     if (loops && direction > 0 && element.scrollLeft >= width) element.scrollLeft -= width;
-    element.scrollBy({left: direction * (group.current.firstElementChild.offsetWidth + 16),
+    element.scrollBy({left: direction * (content.firstElementChild.offsetWidth + 16),
       behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth"});
   }
 

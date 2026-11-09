@@ -9,7 +9,7 @@ import {photoCrop} from '../../lib/photoCrop.mjs';
 const MAX_BYTES = 10 * 1024 * 1024;
 const TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
-export default function LeadPhotoEditor({name, photoUrl, onChange, disabled}) {
+export default function LeadPhotoEditor({name, photoUrl, onChange, disabled, saveHint = "Save the lead to keep your changes."}) {
   const picker = useRef(null);
   const canvas = useRef(null);
   const image = useRef(null);
@@ -122,7 +122,7 @@ export default function LeadPhotoEditor({name, photoUrl, onChange, disabled}) {
     <Dialog open={open} onClose={close} fullWidth maxWidth="xs" aria-labelledby="crop-photo-title">
       <DialogTitle id="crop-photo-title">Edit contact photo</DialogTitle>
       <DialogContent dividers>
-        <Typography variant="body2" sx={{mb: 2}}>Upload a photo, then drag to position it or use the sliders. Save the lead to keep your changes.</Typography>
+        <Typography variant="body2" sx={{mb: 2}}>Upload a photo, then drag to position it or use the sliders. {saveHint}</Typography>
         <Box onDragOver={event => {event.preventDefault(); if (!busy) setOver(true);}} onDragLeave={() => setOver(false)}
           onDrop={event => {event.preventDefault(); setOver(false); if (!busy) void load(event.dataTransfer.files[0]);}}
           sx={{border: '1px dashed', borderColor: over ? 'primary.main' : 'divider', borderRadius: 2, p: 2, mb: 2, textAlign: 'center', bgcolor: over ? 'action.selected' : undefined}}>

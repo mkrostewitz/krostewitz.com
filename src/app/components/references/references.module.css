@@ -1,0 +1,34 @@
+.heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
+.gridItems { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 20px; }
+.card { border: 1px solid var(--border); background: var(--surface-soft); border-radius: 18px; padding: clamp(20px, 3vw, 30px); display: flex; flex-direction: column; gap: 20px; min-width: 0; overflow-wrap: anywhere; }
+.person { display: flex; gap: 14px; align-items: center; }
+.person img, .avatar { border-radius: 50%; width: 64px; height: 64px; object-fit: cover; flex-shrink: 0; }
+.avatar { display: grid; place-items: center; background: var(--background); color: var(--foreground); font-weight: 700; border: 1px solid var(--border); }
+.person h3 { margin: 0 0 4px; font-size: 1.1rem; }
+.person p { margin: 0; color: var(--text-muted); font-size: .88rem; line-height: 1.5; }
+.person .company { color: var(--foreground); font-weight: 600; }
+.card blockquote { margin: 0; white-space: pre-wrap; line-height: 1.75; color: var(--foreground); }
+.context { margin: auto 0 0; color: var(--text-muted); font-size: .85rem; line-height: 1.5; }
+.card a { color: var(--foreground); text-underline-offset: 4px; text-decoration: underline; font-size: .88rem; }
+.pause { flex-shrink: 0; border: 1px solid var(--border); border-radius: 999px; padding: 9px 16px; color: var(--foreground); background: var(--background); cursor: pointer; }
+.viewport { container-type: inline-size; overflow-x: auto; overscroll-behavior-x: contain; max-width: 100%; border-radius: 18px; }
+.track { display: flex; width: max-content; animation: drift var(--duration) linear infinite; }
+.group { display: flex; min-width: 100cqw; gap: 20px; padding-right: 20px; }
+.group .card { width: min(420px, 78vw); flex: 1 0 auto; }
+.track.paused, .viewport:hover .track, .viewport:focus-within .track { animation-play-state: paused; }
+.viewport:focus-visible, .pause:focus-visible, .card a:focus-visible { outline: 3px solid var(--accent, #5773ff); outline-offset: 3px; }
+@keyframes drift { to { transform: translateX(-50%); } }
+@media (max-width: 600px) { .heading { flex-direction: column; } .pause { margin-bottom: 18px; } }
+@media (prefers-reduced-motion: reduce) {
+  .track { animation: none; width: auto; }
+  .group { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); padding-right: 0; width: 100%; }
+  .group .card { width: auto; }
+  .duplicate, .pause { display: none; }
+}
+
+.card .excerpt { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; white-space: normal; }
+.compactCard .person p { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.more { align-self: flex-start; border: 1px solid var(--border); border-radius: 999px; background: var(--background); color: var(--foreground); padding: 8px 16px; font: inherit; font-weight: 600; cursor: pointer; }
+.more:hover { border-color: var(--foreground); }
+.more:focus-visible { outline: 3px solid var(--accent, #5773ff); outline-offset: 3px; }
+.fullCard { border: 0; border-radius: 0; background: transparent; padding: 0; }

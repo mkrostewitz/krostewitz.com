@@ -23,9 +23,10 @@ const navLinks = [
   {href: "/#skills", labelKey: "nav.impact", section: "skills"},
   {href: "/#timeline", labelKey: "nav.timeline"},
   {href: "/#cv", labelKey: "nav.cv"},
+  {href: "/#references", labelKey: "nav.references", section: "references"},
   {href: "/#blog", labelKey: "nav.blog", section: "blog"},
-  {href: "/#portfolio", labelKey: "nav.portfolio"},
-  {href: "/#persoenlich", labelKey: "nav.personal"},
+  {href: "/#portfolio", labelKey: "nav.portfolio", section: "lab"},
+  {href: "/#persoenlich", labelKey: "nav.personal", section: "personal"},
   {href: "/#contact", labelKey: "nav.contact"},
 ];
 
@@ -86,7 +87,7 @@ const NavBar = () => {
   const router = useRouter();
   const {t, i18n} = useTranslation();
   const {allowExternalServices} = useCookieConsent();
-  const {blogEnabled, siteMetadata, skillsAvailable} = usePublicSettings();
+  const {blogEnabled, labEnabled, personalEnabled, referencesAvailable, siteMetadata, skillsAvailable} = usePublicSettings();
 
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -175,28 +176,32 @@ const NavBar = () => {
   const visibleNavLinks = useMemo(
     () =>
       navLinks.filter((link) => {
+        if (link.section === "references") return referencesAvailable;
+        if (link.section === "lab") return labEnabled === true;
+        if (link.section === "personal") return personalEnabled === true;
         if (link.section === "blog") return blogEnabled === true;
         if (link.section === "skills") return skillsAvailable === true;
         return true;
       }),
-    [blogEnabled, skillsAvailable],
+    [blogEnabled, labEnabled, personalEnabled, referencesAvailable, skillsAvailable],
   );
 
-  const syncBlogRouteLanguage = (language) => {
+  const syncRouteLanguage = (language) => {
     if (typeof window === "undefined") return;
 
     const {hash, pathname, search} = window.location;
 
-    if (!pathname.startsWith("/blog/")) return;
-
     const searchParams = new URLSearchParams(search);
+    if (!pathname.startsWith("/blog/") && !searchParams.has("lng") && !searchParams.has("language")) return;
+    searchParams.delete("language");
     searchParams.set("lng", language);
 
     const nextUrl = `${pathname}?${searchParams.toString()}${hash || ""}`;
     const currentUrl = `${pathname}${search}${hash || ""}`;
 
     if (nextUrl !== currentUrl) {
-      router.replace(nextUrl, {scroll: false});
+      if (pathname.startsWith("/blog/")) router.replace(nextUrl, {scroll: false});
+      else window.history.replaceState(null, "", nextUrl);
     }
   };
 
@@ -205,10 +210,10 @@ const NavBar = () => {
 
     if (!supportedLanguage) return;
 
+    syncRouteLanguage(supportedLanguage);
     storeLanguage(supportedLanguage);
     setLang(supportedLanguage);
     void i18n.changeLanguage(supportedLanguage);
-    syncBlogRouteLanguage(supportedLanguage);
   };
 
   return (

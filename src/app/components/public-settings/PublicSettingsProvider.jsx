@@ -1,11 +1,16 @@
 "use client";
 
+import i18n from "../../../lib/i18n";
 import {createContext, useContext, useEffect, useMemo, useState} from "react";
 
 const DEFAULT_PROFILE = {
   address: null,
   aiChat: {enabled: false, scriptTag: ""},
   blogEnabled: null,
+  labEnabled: null,
+  personalEnabled: null,
+  referencesEnabled: false,
+  references: {mode: "cards", items: []},
   koalendar: {enabled: false, bookingUrl: ""},
   metadata: {logoUrl: "/logo.svg", title: ""},
   name: {fullName: ""},
@@ -15,6 +20,9 @@ const DEFAULT_PROFILE = {
 const PublicSettingsContext = createContext({
   bookingUrl: "",
   blogEnabled: null,
+  labEnabled: null,
+  personalEnabled: null,
+  referencesAvailable: false,
   profile: DEFAULT_PROFILE,
   profileName: "",
   skills: null,
@@ -30,9 +38,12 @@ export function PublicSettingsProvider({children}) {
   useEffect(() => {
     const controller = new AbortController();
 
+    let latestRequest = 0;
     async function loadPublicSettings() {
+      const requestId = ++latestRequest;
       try {
         const response = await fetch("/api/content/profile", {
+          cache: "no-store",
           signal: controller.signal,
         });
         const data = await response.json().catch(() => ({}));
@@ -41,6 +52,7 @@ export function PublicSettingsProvider({children}) {
           throw new Error("Unable to load public settings.");
         }
 
+        if (controller.signal.aborted || requestId !== latestRequest) return;
         setProfile({
           ...DEFAULT_PROFILE,
           ...(data.profile || {}),
@@ -60,10 +72,18 @@ export function PublicSettingsProvider({children}) {
       }
     }
 
-    void loadPublicSettings();
-
+    const refresh = () => { void loadPublicSettings(); };
+    const refreshWhenVisible = () => { if (!document.hidden) refresh(); };
+    refresh();
+    // Pick up translations saved in Admin without requiring a full page reload.
+    i18n.on("languageChanged", refresh);
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
     return () => {
       controller.abort();
+      i18n.off("languageChanged", refresh);
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
     };
   }, []);
 
@@ -107,6 +127,9 @@ export function PublicSettingsProvider({children}) {
     return {
       bookingUrl,
       blogEnabled: profile.blogEnabled,
+      labEnabled: profile.labEnabled,
+      personalEnabled: profile.personalEnabled,
+      referencesAvailable: profile.referencesEnabled === true && profile.references?.items?.length > 0,
       profile,
       profileName: profile.name?.fullName || "",
       skills,

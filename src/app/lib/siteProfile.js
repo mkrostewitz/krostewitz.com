@@ -3,6 +3,7 @@ import "server-only";
 import {unstable_cache} from "next/cache";
 
 import {getDb} from "./mongo";
+import {normalizeReferences} from "./references.mjs";
 import {
   PUBLIC_CACHE_REVALIDATE_SECONDS,
   PUBLIC_CACHE_TAGS,
@@ -655,6 +656,10 @@ function serializeProfile(document = {}) {
     address: normalizeSiteAddress(document.address),
     aiChat: normalizeAiChatIntegration(document.aiChat),
     blogEnabled: document.blogEnabled !== false,
+    labEnabled: document.labEnabled !== false,
+    personalEnabled: document.personalEnabled !== false,
+    referencesEnabled: document.referencesEnabled === true,
+    references: normalizeReferences(document.references),
     koalendar: normalizeKoalendarIntegration(document.koalendar),
     metadata,
     name,
@@ -677,6 +682,8 @@ async function readSiteProfile() {
         $setOnInsert: {
           aiChat: getDefaultAiChatIntegration(),
           blogEnabled: true,
+          labEnabled: true,
+          personalEnabled: true,
           koalendar: getDefaultKoalendarIntegration(),
           name: defaultName,
           skillsEnabled: true,
@@ -801,7 +808,25 @@ export async function saveSiteProfile(input = {}, user) {
     document.aiChat = aiChat;
   }
 
+  if (Object.prototype.hasOwnProperty.call(input, "references")) {
+    try {
+      document.references = normalizeReferences(input.references, {strict: true});
+    } catch (error) {
+      throw new SiteProfileError(error.message);
+    }
+  }
+  if (Object.prototype.hasOwnProperty.call(input, "referencesEnabled")) {
+    document.referencesEnabled = input.referencesEnabled === true;
+  }
+
   const insertDefaults = {createdAt: now};
+  for (const field of ["labEnabled", "personalEnabled"]) {
+    if (Object.prototype.hasOwnProperty.call(input, field)) {
+      document[field] = input[field] !== false;
+    } else {
+      insertDefaults[field] = true;
+    }
+  }
   if (!hasBlogEnabled) {
     insertDefaults.blogEnabled = true;
   }

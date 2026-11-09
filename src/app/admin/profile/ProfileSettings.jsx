@@ -48,6 +48,8 @@ const EMPTY_PROFILE = {
     scriptTag: "",
   },
   blogEnabled: true,
+  labEnabled: true,
+  personalEnabled: true,
   name: {
     firstName: "",
     lastName: "",
@@ -198,6 +200,7 @@ export default function ProfileSettings({user}) {
   const [suggestions, setSuggestions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [savingVisibility, setSavingVisibility] = useState(false);
   const [uploadingAsset, setUploadingAsset] = useState(null);
   const uploadingAssetLabelKey = UPLOAD_ASSET_LABEL_KEYS[uploadingAsset];
   const uploadingAssetLabel = uploadingAssetLabelKey
@@ -471,6 +474,28 @@ export default function ProfileSettings({user}) {
     }
   }
 
+  async function saveSectionVisibility(field, enabled) {
+    setSavingVisibility(true);
+    closeSnackbar();
+    try {
+      const response = await fetch("/api/admin/profile", {
+        method: "PUT",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({[field]: enabled}),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error || t("errors.saveProfile"));
+      }
+      setProfile((current) => ({...current, [field]: data.profile[field]}));
+      showSnackbar({type: "success", message: t("status.profileSaved")});
+    } catch (error) {
+      showSnackbar({type: "error", message: error.message || t("errors.saveProfile")});
+    } finally {
+      setSavingVisibility(false);
+    }
+  }
+
   async function saveProfile(event) {
     event.preventDefault();
 
@@ -529,6 +554,39 @@ export default function ProfileSettings({user}) {
             <h1>{t("title")}</h1>
             <p className={styles.muted}>{t("description")}</p>
           </div>
+        </div>
+
+        <div className={styles.profileGrid}>
+          <section className={`${styles.profilePanel} ${styles.profilePanelFull}`} aria-busy={savingVisibility}>
+            <div className={styles.panelHeader}>
+              <div className={styles.titleBlock}>
+                <h2>{t("sections.public.title")}</h2>
+                <p className={styles.muted}>{t("sections.public.description")}</p>
+              </div>
+            </div>
+            {["lab", "personal"].map((section) => {
+              const field = `${section}Enabled`;
+              const enabled = profile[field] !== false;
+              return (
+                <label className={styles.featureToggle} key={section}>
+                  <input
+                    type="checkbox"
+                    checked={enabled}
+                    disabled={isLoading || isSaving || Boolean(uploadingAsset) || savingVisibility}
+                    onChange={(event) => void saveSectionVisibility(field, event.target.checked)}
+                  />
+                  <span className={styles.featureSwitch} aria-hidden="true" />
+                  <span className={styles.featureText}>
+                    <strong>{t(`sectionVisibility.${section}`)}</strong>
+                    <small>{t(`sectionVisibility.${enabled ? "visibleDescription" : "hiddenDescription"}`)}</small>
+                  </span>
+                  <span className={styles.featureStatus}>
+                    {t(`sectionVisibility.${enabled ? "visible" : "hidden"}`)}
+                  </span>
+                </label>
+              );
+            })}
+          </section>
         </div>
 
         <form className={styles.profileGrid} onSubmit={saveProfile}>
@@ -610,7 +668,7 @@ export default function ProfileSettings({user}) {
                     {renderUploadLabel(uploadingAsset === "logoUrl")}
                     <input
                       accept="image/*"
-                      disabled={isSaving || Boolean(uploadingAsset)}
+                      disabled={isSaving || savingVisibility || Boolean(uploadingAsset)}
                       type="file"
                       onChange={(event) =>
                         uploadMetadataAsset(event, {
@@ -648,7 +706,7 @@ export default function ProfileSettings({user}) {
                     {renderUploadLabel(uploadingAsset === "iconUrl")}
                     <input
                       accept="image/*"
-                      disabled={isSaving || Boolean(uploadingAsset)}
+                      disabled={isSaving || savingVisibility || Boolean(uploadingAsset)}
                       type="file"
                       onChange={(event) =>
                         uploadMetadataAsset(event, {
@@ -686,7 +744,7 @@ export default function ProfileSettings({user}) {
                     {renderUploadLabel(uploadingAsset === "appIconUrl")}
                     <input
                       accept="image/*"
-                      disabled={isSaving || Boolean(uploadingAsset)}
+                      disabled={isSaving || savingVisibility || Boolean(uploadingAsset)}
                       type="file"
                       onChange={(event) =>
                         uploadMetadataAsset(event, {
@@ -774,7 +832,7 @@ export default function ProfileSettings({user}) {
                   date: formatDate(profile.updatedAt, locale, notSavedLabel),
                 })}
               </p>
-              <button className={styles.button} disabled={isSaving} type="submit">
+              <button className={styles.button} disabled={isLoading || isSaving || savingVisibility} type="submit">
                 {isSaving ? t("actions.saving") : t("actions.saveMetadata")}
               </button>
             </div>
@@ -837,13 +895,13 @@ export default function ProfileSettings({user}) {
               <div className={styles.buttonRow}>
                 <button
                   className={styles.ghostButton}
-                  disabled={isSaving}
+                  disabled={isLoading || isSaving || savingVisibility}
                   type="button"
                   onClick={clearAddress}
                 >
                   {t("actions.clearAddress")}
                 </button>
-                <button className={styles.button} disabled={isSaving} type="submit">
+                <button className={styles.button} disabled={isLoading || isSaving || savingVisibility} type="submit">
                   {isSaving ? t("actions.saving") : t("actions.saveProfile")}
                 </button>
               </div>
