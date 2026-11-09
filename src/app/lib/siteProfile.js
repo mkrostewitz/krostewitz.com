@@ -636,6 +636,8 @@ export function normalizeSiteAddress(input) {
 
   return {
     label,
+    hideStreetAddress: normalizeBoolean(input.hideStreetAddress),
+    publicLabel: cleanText(input.publicLabel),
     placeName: cleanText(input.placeName || input.place_name || label),
     mapboxId: cleanText(
       input.mapboxId || input.mapbox_id || input.id,
@@ -773,6 +775,10 @@ export async function saveSiteProfile(input = {}, user) {
 
   if (hasAddress && input.address && !address) {
     throw new SiteProfileError("Select a valid address or clear the field.");
+  }
+
+  if (hasAddress && address?.hideStreetAddress && !address.publicLabel) {
+    throw new SiteProfileError("Enter a public location, such as Munich, when hiding the street address.");
   }
 
   const now = new Date();

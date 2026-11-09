@@ -6,6 +6,7 @@ import {useEffect, useMemo, useRef, useState} from "react";
 import {useTranslation} from "react-i18next";
 
 import {loadRuntimeTranslations} from "../../../lib/i18n";
+import {publicAddress} from "../../lib/publicAddress.mjs";
 import AddressMap from "../../components/address-map/AddressMap";
 import {useLoadingState} from "../../components/loading/LoadingProvider";
 import {useSnackbar} from "../../components/snackbar/SnackbarProvider";
@@ -886,6 +887,39 @@ export default function ProfileSettings({user}) {
               )}
             </div>
 
+            <label className={styles.featureToggle}>
+              <input
+                type="checkbox"
+                checked={address?.hideStreetAddress === true}
+                disabled={!address || isLoading || isSaving}
+                onChange={(event) => setAddress((current) => ({
+                  ...current,
+                  hideStreetAddress: event.target.checked,
+                }))}
+              />
+              <span className={styles.featureSwitch} aria-hidden="true" />
+              <span className={styles.featureText}>
+                <strong>{t("fields.hideStreetAddress")}</strong>
+                <small>{t("fields.hideStreetAddressDescription")}</small>
+              </span>
+            </label>
+
+            {address?.hideStreetAddress && (
+              <label className={styles.field}>
+                {t("fields.publicLocation")}
+                <input
+                  required
+                  maxLength={240}
+                  placeholder={t("fields.publicLocationPlaceholder")}
+                  value={address.publicLabel || ""}
+                  onChange={(event) => setAddress((current) => ({
+                    ...current,
+                    publicLabel: event.target.value,
+                  }))}
+                />
+              </label>
+            )}
+
             <div className={styles.editorActions}>
               <p className={styles.muted}>
                 {t("fields.lastSaved", {
@@ -920,11 +954,11 @@ export default function ProfileSettings({user}) {
               <div className={styles.addressPreviewStack}>
                 <div className={styles.addressPreview}>
                   <span>{t("fields.address")}</span>
-                  <strong>{address.label}</strong>
+                  <strong>{publicAddress(address)?.label || t("fields.publicLocationPlaceholder")}</strong>
                   <span>{formatCoordinates(address, coordinatesUnavailableLabel)}</span>
                 </div>
                 <AddressMap
-                  address={address}
+                  address={publicAddress(address)}
                   className={styles.profileMap}
                   interactive
                   label={t("preview.mapLabel")}
