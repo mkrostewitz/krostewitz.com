@@ -29,10 +29,21 @@ test('date validation rejects missing, malformed and reversed ranges', () => {
 test('future full dates persist and invalid calendar dates are rejected', () => {
   const entry=normalizeTimeline([{...base,endDate:'2027-01-28'}])[0];
   assert.equal(entry.endDate,'2027-01-28');
-  assert.match(formatTimelinePeriod(entry,'de'),/28\. Jan\. 2027$/);
+  assert.equal(formatTimelinePeriod(entry,'de'),'Sept. 2022 — Jan. 2027');
   assert.equal(timelineOperations([entry])[0].updateOne.update.$set.endDate,'2027-01-28');
   for (const endDate of ['2027-02-29','2027-04-31','2027-01-00']) {
     assert.throws(()=>normalizeTimeline([{...base,endDate}]));
   }
   assert.doesNotThrow(()=>normalizeTimeline([{...base,endDate:'2028-02-29'}]));
+});
+
+test('overview formatting omits days without changing stored dates or trusting stale period text', () => {
+  const entry = {id:'exact',startDate:'2022-09-15',endDate:'2027-01-31',current:false,translations:{en:{title:'Role',period:'Sep 15, 2022 — Jan 31, 2027'}}};
+  assert.equal(formatTimelinePeriod(entry,'en'),'Sep 2022 — Jan 2027');
+  assert.equal(localizeTimeline([entry],'en')[0].period,'Sep 2022 — Jan 2027');
+  assert.equal(localizeTimeline([entry],'de')[0].period,'Sept. 2022 — Jan. 2027');
+  const saved=normalizeTimeline([entry])[0];
+  assert.equal(saved.startDate,'2022-09-15');
+  assert.equal(saved.endDate,'2027-01-31');
+  assert.equal(formatTimelinePeriod({...entry,current:true},'en'),'Sep 2022 — Present');
 });
