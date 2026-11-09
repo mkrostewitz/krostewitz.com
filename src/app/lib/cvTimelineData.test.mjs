@@ -107,3 +107,22 @@ test("save operations keep stable document IDs and update display order", () => 
   assert.deepEqual(operations[0].updateOne.update.$set.translations, entries[0].translations);
   assert.equal(operations[0].updateOne.update.$set.updatedBy, "admin");
 });
+
+test('attachments survive normalization, database writes and both public languages', async () => {
+  const doc = {id: 'case-study', title: 'Growth case study', fileName: 'growth.pdf', url: 'https://example.com/growth.pdf', size: 2048, language: 'de'};
+  const entry = normalizeTimeline([{id: 'career', translations: {en: {title: 'Role', period: '2026'}}, documents: [doc]}])[0];
+  assert.deepEqual(entry.documents, [doc]);
+  for (const language of ['en', 'de']) assert.deepEqual(localizeTimeline([entry], language)[0].documents, [doc]);
+  assert.deepEqual(timelineOperations([entry])[0].updateOne.update.$set.documents, [doc]);
+  const db = memoryDb({site_content: [{_id: 'cv_timeline_settings'}], cv_timeline: [{_id: entry.id, translations: entry.translations, documents: [doc]}]});
+  assert.deepEqual((await ensureTimeline(db, defaults)).entries[0].documents, [doc]);
+  assert.deepEqual(timelineOperations([{...entry, documents: []}])[0].updateOne.update.$set.documents, []);
+});
+
+test('attachment validation rejects unsafe links, excessive files and invalid metadata', () => {
+  const doc = {id: 'case-study', title: 'Study', fileName: 'study.pdf', url: 'https://example.com/study.pdf', size: 2048, language: 'en'};
+  const base = {id: 'career', translations: {en: {title: 'Role', period: '2026'}}};
+  for (const documents of [[{...doc, url: 'javascript:alert(1)'}], [{...doc, url: 'https://user:secret@example.com/file'}], [doc, doc], Array(11).fill(doc), [{...doc, size: 11 * 1024 * 1024}], [{...doc, title: ''}], [{...doc, language: 'unknown'}]]) {
+    assert.throws(() => normalizeTimeline([{...base, documents}]));
+  }
+});

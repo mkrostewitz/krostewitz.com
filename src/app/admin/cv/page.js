@@ -1,6 +1,7 @@
 import {redirect} from "next/navigation";
 
 import {getCurrentAdminUser} from "../../lib/adminAuth";
+import AdminMuiProvider from "../components/forms/AdminMuiProvider";
 import CvManager from "./CvManager";
 
 export default async function AdminCvPage() {
@@ -10,5 +11,5 @@ export default async function AdminCvPage() {
     redirect("/admin/login");
   }
 
-  return <CvManager user={user} />;
+  return <AdminMuiProvider><CvManager user={user} /></AdminMuiProvider>;
 }

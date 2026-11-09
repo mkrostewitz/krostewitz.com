@@ -17,7 +17,7 @@ export async function saveCvTimeline(input, user) {
   }
   const db = await getDb();
   const result = await db.collection("site_content").updateOne(
-    {_id: CV_TIMELINE_META_ID, timelineOperations, revision: input.revision},
+    {_id: CV_TIMELINE_META_ID, revision: input.revision},
     {$set: {updatedAt: new Date(), updatedBy: user.email}, $inc: {revision: 1}}
   );
   if (!result.matchedCount) throw new TimelineError("The timeline changed in another session. Reload before saving again.", 409);
