@@ -4,6 +4,7 @@ import {useEffect, useState} from "react";
 import {Alert, Button, Chip, Stack} from "@mui/material";
 import {Plus} from "lucide-react";
 import {TIMELINE_LANGUAGES} from "../../lib/cvTimelineData.mjs";
+import {formatTimelinePeriod} from "../../lib/timelineDates.mjs";
 import {SITE_LANGUAGES} from "../../../lib/siteLanguages";
 import TimelineEntryDialog from "./TimelineEntryDialog";
 import timelineStyles from "./timeline-editor.module.css";
@@ -89,7 +90,7 @@ export default function TimelineEditor() {
         {entries.map((entry, index) => {
           const preview = Object.values(entry.translations).find(item => item.title) || {};
           return <article key={entry.id} className={timelineStyles.station}>
-            <div className={timelineStyles.period}>{preview.period}</div>
+            <div className={timelineStyles.period}>{formatTimelinePeriod(entry, "en") || preview.period}</div>
             <span className={timelineStyles.marker} aria-hidden="true" />
             <div className={timelineStyles.card}>
               <button type="button" className={timelineStyles.preview} disabled={saving} aria-haspopup="dialog" onClick={() => openEditor(entry)}>

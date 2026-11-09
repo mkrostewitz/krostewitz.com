@@ -17,7 +17,7 @@ export function formatTimelinePeriod(dates, language = 'en') {
     if (!validTimelineDate(value)) return '';
     const date = new Date(0);
     date.setUTCFullYear(Number(value.slice(0, 4)), Number(value.slice(5, 7)) - 1, value.length === 10 ? Number(value.slice(8)) : 1);
-    return new Intl.DateTimeFormat(language === 'de' ? 'de-DE' : 'en-US', {...(value.length === 10 ? {day: 'numeric'} : {}), month: 'short', year: 'numeric', timeZone: 'UTC'}).format(date);
+    return new Intl.DateTimeFormat(language === 'de' ? 'de-DE' : 'en-US', {month: 'short', year: 'numeric', timeZone: 'UTC'}).format(date);
   };
   return validTimelineDate(dates.startDate) && (dates.current || validTimelineDate(dates.endDate))
     ? `${format(dates.startDate)} — ${dates.current ? (language === 'de' ? 'Heute' : 'Present') : format(dates.endDate)}` : '';
