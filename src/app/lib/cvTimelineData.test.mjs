@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
-import {normalizeTimeline, seedTimelineEntries, localizeTimeline, ensureTimeline, timelineOperations} from "./cvTimelineData.mjs";
+import {normalizeTimeline, seedTimelineEntries, localizeTimeline, readTimeline, ensureTimeline, timelineOperations} from "./cvTimelineData.mjs";
 
 const defaults = Object.fromEntries(await Promise.all(["en", "de"].map(async (language) => [language, JSON.parse(await readFile(new URL(`../../locales/${language}/translation.json`, import.meta.url), "utf8"))])));
 
@@ -125,4 +125,19 @@ test('attachment validation rejects unsafe links, excessive files and invalid me
   for (const documents of [[{...doc, url: 'javascript:alert(1)'}], [{...doc, url: 'https://user:secret@example.com/file'}], [doc, doc], Array(11).fill(doc), [{...doc, size: 11 * 1024 * 1024}], [{...doc, title: ''}], [{...doc, language: 'unknown'}]]) {
     assert.throws(() => normalizeTimeline([{...base, documents}]));
   }
+});
+
+test("company is stored separately from the role and survives localization and database reads", async () => {
+  const entries = normalizeTimeline([{id: "company-test", translations: {
+    en: {title: "President & CEO", company: "Schlegel USA Inc.", period: "2026"},
+    de: {title: "Geschäftsführer", company: "Schlegel USA Inc.", period: "2026"},
+  }}]);
+  const db = memoryDb();
+  assert.equal(timelineOperations(entries)[0].updateOne.update.$set.translations.en.company, "Schlegel USA Inc.");
+  await db.collection("cv_timeline").bulkWrite(timelineOperations(entries, {}, true));
+  const stored = (await readTimeline(db)).entries[0];
+  assert.equal(stored.translations.en.company, "Schlegel USA Inc.");
+  assert.equal(stored.translations.en.title, "President & CEO");
+  assert.equal(localizeTimeline(entries, "de")[0].company, "Schlegel USA Inc.");
+  assert.throws(() => normalizeTimeline([{id:"bad", translations:{en:{title:"Role",period:"2026",company:123}}}]));
 });

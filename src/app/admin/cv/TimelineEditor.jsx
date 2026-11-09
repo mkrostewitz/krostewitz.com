@@ -93,7 +93,7 @@ export default function TimelineEditor() {
             <span className={timelineStyles.marker} aria-hidden="true" />
             <div className={timelineStyles.card}>
               <button type="button" className={timelineStyles.preview} disabled={saving} aria-haspopup="dialog" onClick={() => openEditor(entry)}>
-                <h3>{preview.title}</h3><p className={timelineStyles.location}>{preview.location}</p>
+                <h3>{preview.title}</h3>{preview.company && <p className={timelineStyles.location}>{preview.company}</p>}<p className={timelineStyles.location}>{preview.location}</p>
                 <p className={timelineStyles.summary}>{preview.detail}</p><span className={timelineStyles.editLabel}>Edit station →</span>
               </button>
               <div className={timelineStyles.controls}>

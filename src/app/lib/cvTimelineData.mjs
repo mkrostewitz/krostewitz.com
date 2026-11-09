@@ -1,9 +1,10 @@
+import {validTimelineDate, timelineDateInput, formatTimelinePeriod} from "./timelineDates.mjs";
 import {sanitizeTimelineHtml, timelineHtmlText, TIMELINE_HTML_LIMIT} from "./timelineRichText.mjs";
 
 export const CV_TIMELINE_COLLECTION = "cv_timeline";
 export const CV_TIMELINE_META_ID = "cv_timeline_settings";
 export const TIMELINE_LANGUAGES = ["en", "de"];
-export const TIMELINE_LIMITS = {period: 120, title: 240, location: 240, detail: 10000};
+export const TIMELINE_LIMITS = {period: 120, title: 240, company: 240, location: 240, detail: 10000};
 
 export class TimelineError extends Error {
   constructor(message, status = 400) {
@@ -41,11 +42,18 @@ export function normalizeTimeline(entries) {
       throw new TimelineError("Every entry must have a unique, valid ID.");
     }
     ids.add(entry.id);
+    let dates = {};
+    if (entry.startDate !== undefined) {
+      if (!validTimelineDate(entry.startDate) || typeof entry.current !== "boolean" || (!entry.current && !validTimelineDate(entry.endDate))) throw new TimelineError("Choose a start date and an end date, or mark the position as current.");
+      if (!entry.current && timelineDateInput(entry.endDate) < timelineDateInput(entry.startDate)) throw new TimelineError("End date must not be before start date.");
+      dates = {startDate: entry.startDate, endDate: entry.current ? "" : entry.endDate, current: entry.current};
+    }
     const translations = {};
     for (const language of TIMELINE_LANGUAGES) {
       const source = entry.translations?.[language] || {};
       const translation = {};
       for (const [field, limit] of Object.entries(TIMELINE_LIMITS)) {
+        if (field === "company" && source.company === undefined) continue;
         const value = source[field] ?? "";
         if (typeof value !== "string" || value.length > limit) {
           throw new TimelineError(`${language}: ${field} must be text of at most ${limit} characters.`);
@@ -71,13 +79,14 @@ export function normalizeTimeline(entries) {
           translation.highlights = items;
         }
       }
+      if (dates.startDate) translation.period = formatTimelinePeriod(dates, language);
       translations[language] = translation;
     }
     if (!Object.values(translations).some((value) => value.title && value.period)) {
       throw new TimelineError("Each entry needs a title and period in at least one language.");
     }
     const documents = normalizeTimelineDocuments(entry.documents);
-    return {id: entry.id, translations, ...(documents.length ? {documents} : {})};
+    return {id: entry.id, ...dates, translations, ...(documents.length ? {documents} : {})};
   });
 }
 
@@ -93,7 +102,7 @@ export function localizeTimeline(entries, language) {
   return entries.map((entry) => {
     const fallback = TIMELINE_LANGUAGES.map((code) => entry.translations[code]).find((value) => value?.title && value?.period);
     const selected = entry.translations[language];
-    return {id: entry.id, ...(entry.documents?.length ? {documents: entry.documents} : {}), ...(selected?.title && selected?.period ? selected : fallback)};
+    return {id: entry.id, ...(entry.documents?.length ? {documents: entry.documents} : {}), ...(selected?.title && selected?.period ? selected : fallback), ...(entry.startDate ? {period: formatTimelinePeriod(entry, language)} : {})};
   });
 }
 
@@ -102,7 +111,7 @@ export async function readTimeline(db) {
   const documents = await db.collection(CV_TIMELINE_COLLECTION).find({_id: {$ne: "timeline"}}).sort({order: 1, _id: 1}).toArray();
   const meta = await db.collection("site_content").findOne({_id: CV_TIMELINE_META_ID});
   return {
-    entries: documents.map(({_id, translations, documents}) => ({id: _id, translations, ...(documents?.length ? {documents} : {})})),
+    entries: documents.map(({_id, translations, documents, startDate, endDate, current}) => ({id: _id, ...(startDate ? {startDate, endDate, current} : {}), translations, ...(documents?.length ? {documents} : {})})),
     revision: meta?.revision || 0,
   };
 }
@@ -112,10 +121,11 @@ export function timelineOperations(entries, audit = {}, insertOnly = false) {
   return entries.map((entry, order) => ({updateOne: {
     filter: {_id: entry.id},
     update: insertOnly ? {$setOnInsert: {
+      ...(entry.startDate ? {startDate: entry.startDate, endDate: entry.endDate, current: entry.current} : {}),
       order, translations: entry.translations, documents: entry.documents || [], createdAt: audit.createdAt || now,
       updatedAt: audit.updatedAt || now, updatedBy: audit.updatedBy || null,
     }} : {
-      $set: {order, translations: entry.translations, documents: entry.documents || [], updatedAt: now, updatedBy: audit.updatedBy || null},
+      $set: {...(entry.startDate ? {startDate: entry.startDate, endDate: entry.endDate, current: entry.current} : {}), order, translations: entry.translations, documents: entry.documents || [], updatedAt: now, updatedBy: audit.updatedBy || null},
       $setOnInsert: {createdAt: now},
     },
     upsert: true,
