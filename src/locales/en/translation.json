@@ -4,6 +4,7 @@
     "linkedin": "LinkedIn"
   },
   "nav": {
+    "references": "References",
     "about": "About",
     "personal": "Personal",
     "timeline": "Experience",
@@ -23,9 +24,94 @@
       "dark": "Switch to dark mode"
     }
   },
+  "references": {
+    "more": "More",
+    "moreAbout": "Read the full recommendation from {{name}}",
+    "recommendation": "Recommendation",
+    "close": "Close recommendation",
+    "title": "References",
+    "eyebrow": "Working together",
+    "subtitle": "Recommendations from colleagues, clients, and partners.",
+    "linkedin": "View {{name}} on LinkedIn",
+    "pause": "Pause scrolling",
+    "resume": "Resume scrolling",
+    "carousel": "Recommendations carousel. Hover or focus to pause; scroll to browse."
+  },
   "admin": {
+    "references": {
+      "translation": {
+        "originalLanguage": "Original language",
+        "editLanguage": "Editing language",
+        "en": "English",
+        "de": "German",
+        "help": "Translate or enter this language manually. Review the text, then save the reference. Empty translations fall back to the original.",
+        "generate": "Translate from original",
+        "replace": "Replace translation from original",
+        "working": "Translating…",
+        "error": "Unable to translate this reference."
+      },
+      "photoSaveHint": "Save the reference to keep your changes.",
+      "edit": "Edit reference",
+      "close": "Close reference",
+      "cancel": "Cancel",
+      "saveReference": "Save reference",
+      "visibility": {
+        "title": "Public visibility",
+        "description": "Control whether References appears on the public site.",
+        "visible": "Visible",
+        "hidden": "Hidden",
+        "visibleDescription": "Shown in navigation and on the homepage when recommendations are available.",
+        "hiddenDescription": "Hidden from navigation, homepage, and public profile data.",
+        "lastSaved": "Last saved: {{date}}",
+        "notSaved": "Not saved yet",
+        "shown": "References is visible on the public website.",
+        "hiddenMessage": "References is hidden from the public website.",
+        "error": "Unable to save references visibility."
+      },
+      "title": "References",
+      "description": "Manage recommendations, public visibility, and display style.",
+      "mode": "Display style",
+      "cards": "Individual cards",
+      "carousel": "Smooth looping carousel",
+      "empty": "No references yet. Add your first recommendation below.",
+      "new": "New reference",
+      "up": "Move up",
+      "down": "Move down",
+      "upName": "Move {{name}} up",
+      "downName": "Move {{name}} down",
+      "remove": "Remove",
+      "upload": "Upload photo (JPG, PNG or GIF)",
+      "add": "Add reference",
+      "preview": "Show preview",
+      "hidePreview": "Hide preview",
+      "save": "Save references",
+      "saving": "Saving…",
+      "saved": "References saved.",
+      "unsaved": "Unsaved changes",
+      "loadError": "Unable to load references. Reload the page to try again.",
+      "saveError": "Unable to save references.",
+      "uploadError": "Unable to upload photo.",
+      "fields": {
+        "name": "Name *",
+        "role": "Role / title",
+        "company": "Company",
+        "relationship": "Working relationship",
+        "date": "Recommendation date",
+        "linkedinUrl": "LinkedIn profile URL",
+        "photoUrl": "Photo URL",
+        "quote": "Recommendation *"
+      }
+    },
     "profile": {
-      "title": "Profile",
+      "title": "Profile & Settings",
+      "sectionVisibility": {
+        "lab": "Lab",
+        "personal": "Personal",
+        "visible": "Visible",
+        "hidden": "Hidden",
+        "visibleDescription": "Shown on the homepage and in navigation. Changes save automatically.",
+        "hiddenDescription": "Hidden from the homepage and navigation. Changes save automatically."
+      },
       "description": "Manage public contact details and section visibility.",
       "sections": {
         "public": {

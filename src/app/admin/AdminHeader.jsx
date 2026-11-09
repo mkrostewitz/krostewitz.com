@@ -14,13 +14,14 @@ const DEFAULT_LOGO_URL = "/logo.svg";
 const DEFAULT_SITE_TITLE = process.env.NEXT_PUBLIC_SITE_NAME || "Site";
 const ADMIN_MENU_ID = "admin-menu-panel";
 const ADMIN_NAV_ITEMS = [
-  {active: "profile", href: "/admin/profile", label: "Profile"},
+  {active: "profile", href: "/admin/profile", label: "Profile & Settings"},
   {
     active: "mailCalendar",
     href: "/admin/mail-calendar",
     label: "Mail & Calendar",
   },
   {active: "posts", href: "/admin/posts", label: "Blog"},
+  {active: "references", href: "/admin/references", label: "References"},
   {active: "subscribers", href: "/admin/subscribers", label: "Subscribers"},
   {active: "skills", href: "/admin/skills", label: "Skills"},
   {

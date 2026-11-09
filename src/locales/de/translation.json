@@ -4,6 +4,7 @@
     "linkedin": "Auf LinkedIn verbinden"
   },
   "nav": {
+    "references": "Referenzen",
     "about": "Über mich",
     "personal": "Persönlich",
     "timeline": "Erfahrung",
@@ -23,9 +24,94 @@
       "dark": "In den dunklen Modus wechseln"
     }
   },
+  "references": {
+    "more": "Mehr",
+    "moreAbout": "Vollständige Empfehlung von {{name}} lesen",
+    "recommendation": "Empfehlung",
+    "close": "Empfehlung schließen",
+    "title": "Referenzen",
+    "eyebrow": "Zusammenarbeit",
+    "subtitle": "Empfehlungen von Kollegen, Kunden und Partnern.",
+    "linkedin": "{{name}} auf LinkedIn ansehen",
+    "pause": "Scrollen pausieren",
+    "resume": "Scrollen fortsetzen",
+    "carousel": "Empfehlungskarussell. Zum Pausieren mit Maus oder Tastatur fokussieren; zum Durchsehen scrollen."
+  },
   "admin": {
+    "references": {
+      "translation": {
+        "originalLanguage": "Originalsprache",
+        "editLanguage": "Bearbeitungssprache",
+        "en": "Englisch",
+        "de": "Deutsch",
+        "help": "Übersetzen Sie den Text oder geben Sie ihn manuell ein. Prüfen Sie ihn und speichern Sie die Referenz. Bei fehlender Übersetzung wird das Original angezeigt.",
+        "generate": "Aus dem Original übersetzen",
+        "replace": "Übersetzung aus dem Original ersetzen",
+        "working": "Wird übersetzt…",
+        "error": "Die Referenz konnte nicht übersetzt werden."
+      },
+      "photoSaveHint": "Speichern Sie die Referenz, um die Änderungen zu übernehmen.",
+      "edit": "Referenz bearbeiten",
+      "close": "Referenz schließen",
+      "cancel": "Abbrechen",
+      "saveReference": "Referenz speichern",
+      "visibility": {
+        "title": "Öffentliche Sichtbarkeit",
+        "description": "Steuern Sie, ob Referenzen auf der öffentlichen Website erscheinen.",
+        "visible": "Sichtbar",
+        "hidden": "Ausgeblendet",
+        "visibleDescription": "In der Navigation und auf der Startseite sichtbar, sobald Empfehlungen vorhanden sind.",
+        "hiddenDescription": "In der Navigation, auf der Startseite und in den öffentlichen Profildaten ausgeblendet.",
+        "lastSaved": "Zuletzt gespeichert: {{date}}",
+        "notSaved": "Noch nicht gespeichert",
+        "shown": "Referenzen sind auf der öffentlichen Website sichtbar.",
+        "hiddenMessage": "Referenzen sind auf der öffentlichen Website ausgeblendet.",
+        "error": "Die Sichtbarkeit der Referenzen konnte nicht gespeichert werden."
+      },
+      "title": "Referenzen",
+      "description": "Empfehlungen, öffentliche Sichtbarkeit und Darstellung verwalten.",
+      "mode": "Darstellung",
+      "cards": "Einzelne Karten",
+      "carousel": "Sanft laufendes Endloskarussell",
+      "empty": "Noch keine Referenzen. Fügen Sie unten die erste Empfehlung hinzu.",
+      "new": "Neue Referenz",
+      "up": "Nach oben",
+      "down": "Nach unten",
+      "upName": "{{name}} nach oben verschieben",
+      "downName": "{{name}} nach unten verschieben",
+      "remove": "Entfernen",
+      "upload": "Foto hochladen (JPG, PNG oder GIF)",
+      "add": "Referenz hinzufügen",
+      "preview": "Vorschau anzeigen",
+      "hidePreview": "Vorschau ausblenden",
+      "save": "Referenzen speichern",
+      "saving": "Wird gespeichert…",
+      "saved": "Referenzen gespeichert.",
+      "unsaved": "Ungespeicherte Änderungen",
+      "loadError": "Referenzen konnten nicht geladen werden. Bitte laden Sie die Seite neu.",
+      "saveError": "Referenzen konnten nicht gespeichert werden.",
+      "uploadError": "Foto konnte nicht hochgeladen werden.",
+      "fields": {
+        "name": "Name *",
+        "role": "Position / Titel",
+        "company": "Unternehmen",
+        "relationship": "Berufliche Beziehung",
+        "date": "Datum der Empfehlung",
+        "linkedinUrl": "LinkedIn-Profil-URL",
+        "photoUrl": "Foto-URL",
+        "quote": "Empfehlung *"
+      }
+    },
     "profile": {
-      "title": "Profil",
+      "title": "Profil & Einstellungen",
+      "sectionVisibility": {
+        "lab": "Labor",
+        "personal": "Persönlich",
+        "visible": "Sichtbar",
+        "hidden": "Ausgeblendet",
+        "visibleDescription": "Auf der Startseite und in der Navigation sichtbar. Änderungen werden automatisch gespeichert.",
+        "hiddenDescription": "Auf der Startseite und in der Navigation ausgeblendet. Änderungen werden automatisch gespeichert."
+      },
       "description": "Öffentliche Kontaktdaten und die Sichtbarkeit von Bereichen verwalten.",
       "sections": {
         "public": {

@@ -10,6 +10,7 @@ import NavBar from "./components/nav/nav";
 import ContactSection from "./components/contact/ContactSection";
 import TimelineSection from "./components/timeline/TimelineSection";
 import AboutSection from "./components/about/AboutSection";
+import ReferencesSection from "./components/references/ReferencesSection";
 import PersonalSection from "./components/personal/PersonalSection";
 import SkillsSection from "./components/skills/SkillsSection";
 import FoldSection from "./components/fold/FoldSection";
@@ -55,6 +56,8 @@ function getLocalizedSkill(skill, language) {
 export default function Home() {
   const {i18n} = useTranslation();
   const {
+    labEnabled,
+    personalEnabled,
     skills: storedSkills,
     skillsAvailable,
   } = usePublicSettings();
@@ -98,14 +101,16 @@ export default function Home() {
         {/* CV Section */}
         <CvSection />
 
+        <ReferencesSection />
+
         {/* Blog */}
         <BlogSection />
 
         {/* Portfolio */}
-        <PortfolioSection />
+        {labEnabled === true ? <PortfolioSection /> : null}
 
         {/* Personal */}
-        <PersonalSection />
+        {personalEnabled === true ? <PersonalSection /> : null}
 
         {/* Contact Me */}
         <ContactSection />

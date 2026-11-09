@@ -1,4 +1,5 @@
 import {NextResponse} from "next/server";
+import {publicReferences} from "../../../lib/references.mjs";
 
 import {
   getDefaultAiChatIntegration,
@@ -17,7 +18,7 @@ export const revalidate = 300;
 export async function GET() {
   try {
     const profile = await getSiteProfile();
-    return NextResponse.json({profile}, {headers: PUBLIC_CACHE_HEADERS});
+    return NextResponse.json({profile: {...profile, references: publicReferences(profile)}}, {headers: PUBLIC_CACHE_HEADERS});
   } catch (error) {
     console.warn("Unable to load site profile", error);
     return NextResponse.json(
@@ -26,6 +27,10 @@ export async function GET() {
           address: null,
           aiChat: getDefaultAiChatIntegration(),
           blogEnabled: true,
+          labEnabled: false,
+          personalEnabled: false,
+          referencesEnabled: false,
+          references: {mode: "cards", items: []},
           koalendar: getDefaultKoalendarIntegration(),
           metadata: getDefaultSiteMetadata(),
           name: getDefaultProfileName(),
