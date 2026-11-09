@@ -1,3 +1,4 @@
+import {publicAddress} from "../../../lib/publicAddress.mjs";
 import {NextResponse} from "next/server";
 import {publicReferences} from "../../../lib/references.mjs";
 
@@ -18,7 +19,7 @@ export const revalidate = 300;
 export async function GET() {
   try {
     const profile = await getSiteProfile();
-    return NextResponse.json({profile: {...profile, references: publicReferences(profile)}}, {headers: PUBLIC_CACHE_HEADERS});
+    return NextResponse.json({profile: {...profile, address: publicAddress(profile.address), references: publicReferences(profile)}}, {headers: PUBLIC_CACHE_HEADERS});
   } catch (error) {
     console.warn("Unable to load site profile", error);
     return NextResponse.json(
