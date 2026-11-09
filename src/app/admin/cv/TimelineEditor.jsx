@@ -93,7 +93,7 @@ export default function TimelineEditor() {
             <span className={timelineStyles.marker} aria-hidden="true" />
             <div className={timelineStyles.card}>
               <button type="button" className={timelineStyles.preview} disabled={saving} aria-haspopup="dialog" onClick={() => openEditor(entry)}>
-                <h3>{preview.title}</h3>{preview.company && <p className={timelineStyles.location}>{preview.company}</p>}<p className={timelineStyles.location}>{preview.location}</p>
+                <h3>{preview.title}</h3>{entry.showAfterMore && <Chip size="small" variant="outlined" label="After See more" />}{entry.employerGroup && <Chip size="small" variant="outlined" label={`Group: ${entry.employerGroup}`} />}{preview.company && <p className={timelineStyles.location}>{preview.company}</p>}<p className={timelineStyles.location}>{preview.location}</p>
                 <p className={timelineStyles.summary}>{preview.detail}</p><span className={timelineStyles.editLabel}>Edit station →</span>
               </button>
               <div className={timelineStyles.controls}>
@@ -121,6 +121,6 @@ export default function TimelineEditor() {
         {dirty && <span className={styles.muted}>Unsaved ordering or removals</span>}
       </Stack>
     </>}
-    {editor && <TimelineEntryDialog key={editor.entry.id} entry={editor.entry} isNew={editor.isNew} initialLanguage="en" onSave={saveStation} onClose={() => setEditor(null)} />}
+    {editor && <TimelineEntryDialog employerGroups={[...new Set(entries.map(item => item.employerGroup).filter(Boolean))]} key={editor.entry.id} entry={editor.entry} isNew={editor.isNew} initialLanguage="en" onSave={saveStation} onClose={() => setEditor(null)} />}
   </section>;
 }

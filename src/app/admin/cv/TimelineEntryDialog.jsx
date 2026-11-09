@@ -1,7 +1,7 @@
 "use client";
 
 import {useState} from "react";
-import {Alert, Box, Button, Checkbox, FormControlLabel, Chip, Dialog, DialogActions, DialogContent, DialogTitle, Divider, IconButton, LinearProgress, MenuItem, Paper, Stack, Tab, Tabs, TextField, Typography} from "@mui/material";
+import {Alert, Autocomplete, Box, Button, Checkbox, FormControlLabel, Chip, Dialog, DialogActions, DialogContent, DialogTitle, Divider, IconButton, LinearProgress, MenuItem, Paper, Stack, Tab, Tabs, TextField, Typography} from "@mui/material";
 import {FileText, Languages, Trash2, Upload, X} from "lucide-react";
 import {normalizeTimeline, TIMELINE_LIMITS} from "../../lib/cvTimelineData.mjs";
 import {SITE_LANGUAGES} from "../../../lib/siteLanguages";
@@ -13,7 +13,7 @@ import {initialTimelineDates, timelineDateInput, formatTimelinePeriod} from "../
 
 const labels = {period: "Period", title: "Title / role", company: "Company", location: "Location", detail: "Role description"};
 
-export default function TimelineEntryDialog({entry, isNew, initialLanguage, onSave, onClose}) {
+export default function TimelineEntryDialog({entry, isNew, initialLanguage, onSave, onClose, employerGroups = []}) {
   const [draft, setDraft] = useState(() => ({...structuredClone(entry), ...initialTimelineDates(entry)}));
   const [language, setLanguage] = useState(initialLanguage);
   const [operation, setOperation] = useState("");
@@ -88,6 +88,13 @@ export default function TimelineEntryDialog({entry, isNew, initialLanguage, onSa
         <Stack spacing={3}>
           {error && <Alert severity="error">{error}</Alert>}
           {notice && <Alert severity="success">{notice}</Alert>}
+          <Box>
+            <FormControlLabel control={<Checkbox checked={Boolean(draft.showAfterMore)} disabled={busy} onChange={event => setDraft(current => ({...current, showAfterMore: event.target.checked}))} />} label="Show only after See more" />
+            <Typography variant="caption" sx={{display: "block"}} color="text.secondary">Keep this experience out of the initial public timeline. Visitors can reveal it with See more at the bottom. Applies to both languages.</Typography>
+          </Box>
+          <Autocomplete freeSolo options={employerGroups} inputValue={draft.employerGroup || ""} disabled={busy}
+            onInputChange={(_, value) => setDraft(current => ({...current, employerGroup: value}))}
+            renderInput={params => <TextField {...params} label="Employer group (optional)" helperText="Use the same group, e.g. CAPTRON, for related roles. Leave empty to show this role separately. Groups appear at their first role’s position and apply to both languages." />} />
           <Box>
             <Typography variant="subtitle1" sx={{mb: 2, fontWeight: 600}}>Employment dates</Typography>
             <Stack direction={{xs: "column", sm: "row"}} spacing={2}>

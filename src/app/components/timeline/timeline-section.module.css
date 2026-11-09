@@ -431,3 +431,15 @@
   line-height: 1.45;
   margin: 4px 0;
 }
+
+.ungrouped { display: contents; }
+.employerGroup { display: grid; gap: 14px; padding: 16px 0; border-block: 1px solid var(--border); }
+.employerHeader { margin-left: calc(var(--date-column) + var(--rail-column) + 2 * var(--timeline-column-gap)); display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.employerHeader h3 { font-size: 1.2rem; font-weight: 700; color: var(--accent); margin: 0; }
+.employerHeader span { color: var(--text-muted); font-size: .8rem; padding: 4px 9px; background: var(--surface-subtle); border: 1px solid var(--border); border-radius: 999px; }
+@media (max-width: 960px) { .employerHeader { margin-left: calc(var(--rail-column) + var(--timeline-column-gap)); } }
+
+.expandRow { display: flex; justify-content: center; margin-top: 24px; }
+.expandButton { display: inline-flex; align-items: center; justify-content: center; gap: 10px; border: 1px solid var(--border-strong); border-radius: 999px; padding: 12px 20px; background: var(--surface-subtle); color: var(--foreground); font: inherit; font-size: .9rem; font-weight: 600; cursor: pointer; }
+.expandButton:hover { border-color: var(--accent); background: var(--accent-soft); }
+.expandButton:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
