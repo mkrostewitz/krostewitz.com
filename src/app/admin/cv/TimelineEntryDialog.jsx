@@ -1,7 +1,7 @@
 "use client";
 
 import {useState} from "react";
-import {Alert, Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, Divider, IconButton, LinearProgress, MenuItem, Paper, Stack, Tab, Tabs, TextField, Typography} from "@mui/material";
+import {Alert, Box, Button, Checkbox, FormControlLabel, Chip, Dialog, DialogActions, DialogContent, DialogTitle, Divider, IconButton, LinearProgress, MenuItem, Paper, Stack, Tab, Tabs, TextField, Typography} from "@mui/material";
 import {FileText, Languages, Trash2, Upload, X} from "lucide-react";
 import {normalizeTimeline, TIMELINE_LIMITS} from "../../lib/cvTimelineData.mjs";
 import {SITE_LANGUAGES} from "../../../lib/siteLanguages";
@@ -9,16 +9,19 @@ import TimelineRichTextEditor from "./TimelineRichTextEditor";
 import {timelineEditorHtml} from "../../lib/timelineRichText.mjs";
 import styles from "./timeline-editor.module.css";
 
-const labels = {period: "Period", title: "Title / role", location: "Location", detail: "Role description"};
+import {initialTimelineDates, timelineDateInput, formatTimelinePeriod} from "../../lib/timelineDates.mjs";
+
+const labels = {period: "Period", title: "Title / role", company: "Company", location: "Location", detail: "Role description"};
 
 export default function TimelineEntryDialog({entry, isNew, initialLanguage, onSave, onClose}) {
-  const [draft, setDraft] = useState(() => structuredClone(entry));
+  const [draft, setDraft] = useState(() => ({...structuredClone(entry), ...initialTimelineDates(entry)}));
   const [language, setLanguage] = useState(initialLanguage);
   const [operation, setOperation] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const busy = Boolean(operation);
   const translation = draft.translations[language] || {};
+  const period = formatTimelinePeriod(draft, language);
   const documents = draft.documents || [];
   const update = (field, value) => setDraft(current => ({...current, translations: {...current.translations, [language]: {...current.translations[language], [field]: value}}}));
   const updateDocuments = change => setDraft(current => ({...current, documents: change(current.documents || [])}));
@@ -44,12 +47,12 @@ export default function TimelineEntryDialog({entry, isNew, initialLanguage, onSa
 
   async function translate(targetLanguage) {
     const target = draft.translations[targetLanguage];
-    if (target && (target.title || target.period || target.location || target.detail || target.highlights?.some(Boolean)) && !window.confirm("Replace the existing translation? Review it before saving.")) return;
+    if (target && (target.title || target.company || target.location || target.detail || target.highlights?.some(Boolean)) && !window.confirm("Replace the existing translation? Review it before saving.")) return;
     setOperation("Translating station…"); setError(""); setNotice("");
     try {
       const response = await fetch("/api/admin/cv-timeline/translate", {
         method: "POST", headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({sourceLanguage: language, targetLanguage, translation}),
+        body: JSON.stringify({sourceLanguage: language, targetLanguage, translation: {...translation, period}}),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Unable to translate station.");
@@ -86,21 +89,31 @@ export default function TimelineEntryDialog({entry, isNew, initialLanguage, onSa
           {error && <Alert severity="error">{error}</Alert>}
           {notice && <Alert severity="success">{notice}</Alert>}
           <Box>
+            <Typography variant="subtitle1" sx={{mb: 2, fontWeight: 600}}>Employment dates</Typography>
+            <Stack direction={{xs: "column", sm: "row"}} spacing={2}>
+              <TextField label="From" type="date" required fullWidth disabled={busy} value={timelineDateInput(draft.startDate)} onChange={event => setDraft(value => ({...value, startDate: event.target.value}))} slotProps={{inputLabel: {shrink: true}, htmlInput: {min: "0001-01-01", max: draft.current ? "9999-12-31" : timelineDateInput(draft.endDate) || "9999-12-31"}}} />
+              <TextField label="To" type="date" required={!draft.current} fullWidth disabled={busy || draft.current} value={draft.current ? "" : timelineDateInput(draft.endDate)} onChange={event => setDraft(value => ({...value, endDate: event.target.value}))} slotProps={{inputLabel: {shrink: true}, htmlInput: {min: timelineDateInput(draft.startDate) || "0001-01-01", max: "9999-12-31"}}} />
+            </Stack>
+            <FormControlLabel control={<Checkbox checked={draft.current} disabled={busy} onChange={event => setDraft(value => ({...value, current: event.target.checked}))} />} label="Currently in this position" />
+            <Typography variant="caption" sx={{display: "block", mt: 1}} color="text.secondary">Dates apply to both languages. {period || (entry.translations?.[language]?.period ? `Previous period: ${entry.translations[language].period}. Please select the dates.` : "Select the starting and ending date. Future dates are allowed.")}</Typography>
+            {(draft.startDate?.length === 7 || draft.endDate?.length === 7) && <Typography variant="caption" sx={{display: "block", mt: 1}} color="text.secondary">Existing month-only dates use day 1 in the picker. They keep their original month precision unless you change them.</Typography>}
+          </Box>
+          <Box>
             <Stack direction={{xs: "column", sm: "row"}} spacing={2} sx={{mb: 2, justifyContent: "space-between"}}>
               <Tabs value={language} onChange={(_, value) => setLanguage(value)} aria-label="Station language">
                 {SITE_LANGUAGES.map(lang => <Tab key={lang.code} value={lang.code} label={lang.label} disabled={busy} id={`station-tab-${lang.code}`} aria-controls="station-language-fields" />)}
               </Tabs>
               <Stack direction="row" sx={{alignItems: "center"}}>
-                {SITE_LANGUAGES.filter(lang => lang.code !== language).map(lang => <Button key={lang.code} type="button" variant="outlined" startIcon={<Languages size={16} />} disabled={busy || !translation.title?.trim() || !translation.period?.trim()} onClick={() => void translate(lang.code)}>Translate to {lang.label}</Button>)}
+                {SITE_LANGUAGES.filter(lang => lang.code !== language).map(lang => <Button key={lang.code} type="button" variant="outlined" startIcon={<Languages size={16} />} disabled={busy || !translation.title?.trim() || !period} onClick={() => void translate(lang.code)}>Translate to {lang.label}</Button>)}
               </Stack>
             </Stack>
             <Box role="tabpanel" id="station-language-fields" aria-labelledby={`station-tab-${language}`} sx={{display: "grid", gap: 2}}>
               <Box sx={{display: "grid", gridTemplateColumns: {xs: "1fr", sm: "1fr 1fr"}, gap: 2}}>
-                {["title", "period", "location"].map(field => <TextField key={field} label={labels[field]} autoFocus={field === "title"} disabled={busy} value={translation[field] || ""} onChange={event => update(field, event.target.value)} slotProps={{htmlInput: {maxLength: TIMELINE_LIMITS[field]}}} sx={field === "location" ? {gridColumn: "1 / -1"} : undefined} />)}
+                {["title", "company", "location"].map(field => <TextField key={field} label={labels[field]} autoFocus={field === "title"} disabled={busy} value={translation[field] || ""} onChange={event => update(field, event.target.value)} slotProps={{htmlInput: {maxLength: TIMELINE_LIMITS[field]}}} sx={field === "location" ? {gridColumn: "1 / -1"} : undefined} />)}
               </Box>
               <TimelineRichTextEditor key={`${language}-detail`} label="Role description" disabled={busy} value={timelineEditorHtml(translation, "detail")} onChange={html => update("detailHtml", html)} />
               <TimelineRichTextEditor key={`${language}-highlights`} label="Achievements / highlights" disabled={busy} value={timelineEditorHtml(translation, "highlights")} onChange={html => update("highlightsHtml", html)} />
-              <Typography variant="caption" color="text.secondary">A title and period are required in at least one language. Missing translations fall back to the other language.</Typography>
+              <Typography variant="caption" color="text.secondary">A title is required in at least one language. Missing translations fall back to the other language.</Typography>
             </Box>
           </Box>
           <Divider />

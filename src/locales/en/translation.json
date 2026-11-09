@@ -480,6 +480,7 @@
     }
   ],
   "timelineDialog": {
+    "opensNewTab": "Opens in a new tab",
     "documents": "Documents & case studies",
     "documentLanguages": {"en": "English", "de": "German"},
     "open": "Open details for {{title}}",

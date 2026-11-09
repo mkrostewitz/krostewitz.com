@@ -1,4 +1,5 @@
 import {sanitizeTimelineHtml, timelineHtmlText} from "../../lib/timelineRichText.mjs";
+import {FileText, ArrowUpRight} from "lucide-react";
 import {useEffect, useState} from "react";
 import {useTranslation} from "react-i18next";
 
@@ -6,6 +7,23 @@ import {localizeTimeline} from "../../lib/cvTimelineData.mjs";
 import {useInViewOnce} from "@/lib/useInViewOnce";
 import pageStyles from "../../page.module.css";
 import styles from "./timeline-section.module.css";
+
+function DocumentLinks({documents, t}) {
+  if (!documents?.length) return null;
+  return <div className={styles.documentPanel}>
+    <h4>{t("timelineDialog.documents")}</h4>
+    <ul className={styles.documentLinks}>
+      {documents.map(doc => <li key={doc.id}>
+        <a href={doc.url} target="_blank" rel="noopener noreferrer" onClick={event => event.stopPropagation()}>
+          <span className={styles.documentIcon}><FileText size={22} aria-hidden="true" /></span>
+          <span className={styles.documentTitle}>{doc.title.replace(/_/g, " ").replace(/\.pdf$/i, "")}<small>PDF{doc.language ? ` · ${t(`timelineDialog.documentLanguages.${doc.language}`)}` : ""}</small></span>
+          <ArrowUpRight className={styles.documentArrow} size={18} aria-hidden="true" />
+          <span className={styles.srOnly}>{t("timelineDialog.opensNewTab")}</span>
+        </a>
+      </li>)}
+    </ul>
+  </div>;
+}
 
 const TimelineSection = () => {
   const {t, i18n} = useTranslation();
@@ -58,12 +76,6 @@ const TimelineSection = () => {
   }, [selectedIndex]);
 
   const closeDialog = () => setSelectedIndex(null);
-  const openItemOnKeyDown = (event, idx) => {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      setSelectedIndex(idx);
-    }
-  };
 
   return (
     <section id="timeline" className={pageStyles.section} ref={sectionRef}>
@@ -80,20 +92,18 @@ const TimelineSection = () => {
             }`}
             style={{"--item-delay": `${idx * 120}ms`}}
             onClick={() => setSelectedIndex(idx)}
-            onKeyDown={(event) => openItemOnKeyDown(event, idx)}
-            role="button"
-            tabIndex={0}
-            aria-label={t("timelineDialog.open", {title: item.title})}
           >
             <div className={styles.timelineBadge}>{item.period}</div>
             <span className={styles.timelineMarker} aria-hidden="true" />
             <div className={styles.timelineBody}>
               <h3>{item.title}</h3>
+              {item.company && <p className={styles.company}>{item.company}</p>}
               <p className={styles.location}>{item.location}</p>
               <p>{item.detail}</p>
-              <span className={styles.timelineAction}>
+              <DocumentLinks documents={item.documents} t={t} />
+              <button type="button" className={styles.timelineAction} aria-label={t("timelineDialog.open", {title: item.title})} onClick={event => {event.stopPropagation(); setSelectedIndex(idx);}}>
                 {t("timelineDialog.viewDetails")}
-              </span>
+              </button>
             </div>
           </div>
         ))}
@@ -119,6 +129,7 @@ const TimelineSection = () => {
               <div>
                 <p className={styles.modalPeriod}>{selectedItem.period}</p>
                 <h3 id="timeline-dialog-title">{selectedItem.title}</h3>
+                {selectedItem.company && <p className={styles.company}>{selectedItem.company}</p>}
                 <p className={styles.modalLocation}>{selectedItem.location}</p>
               </div>
               <button
@@ -129,6 +140,7 @@ const TimelineSection = () => {
                 {t("timelineDialog.close")}
               </button>
             </header>
+            <DocumentLinks documents={selectedItem.documents} t={t} />
 
             {selectedItem.detailHtml !== undefined ? <div id="timeline-dialog-summary" className={`${styles.modalSummary} ${styles.richText}`} dangerouslySetInnerHTML={{__html: sanitizeTimelineHtml(selectedItem.detailHtml)}} /> : <p id="timeline-dialog-summary" className={styles.modalSummary}>{selectedItem.detail}</p>}
 
@@ -142,16 +154,7 @@ const TimelineSection = () => {
                 </ul>}
               </div>
             )}
-            {selectedItem.documents?.length > 0 && <div className={styles.modalHighlights}>
-              <h4>{t("timelineDialog.documents")}</h4>
-              <ul className={styles.documents}>
-                {selectedItem.documents.map(doc => <li key={doc.id}>
-                  <a href={doc.url} target="_blank" rel="noopener noreferrer">
-                    {doc.title} <span>— PDF{doc.language ? ` · ${t(`timelineDialog.documentLanguages.${doc.language}`)}` : ""} ↗</span>
-                  </a>
-                </li>)}
-              </ul>
-            </div>}
+
           </article>
         </div>
       )}
