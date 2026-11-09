@@ -5,6 +5,7 @@ import {useTranslation} from "react-i18next";
 
 import LeadCaptureModal from "../contact/LeadCaptureModal";
 import pageStyles from "../../page.module.css";
+import styles from "./cv-section.module.css";
 import "../../buttons.css";
 
 const DEFAULT_CV_DOWNLOADS = {
@@ -64,21 +65,16 @@ const CvSection = () => {
   return (
     <section
       id="cv"
-      className={pageStyles.section}
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        textAlign: "center",
-      }}
+      className={styles.cvDownload}
+      aria-labelledby="cv-title"
     >
       <div className={pageStyles.sectionHeader}>
-        <h2>{t("cv.title")}</h2>
+        <h3 id="cv-title" className={styles.title}>{t("cv.title")}</h3>
         <p className={pageStyles.lead}>{t("cv.subtitle")}</p>
       </div>
       <button
         type="button"
-        className="primary"
+        className={`primary ${styles.cvButton}`}
         title={cvDownload.fileName || t("cv.download")}
         onClick={() => setIsModalOpen(true)}
       >

@@ -6,6 +6,7 @@ import {useTranslation} from "react-i18next";
 import {groupTimelineRoles} from "../../lib/timelineGroups.mjs";
 import {localizeTimeline} from "../../lib/cvTimelineData.mjs";
 import {useInViewOnce} from "@/lib/useInViewOnce";
+import CvSection from "../cv/CvSection";
 import pageStyles from "../../page.module.css";
 import styles from "./timeline-section.module.css";
 
@@ -125,6 +126,8 @@ const TimelineSection = () => {
           {expanded ? <ChevronUp size={18} aria-hidden="true" /> : <ChevronDown size={18} aria-hidden="true" />}
         </button>
       </div>}
+
+      <CvSection />
 
       {selectedItem && (
         <div

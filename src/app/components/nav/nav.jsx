@@ -22,7 +22,6 @@ const navLinks = [
   {href: "/#about", labelKey: "nav.about"},
   {href: "/#skills", labelKey: "nav.impact", section: "skills"},
   {href: "/#timeline", labelKey: "nav.timeline"},
-  {href: "/#cv", labelKey: "nav.cv"},
   {href: "/#references", labelKey: "nav.references", section: "references"},
   {href: "/#blog", labelKey: "nav.blog", section: "blog"},
   {href: "/#portfolio", labelKey: "nav.portfolio", section: "lab"},

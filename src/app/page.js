@@ -15,7 +15,6 @@ import PersonalSection from "./components/personal/PersonalSection";
 import SkillsSection from "./components/skills/SkillsSection";
 import FoldSection from "./components/fold/FoldSection";
 import ExecutiveSummary from "./components/executive/ExecutiveSection";
-import CvSection from "./components/cv/CvSection";
 import BlogSection from "./components/blog/BlogSection";
 import PortfolioSection from "./components/portfolio/PortfolioSection";
 import PublicFooter from "./components/footer/PublicFooter";
@@ -94,12 +93,8 @@ export default function Home() {
         {/* My Skills */}
         {showSkillsSection ? <SkillsSection skills={databaseSkills} /> : null}
 
-        {/* Timeline */}
+        {/* Experience and CV */}
         <TimelineSection />
-
-        {/* Experience Map */}
-        {/* CV Section */}
-        <CvSection />
 
         <ReferencesSection />
 
