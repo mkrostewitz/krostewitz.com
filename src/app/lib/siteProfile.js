@@ -3,6 +3,7 @@ import "server-only";
 import {unstable_cache} from "next/cache";
 
 import {getDb} from "./mongo";
+import {ensureReferences, saveReferences, withReferences} from "./referenceStorage.mjs";
 import {normalizeReferences} from "./references.mjs";
 import {
   PUBLIC_CACHE_REVALIDATE_SECONDS,
@@ -725,7 +726,7 @@ async function readSiteProfile() {
     document = {...document, skillsEnabled: true};
   }
 
-  return serializeProfile(document || {});
+  return serializeProfile(withReferences(document || {}, await ensureReferences(db)));
 }
 
 export const getSiteProfile = unstable_cache(
@@ -808,15 +809,16 @@ export async function saveSiteProfile(input = {}, user) {
     document.aiChat = aiChat;
   }
 
+  const referenceChanges = {};
   if (Object.prototype.hasOwnProperty.call(input, "references")) {
     try {
-      document.references = normalizeReferences(input.references, {strict: true});
+      referenceChanges.references = normalizeReferences(input.references, {strict: true});
     } catch (error) {
       throw new SiteProfileError(error.message);
     }
   }
   if (Object.prototype.hasOwnProperty.call(input, "referencesEnabled")) {
-    document.referencesEnabled = input.referencesEnabled === true;
+    referenceChanges.referencesEnabled = input.referencesEnabled === true;
   }
 
   const insertDefaults = {createdAt: now};
@@ -854,12 +856,16 @@ export async function saveSiteProfile(input = {}, user) {
     .collection(CONTENT_COLLECTION)
     .findOne({_id: PROFILE_ID});
 
+  const storedReferences = Object.keys(referenceChanges).length
+    ? await saveReferences(db, referenceChanges, user)
+    : await ensureReferences(db);
+
   revalidatePublicTags(
     PUBLIC_CACHE_TAGS.profile,
     PUBLIC_CACHE_TAGS.translations
   );
 
-  return serializeProfile(nextDocument || document);
+  return serializeProfile(withReferences(nextDocument || document, storedReferences));
 }
 
 export async function isBlogEnabled() {
