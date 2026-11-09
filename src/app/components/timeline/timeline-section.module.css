@@ -280,20 +280,20 @@
   font-size: 1rem;
 }
 
-.modalHighlights ul {
+.modalHighlights > ul {
   display: grid;
   gap: 8px;
   list-style: none;
 }
 
-.modalHighlights li {
+.modalHighlights > ul > li {
   color: var(--text-secondary);
   line-height: 1.55;
   padding-left: 18px;
   position: relative;
 }
 
-.modalHighlights li::before {
+.modalHighlights > ul > li::before {
   background: var(--foreground);
   border-radius: 50%;
   content: "";
@@ -372,3 +372,15 @@
     animation: none;
   }
 }
+
+.documents a { color: var(--foreground); text-decoration: underline; text-underline-offset: 4px; overflow-wrap: anywhere; }
+.documents a span { color: var(--text-muted); font-size: .85em; }
+.documents a:focus-visible { outline: 2px solid var(--accent, #5773ff); outline-offset: 4px; }
+
+.richText { line-height: 1.65; overflow-wrap: anywhere; white-space: normal; }
+.richText p { margin: 0 0 .8em; }
+.richText h3, .richText h4 { margin: 1em 0 .5em; }
+.richText ul, .richText ol { padding-left: 1.5em; margin: .6em 0; }
+.richText li p { margin: 0; }
+.richText blockquote { border-left: 3px solid var(--border); margin: .8em 0; padding-left: 1em; }
+.richText a { text-decoration: underline; }

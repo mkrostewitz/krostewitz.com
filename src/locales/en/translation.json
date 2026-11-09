@@ -480,6 +480,8 @@
     }
   ],
   "timelineDialog": {
+    "documents": "Documents & case studies",
+    "documentLanguages": {"en": "English", "de": "German"},
     "open": "Open details for {{title}}",
     "viewDetails": "Details",
     "close": "Close",

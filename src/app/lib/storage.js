@@ -364,3 +364,18 @@ export function allowedLeadPhotoHost(hostname) {
   try {trusted.push(new URL(getSpacesConfig().publicUrl).hostname);} catch { /* Remote Apollo photos work without upload storage configured. */ }
   return trusted.includes(hostname.toLowerCase());
 }
+
+export async function uploadTimelineDocument(file, user) {
+  if (!file || typeof file.arrayBuffer !== "function") throw new UploadError("Select a PDF document.");
+  if (!/\.pdf$/i.test(file.name || "") || file.size <= 0 || file.size > 10 * 1024 * 1024) throw new UploadError("Choose a PDF up to 10 MB.");
+  const body = Buffer.from(await file.arrayBuffer());
+  if (body.byteLength > 10 * 1024 * 1024 || body.subarray(0, 5).toString() !== "%PDF-") throw new UploadError("The file is not a valid PDF document.");
+  const fileName = safeFileName(file.name).slice(0, 200);
+  const id = crypto.randomUUID();
+  const key = `${getSpacesConfig().prefix}/timeline/${id}/${fileName}`;
+  const url = await putPublicObject({key, body, contentType: "application/pdf",
+    disposition: `inline; filename="${fileName}"`,
+    metadata: {uploadedBy: user?.email || "admin", purpose: "timeline-document"},
+  });
+  return {id, type: "pdf", url, fileName, size: body.byteLength};
+}

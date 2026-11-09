@@ -1,3 +1,4 @@
+import {sanitizeTimelineHtml, timelineHtmlText} from "../../lib/timelineRichText.mjs";
 import {useEffect, useState} from "react";
 import {useTranslation} from "react-i18next";
 
@@ -129,20 +130,28 @@ const TimelineSection = () => {
               </button>
             </header>
 
-            <p id="timeline-dialog-summary" className={styles.modalSummary}>
-              {selectedItem.detail}
-            </p>
+            {selectedItem.detailHtml !== undefined ? <div id="timeline-dialog-summary" className={`${styles.modalSummary} ${styles.richText}`} dangerouslySetInnerHTML={{__html: sanitizeTimelineHtml(selectedItem.detailHtml)}} /> : <p id="timeline-dialog-summary" className={styles.modalSummary}>{selectedItem.detail}</p>}
 
-            {selectedHighlights.length > 0 && (
+            {(selectedItem.highlightsHtml !== undefined ? Boolean(timelineHtmlText(selectedItem.highlightsHtml)) : selectedHighlights.length > 0) && (
               <div className={styles.modalHighlights}>
                 <h4>{t("timelineDialog.highlights")}</h4>
-                <ul>
+                {selectedItem.highlightsHtml !== undefined ? <div className={styles.richText} dangerouslySetInnerHTML={{__html: sanitizeTimelineHtml(selectedItem.highlightsHtml)}} /> : <ul>
                   {selectedHighlights.map((highlight) => (
                     <li key={highlight}>{highlight}</li>
                   ))}
-                </ul>
+                </ul>}
               </div>
             )}
+            {selectedItem.documents?.length > 0 && <div className={styles.modalHighlights}>
+              <h4>{t("timelineDialog.documents")}</h4>
+              <ul className={styles.documents}>
+                {selectedItem.documents.map(doc => <li key={doc.id}>
+                  <a href={doc.url} target="_blank" rel="noopener noreferrer">
+                    {doc.title} <span>— PDF{doc.language ? ` · ${t(`timelineDialog.documentLanguages.${doc.language}`)}` : ""} ↗</span>
+                  </a>
+                </li>)}
+              </ul>
+            </div>}
           </article>
         </div>
       )}

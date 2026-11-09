@@ -1,3 +1,5 @@
+import {sanitizeTimelineHtml, timelineHtmlText, TIMELINE_HTML_LIMIT} from "./timelineRichText.mjs";
+
 export const CV_TIMELINE_COLLECTION = "cv_timeline";
 export const CV_TIMELINE_META_ID = "cv_timeline_settings";
 export const TIMELINE_LANGUAGES = ["en", "de"];
@@ -8,6 +10,25 @@ export class TimelineError extends Error {
     super(message);
     this.status = status;
   }
+}
+
+export function normalizeTimelineDocuments(documents = []) {
+  if (!Array.isArray(documents) || documents.length > 10) throw new TimelineError("Attach at most 10 PDF documents per station.");
+  const ids = new Set();
+  return documents.map((doc) => {
+    if (!doc || typeof doc.id !== "string" || !/^[a-zA-Z0-9_-]{1,100}$/.test(doc.id) || ids.has(doc.id)) throw new TimelineError("Every document needs a unique valid ID.");
+    ids.add(doc.id);
+    for (const [field, limit] of [["title", 200], ["fileName", 250], ["url", 2000]]) {
+      if (typeof doc[field] !== "string" || !doc[field].trim() || doc[field].length > limit) throw new TimelineError(`Invalid document ${field}.`);
+    }
+    try {
+      const url = new URL(doc.url);
+      if (!["https:", "http:"].includes(url.protocol) || url.username || url.password) throw new Error();
+    } catch { throw new TimelineError("Document URL must use HTTP or HTTPS."); }
+    if (!["", ...TIMELINE_LANGUAGES].includes(doc.language || "")) throw new TimelineError("Choose a supported document language.");
+    if (!Number.isInteger(doc.size) || doc.size <= 0 || doc.size > 10 * 1024 * 1024) throw new TimelineError("Documents must be PDFs up to 10 MB.");
+    return {id: doc.id, title: doc.title.trim(), fileName: doc.fileName.trim(), url: doc.url.trim(), size: doc.size, language: doc.language || ""};
+  });
 }
 
 export function normalizeTimeline(entries) {
@@ -36,12 +57,27 @@ export function normalizeTimeline(entries) {
         throw new TimelineError("Use at most 50 highlights, each up to 2,000 characters.");
       }
       translation.highlights = highlights.map((value) => value.trim()).filter(Boolean);
+      for (const field of ["detailHtml", "highlightsHtml"]) {
+        if (source[field] === undefined) continue;
+        if (typeof source[field] !== "string" || source[field].length > TIMELINE_HTML_LIMIT) throw new TimelineError(`Rich text must be at most ${TIMELINE_HTML_LIMIT} characters.`);
+        translation[field] = sanitizeTimelineHtml(source[field]);
+        const plain = timelineHtmlText(translation[field]);
+        if (field === "detailHtml") {
+          if (plain.length > TIMELINE_LIMITS.detail) throw new TimelineError("Role description must be at most 10000 text characters.");
+          translation.detail = plain;
+        } else {
+          const items = plain.split(/\n+/).filter(Boolean);
+          if (items.length > 50 || items.some(item => item.length > 2000)) throw new TimelineError("Use at most 50 highlights, each up to 2,000 characters.");
+          translation.highlights = items;
+        }
+      }
       translations[language] = translation;
     }
     if (!Object.values(translations).some((value) => value.title && value.period)) {
       throw new TimelineError("Each entry needs a title and period in at least one language.");
     }
-    return {id: entry.id, translations};
+    const documents = normalizeTimelineDocuments(entry.documents);
+    return {id: entry.id, translations, ...(documents.length ? {documents} : {})};
   });
 }
 
@@ -57,7 +93,7 @@ export function localizeTimeline(entries, language) {
   return entries.map((entry) => {
     const fallback = TIMELINE_LANGUAGES.map((code) => entry.translations[code]).find((value) => value?.title && value?.period);
     const selected = entry.translations[language];
-    return {id: entry.id, ...(selected?.title && selected?.period ? selected : fallback)};
+    return {id: entry.id, ...(entry.documents?.length ? {documents: entry.documents} : {}), ...(selected?.title && selected?.period ? selected : fallback)};
   });
 }
 
@@ -66,7 +102,7 @@ export async function readTimeline(db) {
   const documents = await db.collection(CV_TIMELINE_COLLECTION).find({_id: {$ne: "timeline"}}).sort({order: 1, _id: 1}).toArray();
   const meta = await db.collection("site_content").findOne({_id: CV_TIMELINE_META_ID});
   return {
-    entries: documents.map(({_id, translations}) => ({id: _id, translations})),
+    entries: documents.map(({_id, translations, documents}) => ({id: _id, translations, ...(documents?.length ? {documents} : {})})),
     revision: meta?.revision || 0,
   };
 }
@@ -76,10 +112,10 @@ export function timelineOperations(entries, audit = {}, insertOnly = false) {
   return entries.map((entry, order) => ({updateOne: {
     filter: {_id: entry.id},
     update: insertOnly ? {$setOnInsert: {
-      order, translations: entry.translations, createdAt: audit.createdAt || now,
+      order, translations: entry.translations, documents: entry.documents || [], createdAt: audit.createdAt || now,
       updatedAt: audit.updatedAt || now, updatedBy: audit.updatedBy || null,
     }} : {
-      $set: {order, translations: entry.translations, updatedAt: now, updatedBy: audit.updatedBy || null},
+      $set: {order, translations: entry.translations, documents: entry.documents || [], updatedAt: now, updatedBy: audit.updatedBy || null},
       $setOnInsert: {createdAt: now},
     },
     upsert: true,

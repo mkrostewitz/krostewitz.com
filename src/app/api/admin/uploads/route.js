@@ -10,6 +10,7 @@ import {
   uploadPostAsset,
   uploadSiteAsset,
   uploadLeadPhoto,
+  uploadTimelineDocument,
 } from "../../../lib/storage";
 
 export const runtime = "nodejs";
@@ -27,7 +28,7 @@ export async function POST(request) {
     const file = formData.get("file");
     const purpose = String(formData.get("purpose") || "");
     const asset =
-      purpose === "lead-photo" ? await uploadLeadPhoto(file, user) : purpose === "site-branding"
+      purpose === "timeline-document" ? await uploadTimelineDocument(file, user) : purpose === "lead-photo" ? await uploadLeadPhoto(file, user) : purpose === "site-branding"
         ? await uploadSiteAsset(file, formData.get("kind"), user)
         : await uploadPostAsset(file, user);
 
