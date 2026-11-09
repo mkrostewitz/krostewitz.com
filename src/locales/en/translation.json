@@ -480,6 +480,10 @@
     }
   ],
   "timelineDialog": {
+    "showMore": "See more experience ({{count}})",
+    "showLess": "Show less",
+    "positions_one": "{{count}} position",
+    "positions_other": "{{count}} positions",
     "opensNewTab": "Opens in a new tab",
     "documents": "Documents & case studies",
     "documentLanguages": {"en": "English", "de": "German"},

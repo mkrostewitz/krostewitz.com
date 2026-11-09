@@ -1,8 +1,9 @@
 import {sanitizeTimelineHtml, timelineHtmlText} from "../../lib/timelineRichText.mjs";
-import {FileText, ArrowUpRight} from "lucide-react";
+import {FileText, ArrowUpRight, ChevronDown, ChevronUp} from "lucide-react";
 import {useEffect, useState} from "react";
 import {useTranslation} from "react-i18next";
 
+import {groupTimelineRoles} from "../../lib/timelineGroups.mjs";
 import {localizeTimeline} from "../../lib/cvTimelineData.mjs";
 import {useInViewOnce} from "@/lib/useInViewOnce";
 import pageStyles from "../../page.module.css";
@@ -29,6 +30,7 @@ const TimelineSection = () => {
   const {t, i18n} = useTranslation();
   const [sectionRef, inView] = useInViewOnce({threshold: 0.15});
   const [selectedIndex, setSelectedIndex] = useState(null);
+  const [expanded, setExpanded] = useState(false);
   const [entries, setEntries] = useState(null);
   const fallback = t("timeline", {returnObjects: true});
   const timeline = entries === null
@@ -75,6 +77,7 @@ const TimelineSection = () => {
     };
   }, [selectedIndex]);
 
+  const hiddenCount = timeline.filter(item => item.showAfterMore).length;
   const closeDialog = () => setSelectedIndex(null);
 
   return (
@@ -83,8 +86,13 @@ const TimelineSection = () => {
         <p className={pageStyles.eyebrow}>{t("nav.timeline")}</p>
         <h2>{t("nav.timeline")}</h2>
       </div>
-      <div className={styles.timeline}>
-        {timeline.map((item, idx) => (
+      <div id="timeline-entries" className={styles.timeline}>
+        {groupTimelineRoles(timeline, expanded).map(group => (
+          <div key={group.roles[0].item.id || group.roles[0].index} className={group.label && group.roles.length > 1 ? styles.employerGroup : styles.ungrouped}>
+            {group.label && group.roles.length > 1 && <header className={styles.employerHeader}>
+              <h3>{group.label}</h3><span>{t("timelineDialog.positions", {count: group.roles.length})}</span>
+            </header>}
+            {group.roles.map(({item, index: idx}) => (
           <div
             key={item.id || item.title}
             className={`${styles.timelineItem} ${
@@ -106,8 +114,17 @@ const TimelineSection = () => {
               </button>
             </div>
           </div>
+            ))}
+          </div>
         ))}
       </div>
+
+      {hiddenCount > 0 && <div className={styles.expandRow}>
+        <button type="button" className={styles.expandButton} aria-expanded={expanded} aria-controls="timeline-entries" onClick={() => {setSelectedIndex(null); setExpanded(value => !value);}}>
+          {t(expanded ? "timelineDialog.showLess" : "timelineDialog.showMore", {count: hiddenCount})}
+          {expanded ? <ChevronUp size={18} aria-hidden="true" /> : <ChevronDown size={18} aria-hidden="true" />}
+        </button>
+      </div>}
 
       {selectedItem && (
         <div
