@@ -5,6 +5,7 @@ import {useEffect, useState} from "react";
 import {useLoadingState} from "../../components/loading/LoadingProvider";
 import {useSnackbar} from "../../components/snackbar/SnackbarProvider";
 import AdminHeader from "../AdminHeader";
+import {uploadCvFile} from "../../lib/uploadCvClient.mjs";
 import TimelineEditor from "./TimelineEditor";
 import styles from "../admin.module.css";
 
@@ -43,6 +44,7 @@ export default function CvManager({user}) {
   const {closeSnackbar, showSnackbar} = useSnackbar();
   const [downloads, setDownloads] = useState({});
   const [uploadingLanguage, setUploadingLanguage] = useState("");
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const uploadingLanguageLabel =
     LANGUAGES.find((language) => language.code === uploadingLanguage)?.label ||
@@ -55,7 +57,7 @@ export default function CvManager({user}) {
   });
   useLoadingState({
     isLoading: Boolean(uploadingLanguage),
-    label: `Uploading ${uploadingLanguageLabel} CV`,
+    label: `Uploading ${uploadingLanguageLabel} CV${uploadProgress ? ` · ${uploadProgress}% transferred` : ""}`,
     type: "action",
   });
 
@@ -99,22 +101,11 @@ export default function CvManager({user}) {
     if (!file) return;
 
     setUploadingLanguage(language);
+    setUploadProgress(0);
     closeSnackbar();
 
     try {
-      const body = new FormData();
-      body.append("language", language);
-      body.append("file", file);
-
-      const response = await fetch("/api/admin/cv", {
-        method: "POST",
-        body,
-      });
-      const data = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        throw new Error(data.error || "Unable to upload CV file.");
-      }
+      const data = await uploadCvFile(file, language, setUploadProgress);
 
       setDownloads(data.downloads || {});
       showSnackbar({type: "success", message: "CV file uploaded."});
