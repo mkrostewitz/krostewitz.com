@@ -1631,6 +1631,62 @@
   min-height: 138px;
 }
 
+.postAssetsColumn {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+  align-content: start;
+  align-self: start;
+}
+
+.postDocumentsHeader {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.postDocumentsHeader .uploadButton {
+  justify-self: start;
+  max-width: 100%;
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+
+.postDocumentsHeader .uploadButton:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.postDocumentRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+}
+
+.postDocumentDetails {
+  display: grid;
+  gap: 4px;
+  flex: 1 1 150px;
+  min-width: 0;
+}
+
+.postDocumentDetails a {
+  color: var(--accent-text);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.postDocumentDetails span {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
 .postMediaPanel {
   display: grid;
   gap: 12px;

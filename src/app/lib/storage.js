@@ -1,6 +1,7 @@
 import "server-only";
 
 import crypto from "crypto";
+import {documentMimeType, MAX_DOCUMENT_BYTES} from "./postAttachments.mjs";
 import {PutObjectCommand, S3Client} from "@aws-sdk/client-s3";
 
 const DEFAULT_MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
@@ -400,4 +401,22 @@ export async function uploadAboutPhoto(file, user) {
   const key = `${getSiteUploadPrefix()}/about/${crypto.randomUUID()}.${extension}`;
   const url = await putPublicObject({key, body, contentType: mimeType, metadata: {uploadedBy: user?.email || "admin", purpose: "about-photo"}});
   return {type: "image", url, key, mimeType, size: body.byteLength};
+}
+
+export async function uploadPostDocument(file, user) {
+  if (!file || typeof file.arrayBuffer !== "function") throw new UploadError("Select a document.");
+  const mimeType = documentMimeType(file.name);
+  if (!mimeType) throw new UploadError("Choose a PDF, Word, Excel, PowerPoint, text, or CSV document.");
+  if (file.size <= 0 || file.size > MAX_DOCUMENT_BYTES) throw new UploadError("Choose a document up to 10 MB.");
+  const body = Buffer.from(await file.arrayBuffer());
+  if (!body.length || body.length > MAX_DOCUMENT_BYTES) throw new UploadError("Choose a document up to 10 MB.");
+  if (mimeType === "application/pdf" && body.subarray(0, 5).toString() !== "%PDF-") throw new UploadError("The file is not a valid PDF document.");
+  const originalName = String(file.name).slice(0, 200);
+  const fileName = safeFileName(originalName);
+  const key = `${getSpacesConfig().prefix}/documents/${crypto.randomUUID()}/${fileName}`;
+  const url = await putPublicObject({key, body, contentType: mimeType,
+    disposition: `attachment; filename="${fileName}"; filename*=UTF-8''${encodeURIComponent(originalName).replace(/'/g, "%27")}`,
+    metadata: {uploadedBy: user?.email || "admin", purpose: "post-document"},
+  });
+  return {type: "document", url, key, fileName: originalName, mimeType, size: body.byteLength};
 }

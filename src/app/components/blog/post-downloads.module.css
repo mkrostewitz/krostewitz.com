@@ -1,0 +1,6 @@
+.downloads { margin: 2rem 0; padding: 1.5rem; border: 1px solid currentColor; border-radius: 12px; }
+.downloads h2 { margin: 0 0 1rem; font-size: 1.3rem; }
+.downloads ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 1rem; }
+.downloads li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.5rem 1rem; }
+.downloads a { color: inherit; text-decoration: underline; overflow-wrap: anywhere; }
+.downloads span { opacity: 0.7; font-size: 0.875rem; }

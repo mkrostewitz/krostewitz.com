@@ -1,3 +1,4 @@
+import PostDownloads from "../../../../components/blog/PostDownloads";
 import Link from "next/link";
 import {notFound, redirect} from "next/navigation";
 
@@ -231,6 +232,8 @@ export default async function AdminPostPreviewPage({params, searchParams}) {
             className={blogStyles.content}
             dangerouslySetInnerHTML={{__html: previewPost.contentHtml}}
           />
+
+          <PostDownloads attachments={previewPost.attachments} language={language} />
         </article>
       </main>
       <PublicFooter />
