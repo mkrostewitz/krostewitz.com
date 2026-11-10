@@ -19,6 +19,21 @@ function excerpt(quote) {
   return `${shortened.slice(0, boundary > 200 ? boundary : 280)}…`;
 }
 
+function scrollReference(viewport, direction) {
+  const left = viewport.getBoundingClientRect().left;
+  const cards = [...viewport.querySelectorAll("article")];
+  const maxScroll = viewport.scrollWidth - viewport.clientWidth;
+  const target = direction > 0
+    ? cards.find(card => card.getBoundingClientRect().left > left + 2)
+    : cards.reverse().find(card => card.getBoundingClientRect().left < left - 2);
+  const wrap = direction > 0 ? viewport.scrollLeft >= maxScroll - 2 : viewport.scrollLeft <= 2;
+  viewport.scrollTo({
+    left: wrap || !target ? (direction > 0 ? 0 : maxScroll)
+      : viewport.scrollLeft + target.getBoundingClientRect().left - left,
+    behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth",
+  });
+}
+
 function ReferenceCard({item, t, language, full = false, onMore}) {
   const [failedPhoto, setFailedPhoto] = useState(false);
   return (
@@ -59,16 +74,15 @@ export function ReferencesDisplay({references, preview = false}) {
     const viewport = viewportRef.current;
     if (!carousel || paused || activeId || !viewport) return;
     const timer = window.setInterval(() => {
-      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
-          viewport.matches(":hover, :focus-within")) return;
-      const cards = [...viewport.querySelectorAll("article")];
-      const left = viewport.getBoundingClientRect().left;
-      const next = cards.find(card => card.getBoundingClientRect().left > left + 2);
-      const atEnd = viewport.scrollLeft + viewport.clientWidth >= viewport.scrollWidth - 2;
-      viewport.scrollTo({left: atEnd || !next ? 0 : viewport.scrollLeft + next.getBoundingClientRect().left - left, behavior: "smooth"});
-    }, 18000);
+      if (document.hidden || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      scrollReference(viewport, 1);
+    }, 6000);
     return () => window.clearInterval(timer);
   }, [carousel, paused, activeId]);
+  function move(direction) {
+    setPaused(true);
+    if (viewportRef.current) scrollReference(viewportRef.current, direction);
+  }
   if (!items.length) return null;
   return (
     <section id={preview ? undefined : "references"} className={pageStyles.section} aria-label={t("title")}>
@@ -78,9 +92,15 @@ export function ReferencesDisplay({references, preview = false}) {
           <h2>{t("title")}</h2>
           <p className={pageStyles.lead}>{t("subtitle")}</p>
         </div>
-        {carousel && <button type="button" className={styles.pause} aria-pressed={paused} onClick={() => setPaused(!paused)}>{t(paused ? "resume" : "pause")}</button>}
+        {carousel && <div className={styles.controls}>
+          <button type="button" className={styles.pause} onClick={() => move(-1)} aria-label={t("previous")}>←</button>
+          <button type="button" className={styles.pause} aria-pressed={paused} onClick={() => setPaused(!paused)}>{t(paused ? "resume" : "pause")}</button>
+          <button type="button" className={styles.pause} onClick={() => move(1)} aria-label={t("next")}>→</button>
+        </div>}
       </div>
-      <div ref={viewportRef} className={carousel ? styles.viewport : undefined} tabIndex={carousel ? 0 : undefined} aria-label={carousel ? t("carousel") : undefined}>
+      <div ref={viewportRef} className={carousel ? styles.viewport : undefined} tabIndex={carousel ? 0 : undefined} aria-label={carousel ? t("carousel") : undefined}
+        onMouseEnter={() => setPaused(true)} onFocusCapture={() => setPaused(true)}
+        onTouchStart={() => setPaused(true)} onWheel={() => setPaused(true)}>
         <div className={carousel ? styles.group : styles.gridItems}>
           {items.map((item) => <ReferenceCard key={`${item.id}-${item.photoUrl}`} item={item} t={t} language={i18n.resolvedLanguage || "en"} onMore={setActiveId} />)}
         </div>

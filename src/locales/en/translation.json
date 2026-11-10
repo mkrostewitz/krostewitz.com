@@ -35,6 +35,8 @@
     "linkedin": "View {{name}} on LinkedIn",
     "pause": "Pause scrolling",
     "resume": "Resume scrolling",
+    "previous": "Previous recommendation",
+    "next": "Next recommendation",
     "carousel": "Recommendations carousel. Hover or focus to pause; scroll to browse."
   },
   "admin": {

@@ -1,4 +1,5 @@
 .heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; flex-shrink: 0; }
 .gridItems { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 20px; }
 .card { border: 1px solid var(--border); background: var(--surface-soft); border-radius: 18px; padding: clamp(20px, 3vw, 30px); display: flex; flex-direction: column; gap: 20px; min-width: 0; overflow-wrap: anywhere; }
 .person { display: flex; gap: 14px; align-items: center; }
@@ -20,7 +21,7 @@
 @media (prefers-reduced-motion: reduce) {
   .group { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); }
   .group .card { width: auto; }
-  .pause { display: none; }
+  .controls { display: none; }
 }
 
 .card .excerpt { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; white-space: normal; }

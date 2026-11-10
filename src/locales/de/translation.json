@@ -35,6 +35,8 @@
     "linkedin": "{{name}} auf LinkedIn ansehen",
     "pause": "Scrollen pausieren",
     "resume": "Scrollen fortsetzen",
+    "previous": "Vorherige Empfehlung",
+    "next": "Nächste Empfehlung",
     "carousel": "Empfehlungskarussell. Zum Pausieren mit Maus oder Tastatur fokussieren; zum Durchsehen scrollen."
   },
   "admin": {
