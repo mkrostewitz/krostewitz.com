@@ -3,6 +3,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import {EditorContent, mergeAttributes, Node, useEditor} from "@tiptap/react";
+import {DOCUMENT_ACCEPT, formatDocumentSize} from "../../lib/postAttachments.mjs";
 import LinkExtension from "@tiptap/extension-link";
 import StarterKit from "@tiptap/starter-kit";
 import {
@@ -393,6 +394,7 @@ function createEmptyForm() {
     categories: [],
     media: null,
     mediaGallery: [],
+    attachments: [],
     translations: createEmptyTranslations(),
   };
 }
@@ -623,6 +625,7 @@ function createFormFromPost(post) {
     categories: normalizeFormCategories(post.categories),
     media: post.media || null,
     mediaGallery: normalizeFormMediaGallery(post.mediaGallery),
+    attachments: post.attachments || [],
     translations: normalizePostTranslations(post),
   };
 }
@@ -1323,7 +1326,7 @@ export default function EditPostForm({
     }
   }
 
-  async function uploadFiles(event) {
+  async function uploadFiles(event, documents = false) {
     const input = event.currentTarget;
     const files = Array.from(input.files || []);
     if (files.length === 0) return;
@@ -1339,6 +1342,7 @@ export default function EditPostForm({
         try {
           const body = new FormData();
           body.append("file", file);
+          if (documents) body.append("purpose", "post-document");
 
           const response = await fetch("/api/admin/uploads", {
             method: "POST",
@@ -1357,7 +1361,11 @@ export default function EditPostForm({
         }
       }
 
-      appendUploadedAssets(uploadedAssets);
+      if (documents) {
+        setForm(current => ({...current, attachments: [...(current.attachments || []), ...uploadedAssets]}));
+      } else {
+        appendUploadedAssets(uploadedAssets);
+      }
 
       if (uploadError) {
         throw new Error(
@@ -1478,6 +1486,7 @@ export default function EditPostForm({
       translations,
       media: form.media,
       mediaGallery: form.mediaGallery,
+      attachments: form.attachments,
     };
   }
 
@@ -1621,7 +1630,7 @@ export default function EditPostForm({
         <div className={styles.buttonRow}>
           <button
             className={`${styles.secondaryButton} ${styles.aiAssistantButton} ${styles.iconTextButton}`}
-            disabled={isSaving}
+            disabled={isSaving || isUploading}
             type="button"
             onClick={() => setIsAiModalOpen(true)}
           >
@@ -1644,7 +1653,7 @@ export default function EditPostForm({
             <ChevronLeft aria-hidden="true" size={17} strokeWidth={2.3} />
             Back
           </Link>
-          <button className={styles.button} disabled={isSaving} type="submit">
+          <button className={styles.button} disabled={isSaving || isUploading} type="submit">
             {isSaving ? "Saving..." : "Save post"}
           </button>
         </div>
@@ -1853,95 +1862,125 @@ export default function EditPostForm({
             </div>
           </div>
 
-          <section
-            aria-labelledby="post-picture-title"
-            className={styles.postMediaPanel}
-          >
-            <div className={styles.postMediaHeader}>
-              <div className={styles.titleBlock}>
-                <h2 id="post-picture-title">Post pictures</h2>
-                <p className={styles.muted}>JPG, PNG, GIF, or video.</p>
+          <div className={styles.postAssetsColumn}>
+            <section className={styles.postMediaPanel} aria-labelledby="post-documents-title">
+              <div className={styles.postDocumentsHeader}>
+                <div className={styles.titleBlock}>
+                  <h2 id="post-documents-title">Documents</h2>
+                  <p className={styles.muted}>PDF, Word, Excel, PowerPoint, TXT, or CSV. Up to 10 MB each. Shared across post languages.</p>
+                </div>
+                <label className={styles.uploadButton}>
+                  {isUploading ? "Uploading..." : "Attach documents"}
+                  <input type="file" accept={DOCUMENT_ACCEPT} multiple disabled={isUploading || isSaving}
+                    onChange={event => uploadFiles(event, true)} />
+                </label>
               </div>
-              <label className={styles.uploadButton}>
-                {isUploading ? "Uploading..." : "Upload"}
-                <input
-                  accept="image/jpeg,image/png,image/gif,video/*"
-                  disabled={isUploading}
-                  multiple
-                  type="file"
-                  onChange={uploadFiles}
-                />
-              </label>
-            </div>
-
-            {form.media ? (
-              <div className={styles.postMediaPreview}>
-                {form.media.type === "image" ? (
-                  <img src={form.media.url} alt="" />
-                ) : (
-                  <video controls src={form.media.url} />
-                )}
-                <div className={styles.mediaDetails}>
-                  <strong title={form.media.fileName || "Uploaded media"}>
-                    {form.media.fileName || "Uploaded media"}
-                  </strong>
-                  <span>{form.media.mimeType || form.media.type}</span>
-                  <button
-                    className={styles.dangerButton}
-                    type="button"
-                    onClick={() => updateField("media", null)}
-                  >
-                    Remove cover
+              {!form.attachments?.length && <p className={styles.muted}>No documents attached.</p>}
+              {(form.attachments || []).map((item, index) => (
+                <div className={styles.postDocumentRow} key={`${item.url}-${index}`}>
+                  <div className={styles.postDocumentDetails}>
+                    <a href={item.url} download>{item.fileName}</a>
+                    <span>{formatDocumentSize(item.size)}</span>
+                  </div>
+                  <button type="button" className={styles.dangerButton} disabled={isSaving || isUploading}
+                    aria-label={`Remove ${item.fileName}`}
+                    onClick={() => setForm(current => ({...current, attachments: current.attachments.filter((_, i) => i !== index)}))}>
+                    Remove
                   </button>
                 </div>
+              ))}
+            </section>
+
+            <section
+              aria-labelledby="post-picture-title"
+              className={styles.postMediaPanel}
+            >
+              <div className={styles.postMediaHeader}>
+                <div className={styles.titleBlock}>
+                  <h2 id="post-picture-title">Post pictures</h2>
+                  <p className={styles.muted}>JPG, PNG, GIF, or video.</p>
+                </div>
+                <label className={styles.uploadButton}>
+                  {isUploading ? "Uploading..." : "Upload"}
+                  <input
+                    accept="image/jpeg,image/png,image/gif,video/*"
+                    disabled={isUploading}
+                    multiple
+                    type="file"
+                    onChange={event => uploadFiles(event)}
+                  />
+                </label>
               </div>
-            ) : (
-              <p className={styles.muted}>No cover attached.</p>
-            )}
 
-            {formGalleryMedia.length > 0 && (
-              <div
-                className={styles.postGalleryPreview}
-                aria-label="Gallery pictures"
-              >
-                {formGalleryMedia.map((item) => {
-                  const isCover = isSameMedia(form.media, item);
-
-                  return (
-                    <div
-                      className={styles.postGalleryItem}
-                      key={getMediaIdentity(item)}
+              {form.media ? (
+                <div className={styles.postMediaPreview}>
+                  {form.media.type === "image" ? (
+                    <img src={form.media.url} alt="" />
+                  ) : (
+                    <video controls src={form.media.url} />
+                  )}
+                  <div className={styles.mediaDetails}>
+                    <strong title={form.media.fileName || "Uploaded media"}>
+                      {form.media.fileName || "Uploaded media"}
+                    </strong>
+                    <span>{form.media.mimeType || form.media.type}</span>
+                    <button
+                      className={styles.dangerButton}
+                      type="button"
+                      onClick={() => updateField("media", null)}
                     >
-                      <img src={item.url} alt="" />
-                      <div className={styles.mediaDetails}>
-                        <strong title={item.fileName || "Gallery picture"}>
-                          {item.fileName || "Gallery picture"}
-                        </strong>
-                        <span>{item.mimeType || item.type}</span>
-                        <div className={styles.mediaActions}>
-                          <button
-                            className={styles.secondaryButton}
-                            disabled={isCover}
-                            type="button"
-                            onClick={() => setMediaAsCover(item)}
-                          >
-                            {isCover ? "Cover" : "Use as cover"}
-                          </button>
-                          <button
-                            className={styles.dangerButton}
-                            type="button"
-                            onClick={() => removeGalleryMedia(item)}
-                          >
-                            Remove
-                          </button>
+                      Remove cover
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <p className={styles.muted}>No cover attached.</p>
+              )}
+
+              {formGalleryMedia.length > 0 && (
+                <div
+                  className={styles.postGalleryPreview}
+                  aria-label="Gallery pictures"
+                >
+                  {formGalleryMedia.map((item) => {
+                    const isCover = isSameMedia(form.media, item);
+
+                    return (
+                      <div
+                        className={styles.postGalleryItem}
+                        key={getMediaIdentity(item)}
+                      >
+                        <img src={item.url} alt="" />
+                        <div className={styles.mediaDetails}>
+                          <strong title={item.fileName || "Gallery picture"}>
+                            {item.fileName || "Gallery picture"}
+                          </strong>
+                          <span>{item.mimeType || item.type}</span>
+                          <div className={styles.mediaActions}>
+                            <button
+                              className={styles.secondaryButton}
+                              disabled={isCover}
+                              type="button"
+                              onClick={() => setMediaAsCover(item)}
+                            >
+                              {isCover ? "Cover" : "Use as cover"}
+                            </button>
+                            <button
+                              className={styles.dangerButton}
+                              type="button"
+                              onClick={() => removeGalleryMedia(item)}
+                            >
+                              Remove
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </section>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+          </div>
         </div>
       </section>
 

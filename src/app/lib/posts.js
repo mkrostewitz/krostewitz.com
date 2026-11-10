@@ -9,6 +9,7 @@ import {
   getSupportedSiteLanguage,
   SITE_LANGUAGE_CODES,
 } from "../../lib/siteLanguages";
+import {normalizeAttachments} from "./postAttachments.mjs";
 import {getDb} from "./mongo";
 import {POST_CATEGORIES_COLLECTION, registerPostCategories} from "./postCategories.mjs";
 import {
@@ -779,6 +780,10 @@ function serializeLinkedInShareAttempts(value) {
     });
 }
 
+function normalizePostAttachments(value) {
+  try { return normalizeAttachments(value); } catch (error) { throw new PostValidationError(error.message); }
+}
+
 function normalizePostInput(input = {}) {
   const translations = normalizeTranslations(input);
   const primaryTranslation = getPrimaryTranslation(translations);
@@ -807,6 +812,7 @@ function normalizePostInput(input = {}) {
     translations,
     media: normalizeMedia(input.media),
     mediaGallery: normalizeMediaGallery(input.mediaGallery),
+    attachments: normalizePostAttachments(input.attachments),
     publishedAt: normalizePublishedAt(input),
   };
 }
@@ -834,6 +840,7 @@ export function serializePost(document, options = {}) {
     status: document.status || "draft",
     media: document.media || null,
     mediaGallery: serializeMediaGallery(document.mediaGallery),
+    attachments: normalizeAttachments(document.attachments),
     createdAt: toIsoDate(document.createdAt),
     updatedAt: toIsoDate(document.updatedAt),
     publishedAt: toIsoDate(document.publishedAt),
@@ -909,6 +916,7 @@ export async function createPost(input, user) {
     translations: normalized.translations,
     media: normalized.media,
     mediaGallery: normalized.mediaGallery,
+    attachments: normalized.attachments,
     authorEmail: user?.email || null,
     updatedBy: user?.email || null,
     createdAt: now,
@@ -949,6 +957,7 @@ export async function updatePost(postId, input, user) {
     translations: normalized.translations,
     media: normalized.media,
     mediaGallery: normalized.mediaGallery,
+    attachments: input.attachments === undefined ? (existing.attachments || []) : normalized.attachments,
     updatedAt: now,
     updatedBy: user?.email || null,
   };

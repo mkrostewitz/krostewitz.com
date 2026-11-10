@@ -1,3 +1,4 @@
+import PostDownloads from "../../components/blog/PostDownloads";
 import NewsletterSignup from "../../components/newsletter/NewsletterSignup";
 import {cookies} from "next/headers";
 import Link from "next/link";
@@ -232,6 +233,8 @@ export default async function BlogPostPage({params, searchParams}) {
             className={styles.content}
             dangerouslySetInnerHTML={{__html: post.contentHtml}}
           />
+
+          <PostDownloads attachments={post.attachments} language={language} />
 
           <NewsletterSignup language={language} />
 
