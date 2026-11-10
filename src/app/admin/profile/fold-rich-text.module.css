@@ -1,0 +1,7 @@
+.field { min-width: 0; width: 100%; }
+.label { font-size: 0.875rem; font-weight: 600; margin-bottom: 8px; }
+.editor { background: var(--surface); color: var(--foreground); }
+.editor :global(.ProseMirror) { min-height: 90px; padding: 14px 16px; outline: none; line-height: 1.6; overflow-wrap: anywhere; }
+.editor :global(.ProseMirror) p { margin: 0; }
+.editor :global(.ProseMirror) span { color: var(--accent-text); background: var(--accent-soft); border-radius: 3px; }
+.field [aria-disabled="true"] { opacity: 0.6; }

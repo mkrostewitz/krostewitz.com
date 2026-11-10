@@ -1,7 +1,6 @@
 import Link from "next/link";
 import {Trans, useTranslation} from "react-i18next";
 
-import pageStyles from "../../page.module.css";
 import {useCookieConsent} from "../consent/CookieConsent";
 import {usePublicSettings} from "../public-settings/PublicSettingsProvider";
 import SkillsMap from "../skills/SkillsMap";
@@ -47,18 +46,19 @@ const FoldSection = () => {
 
       <div className={styles.content}>
         <div className={styles.copy}>
-          {/* <p className={`${pageStyles.eyebrow} ${styles.eyebrow}`}>
-            {t("eyebrow")}
-          </p> */}
           <h1 dangerouslySetInnerHTML={{__html: t("title")}} />
 
           <p className={styles.lead}>
-            <Trans i18nKey="offer.subtitle" components={{br: <br />}}>
+            <Trans i18nKey="offer.subtitle" components={{br: <br />, strong: <strong />, em: <em />, u: <u />, s: <s />, span: <span />}}>
               {t("subtitle")}
             </Trans>
           </p>
 
-          <p className={styles.usp}>{t("usp")}</p>
+          <p className={styles.usp}>
+            <Trans i18nKey="offer.usp" components={{br: <br />, strong: <strong />, em: <em />, u: <u />, s: <s />, span: <span />}}>
+              {t("usp")}
+            </Trans>
+          </p>
         </div>
 
         <ul className={styles.offerings}>
@@ -66,7 +66,7 @@ const FoldSection = () => {
             <li key={point}>
               <Trans
                 i18nKey={`offer.points.${index}`}
-                components={{br: <br />, strong: <strong />}}
+                components={{br: <br />, strong: <strong />, em: <em />, u: <u />, s: <s />, span: <span />}}
               >
                 {point}
               </Trans>

@@ -12,6 +12,7 @@ import {useLoadingState} from "../../components/loading/LoadingProvider";
 import {useSnackbar} from "../../components/snackbar/SnackbarProvider";
 import AdminHeader from "../AdminHeader";
 import AboutSettings from "./AboutSettings";
+import FoldSettings from "./FoldSettings";
 import styles from "../admin.module.css";
 
 const DEFAULT_THEME = {
@@ -590,6 +591,8 @@ export default function ProfileSettings({user}) {
             })}
           </section>
         </div>
+
+        <FoldSettings />
 
         <AboutSettings />
 
