@@ -1,0 +1,21 @@
+{
+  "iiot hardware": ["Industrial IoT Hardware", "Hardware für das industrielle Internet der Dinge"],
+  "industrial automation": ["Industrial Automation", "Industrieautomation"],
+  "automation systems": ["Automation Systems", "Automatisierungssysteme"],
+  "sensors and controls": ["Sensors & Controls", "Sensorik & Steuerungstechnik"],
+  "warehouse automation": ["Warehouse Automation", "Lagerautomation"],
+  "process automation": ["Process Automation", "Prozessautomation"],
+  "automotive": ["Automotive", "Automobilindustrie"],
+  "mobility": ["Mobility", "Mobilität"],
+  "traffic & transportation": ["Traffic & Transportation", "Verkehr & Transport"],
+  "building technology": ["Building Technology", "Gebäudetechnik"],
+  "military defence": ["Defence Technology", "Wehrtechnik"],
+  "rides & attractions": ["Amusement Rides & Attractions", "Fahrgeschäfte & Freizeitattraktionen"],
+  "industry-focus-0": ["Industrial Manufacturing", "Industrielle Fertigung"],
+  "industry-focus-1": ["Automation & Controls", "Automatisierungs- & Steuerungstechnik"],
+  "industry-focus-2": ["Transportation & Infrastructure", "Transport & Infrastruktur"],
+  "industry-focus-4": ["Electronics Manufacturing", "Elektronikfertigung"],
+  "industry-focus-5": ["Intralogistics & Warehousing", "Intralogistik & Lagerwirtschaft"],
+  "telecommunication": ["Telecommunications", "Telekommunikation"],
+  "advertisement": ["Advertising", "Werbung"]
+}

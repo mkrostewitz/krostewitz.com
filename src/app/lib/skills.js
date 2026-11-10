@@ -1,4 +1,5 @@
 import "server-only";
+import {createHash} from "node:crypto";
 
 import {unstable_cache} from "next/cache";
 
@@ -321,4 +322,33 @@ export async function saveSkills(input = [], user) {
   revalidatePublicTags(PUBLIC_CACHE_TAGS.skills);
 
   return skills;
+}
+
+export async function createSkill(label, user) {
+  const cleaned = cleanText(label, MAX_SKILL_LABEL_LENGTH);
+  if (!cleaned || label.length > MAX_SKILL_LABEL_LENGTH) {
+    throw new SkillsCollectionError(`Enter functional expertise of at most ${MAX_SKILL_LABEL_LENGTH} characters.`);
+  }
+  const skills = await readSkillsCollection();
+  const key = cleaned.normalize("NFKC").toLowerCase();
+  const existing = skills.find(skill => Object.values(skill.translations).some(
+    translation => translation.label.normalize("NFKC").toLowerCase() === key
+  ));
+  if (existing) return {id: existing.id, label: existing.translations.en.label};
+  if (skills.length >= MAX_SKILLS) throw new SkillsCollectionError(`The shared Skills catalog supports at most ${MAX_SKILLS} skills. Manage existing entries in Skills administration.`);
+  const id = `skill-${createHash("sha256").update(key).digest("hex")}`;
+  const translations = Object.fromEntries(supportedLanguages.map(language => [language, {label: cleaned, detail: ""}]));
+  const collection = (await getDb()).collection(SKILLS_COLLECTION);
+  const now = new Date();
+  try {
+    await collection.updateOne({_id: id}, {$setOnInsert: {
+      type: "skill", order: skills.length, score: DEFAULT_SKILL_SCORE, translations,
+      createdAt: now, updatedAt: now, updatedBy: user?.email || null,
+    }}, {upsert: true});
+  } catch (error) {
+    if (error.code !== 11000) throw error;
+  }
+  const saved = await collection.findOne({_id: id});
+  revalidatePublicTags(PUBLIC_CACHE_TAGS.skills);
+  return {id, label: saved.translations.en.label};
 }

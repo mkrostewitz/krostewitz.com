@@ -1,0 +1,16 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: 20px;
+}
+.card {
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 24px;
+  overflow-wrap: anywhere;
+}
+.card h3 { margin: 0 0 12px; }
+.card p { color: var(--text-muted); margin: 0 0 12px; }
+.year { font-size: 0.9rem; }
+.detail { white-space: pre-line; }
+.card a { color: var(--foreground); text-underline-offset: 4px; }

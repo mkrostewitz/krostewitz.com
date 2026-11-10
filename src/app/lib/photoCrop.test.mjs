@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {photoCrop} from './photoCrop.mjs';
+import {photoCrop, rectangularPhotoCrop} from './photoCrop.mjs';
 
 test('portrait and landscape images start with a centered square crop', () => {
   assert.deepEqual(photoCrop(800, 1200), {sx: 0, sy: 200, size: 800});
@@ -24,4 +24,19 @@ test('zoom and dragging keep the exported region inside the source image', () =>
 
 test('invalid dimensions cannot produce a blank or invalid crop', () => {
   for (const args of [[0, 100], [100, -1], [NaN, 100], [100, 100, Infinity]]) assert.throws(() => photoCrop(...args));
+});
+
+test('portrait crops preserve the requested ratio and stay within the image', () => {
+  for (const [width, height] of [[800, 1200], [1200, 800], [512, 512]]) {
+    for (const zoom of [1, 2, 4]) {
+      for (const position of [0, .5, 1]) {
+        const crop = rectangularPhotoCrop(width, height, zoom, position, position, 4 / 5);
+        assert.equal(crop.width / crop.height, 4 / 5);
+        assert.ok(crop.sx >= 0 && crop.sy >= 0);
+        assert.ok(crop.sx + crop.width <= width && crop.sy + crop.height <= height);
+      }
+    }
+    const square = photoCrop(width, height);
+    assert.deepEqual(rectangularPhotoCrop(width, height), {sx: square.sx, sy: square.sy, width: square.size, height: square.size});
+  }
 });

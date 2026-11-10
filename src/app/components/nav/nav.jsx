@@ -3,8 +3,8 @@
 /* eslint-disable @next/next/no-img-element */
 
 import Link from "next/link";
-import {useRouter} from "next/navigation";
-import {useEffect, useMemo, useState} from "react";
+import {usePathname, useRouter} from "next/navigation";
+import {useEffect, useMemo, useRef, useState} from "react";
 import {useTranslation} from "react-i18next";
 import {resources} from "../../../lib/i18n";
 import {
@@ -18,8 +18,8 @@ import ThemeToggle from "../theme/ThemeToggle";
 import "./nav.component.css";
 
 const navLinks = [
-  {href: "/#executiveSummary", labelKey: "nav.executiveSummary"},
   {href: "/#about", labelKey: "nav.about"},
+  {href: "/#executiveSummary", labelKey: "nav.executiveSummary"},
   {href: "/#skills", labelKey: "nav.impact", section: "skills"},
   {href: "/#timeline", labelKey: "nav.timeline"},
   {href: "/#references", labelKey: "nav.references", section: "references"},
@@ -84,11 +84,14 @@ function storeLanguage(language) {
 
 const NavBar = () => {
   const router = useRouter();
+  const pathname = usePathname();
+  const topBarRef = useRef(null);
   const {t, i18n} = useTranslation();
   const {allowExternalServices} = useCookieConsent();
   const {blogEnabled, labEnabled, personalEnabled, referencesAvailable, siteMetadata, skillsAvailable} = usePublicSettings();
 
   const [menuOpen, setMenuOpen] = useState(false);
+  const [activeHref, setActiveHref] = useState(null);
 
   const [lang, setLang] = useState(
     () =>
@@ -185,6 +188,61 @@ const NavBar = () => {
     [blogEnabled, labEnabled, personalEnabled, referencesAvailable, skillsAvailable],
   );
 
+  useEffect(() => {
+    if (pathname !== "/") return undefined;
+
+    let frame = 0;
+    const updateActiveSection = () => {
+      frame = 0;
+      const sections = visibleNavLinks
+        .map(({href}) => {
+          const element = document.getElementById(href.slice(2));
+          if (!element || !element.getClientRects().length) return null;
+          return {href, top: element.getBoundingClientRect().top};
+        })
+        .filter(Boolean)
+        .sort((a, b) => a.top - b.top);
+
+      // Read below the fixed header, using page order rather than menu order.
+      const readingLine = Math.max(
+        (topBarRef.current?.getBoundingClientRect().bottom || 0) + 24,
+        window.innerHeight * 0.25,
+      );
+      let current = null;
+      for (const section of sections) {
+        if (section.top > readingLine) break;
+        current = section.href;
+      }
+
+      // Short final sections may never reach the reading line.
+      if (
+        window.scrollY > 0 &&
+        window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 2
+      ) {
+        current = sections.at(-1)?.href || null;
+      }
+      setActiveHref(current);
+    };
+    const scheduleUpdate = () => {
+      if (!frame) frame = window.requestAnimationFrame(updateActiveSection);
+    };
+
+    window.addEventListener("scroll", scheduleUpdate, {passive: true});
+    window.addEventListener("resize", scheduleUpdate);
+    // Recheck after asynchronous content, images, or translations change layout.
+    const resizeObserver = new ResizeObserver(scheduleUpdate);
+    resizeObserver.observe(document.body);
+    if (topBarRef.current) resizeObserver.observe(topBarRef.current);
+    scheduleUpdate();
+
+    return () => {
+      window.removeEventListener("scroll", scheduleUpdate);
+      window.removeEventListener("resize", scheduleUpdate);
+      resizeObserver.disconnect();
+      window.cancelAnimationFrame(frame);
+    };
+  }, [pathname, visibleNavLinks]);
+
   const syncRouteLanguage = (language) => {
     if (typeof window === "undefined") return;
 
@@ -216,7 +274,7 @@ const NavBar = () => {
   };
 
   return (
-    <div className="topBar">
+    <div className="topBar" ref={topBarRef}>
       {/* Logo / back-to-top anchor */}
       <div className="kicker">
         <Link href="/#top" onClick={closeMenu} aria-label="Back to top">
@@ -233,7 +291,12 @@ const NavBar = () => {
       {/* Primary nav links */}
       <nav className={`nav ${menuOpen ? "navOpen" : ""}`}>
         {visibleNavLinks.map(({href, labelKey}) => (
-          <Link key={href} href={href} onClick={closeMenu}>
+          <Link
+            key={href}
+            href={href}
+            onClick={closeMenu}
+            aria-current={pathname === "/" && activeHref === href ? "location" : undefined}
+          >
             {t(labelKey)}
           </Link>
         ))}

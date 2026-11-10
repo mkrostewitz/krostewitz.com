@@ -214,16 +214,6 @@ export default function SkillsSettings({user}) {
     });
   }
 
-  function handleSkillScore(skillId, value) {
-    setSkillsForm((current) =>
-      current.map((skill) =>
-        skill.id === skillId
-          ? {...skill, score: normalizeSkillScore(value)}
-          : skill
-      )
-    );
-  }
-
   function handleSkillTranslation(skillId, language, field, value) {
     setSkillsForm((current) =>
       current.map((skill) =>
@@ -395,10 +385,7 @@ export default function SkillsSettings({user}) {
                         )}
                       </h3>
                       <p className={styles.muted}>
-                        {t("skills.scoreSummary", {
-                          score: skill.score,
-                          max: MAX_SKILL_SCORE,
-                        })}
+                        {t("skills.assignmentScale")}
                       </p>
                     </div>
 
@@ -438,40 +425,6 @@ export default function SkillsSettings({user}) {
                         <Trash2 aria-hidden="true" size={17} strokeWidth={2.3} />
                       </button>
                     </div>
-                  </div>
-
-                  <div className={styles.skillScoreRow}>
-                    <label className={`${styles.field} ${styles.skillRangeField}`}>
-                      <span className={styles.fieldLabel}>
-                        {t("fields.skillScore")}
-                      </span>
-                      <input
-                        max={MAX_SKILL_SCORE}
-                        min="0"
-                        step="0.1"
-                        type="range"
-                        value={skill.score}
-                        onChange={(event) =>
-                          handleSkillScore(skill.id, event.target.value)
-                        }
-                      />
-                    </label>
-                    <label className={styles.field}>
-                      <span className={styles.fieldLabel}>
-                        {t("fields.skillScoreValue")}
-                      </span>
-                      <input
-                        inputMode="numeric"
-                        max={MAX_SKILL_SCORE}
-                        min="0"
-                        step="0.1"
-                        type="number"
-                        value={skill.score}
-                        onChange={(event) =>
-                          handleSkillScore(skill.id, event.target.value)
-                        }
-                      />
-                    </label>
                   </div>
 
                   <div className={styles.skillLanguageGrid}>

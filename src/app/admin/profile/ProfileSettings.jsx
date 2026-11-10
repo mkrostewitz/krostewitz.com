@@ -11,6 +11,7 @@ import AddressMap from "../../components/address-map/AddressMap";
 import {useLoadingState} from "../../components/loading/LoadingProvider";
 import {useSnackbar} from "../../components/snackbar/SnackbarProvider";
 import AdminHeader from "../AdminHeader";
+import AboutSettings from "./AboutSettings";
 import styles from "../admin.module.css";
 
 const DEFAULT_THEME = {
@@ -589,6 +590,8 @@ export default function ProfileSettings({user}) {
             })}
           </section>
         </div>
+
+        <AboutSettings />
 
         <form className={styles.profileGrid} onSubmit={saveProfile}>
           <section className={`${styles.profilePanel} ${styles.profilePanelFull}`}>

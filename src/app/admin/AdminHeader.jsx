@@ -32,9 +32,10 @@ const ADMIN_NAV_ITEMS = [
   {active: "integrations", href: "/admin/integrations", label: "Integrations"},
   {active: "aiSettings", href: "/admin/ai-settings", label: "Agent Settings"},
   {active: "leads", href: "/admin/leads", label: "Leads"},
-  {active: "cv", href: "/admin/cv", label: "CV"},
+  {active: "cv", href: "/admin/cv", label: "Experience"},
+  {active: "education", href: "/admin/education", label: "Education"},
   {active: "security", href: "/admin/security", label: "Security"},
-];
+].sort((a, b) => a.label.localeCompare(b.label, "en"));
 
 export default function AdminHeader({active, user}) {
   const router = useRouter();
