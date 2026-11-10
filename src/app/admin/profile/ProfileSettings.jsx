@@ -4,6 +4,9 @@
 
 import {useEffect, useMemo, useRef, useState} from "react";
 import {useTranslation} from "react-i18next";
+import {Tabs, Tab, useMediaQuery} from "@mui/material";
+import {UserRound, PanelTop, FileUser, PanelsTopLeft, MapPin} from "lucide-react";
+import layout from "./profile-settings.module.css";
 
 import {loadRuntimeTranslations} from "../../../lib/i18n";
 import {publicAddress} from "../../lib/publicAddress.mjs";
@@ -191,6 +194,17 @@ export default function ProfileSettings({user}) {
   const coordinatesUnavailableLabel = t("status.coordinatesUnavailable");
   const notSavedLabel = t("status.notSaved");
   const missingMapboxNoticeShownRef = useRef(false);
+  const [activePanel, setActivePanel] = useState('identity');
+  const compact = useMediaQuery('(max-width: 900px)');
+  const german = String(locale).startsWith('de');
+  const panels = [
+    ['identity', german ? 'Identität & Design' : 'Identity & appearance', UserRound],
+    ['fold', 'Fold / Hero', PanelTop],
+    ['about', german ? 'Über mich' : 'About', FileUser],
+    ['visibility', german ? 'Sichtbare Bereiche' : 'Section visibility', PanelsTopLeft],
+    ['location', german ? 'Standort' : 'Location', MapPin],
+  ];
+  const panelProps = id => ({id: `settings-panel-${id}`, role: 'tabpanel', 'aria-labelledby': `settings-tab-${id}`, hidden: activePanel !== id, className: layout.tabPanel});
   const [profile, setProfile] = useState(EMPTY_PROFILE);
   const [address, setAddress] = useState(null);
   const [addressInput, setAddressInput] = useState("");
@@ -499,10 +513,10 @@ export default function ProfileSettings({user}) {
     }
   }
 
-  async function saveProfile(event) {
+  async function saveProfile(event, scope) {
     event.preventDefault();
 
-    if (addressInput.trim() && !address) {
+    if (scope === "location" && addressInput.trim() && !address) {
       showSnackbar({
         type: "error",
         message: t("errors.chooseAddress"),
@@ -517,8 +531,7 @@ export default function ProfileSettings({user}) {
       const response = await fetch("/api/admin/profile", {
         method: "PUT",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({
-          address,
+        body: JSON.stringify(scope === 'location' ? {address} : {
           metadata: metadataForm,
           name: nameForm,
         }),
@@ -532,10 +545,13 @@ export default function ProfileSettings({user}) {
       const nextProfile = data.profile || EMPTY_PROFILE;
 
       setProfile(nextProfile);
-      setAddress(nextProfile.address || null);
-      setAddressInput(nextProfile.address?.label || "");
-      setNameForm(normalizeNameForm(nextProfile.name));
-      setMetadataForm(normalizeMetadataForm(nextProfile.metadata));
+      if (scope === 'location') {
+        setAddress(nextProfile.address || null);
+        setAddressInput(nextProfile.address?.label || "");
+      } else {
+        setNameForm(normalizeNameForm(nextProfile.name));
+        setMetadataForm(normalizeMetadataForm(nextProfile.metadata));
+      }
       showSnackbar({type: "success", message: t("status.profileSaved")});
     } catch (error) {
       showSnackbar({
@@ -551,7 +567,7 @@ export default function ProfileSettings({user}) {
     <div className={styles.shell}>
       <AdminHeader active="profile" user={user} />
 
-      <main className={styles.main} aria-busy={isLoading}>
+      <main className={`${styles.main} ${layout.page}`} aria-busy={isLoading}>
         <div className={styles.toolbar}>
           <div className={styles.titleBlock}>
             <h1>{t("title")}</h1>
@@ -559,8 +575,19 @@ export default function ProfileSettings({user}) {
           </div>
         </div>
 
-        <div className={styles.profileGrid}>
-          <section className={`${styles.profilePanel} ${styles.profilePanelFull}`} aria-busy={savingVisibility}>
+        <div className={layout.workspace}>
+          <aside className={layout.navigation}>
+            <p className={layout.navLabel}>{german ? 'Einstellungen' : 'Settings'}</p>
+            <Tabs orientation={compact ? 'horizontal' : 'vertical'} variant="scrollable" scrollButtons="auto" allowScrollButtonsMobile
+              value={activePanel} onChange={(_, value) => {setActivePanel(value); window.scrollTo({top: 0, behavior: 'instant'});}} aria-label={german ? 'Komponenteneinstellungen' : 'Component settings'}>
+              {panels.map(([id, label, Icon]) => <Tab key={id} value={id} id={`settings-tab-${id}`} aria-controls={`settings-panel-${id}`}
+                icon={<Icon size={18} />} iconPosition="start" label={label} />)}
+            </Tabs>
+            <p className={layout.navHint}>{german ? 'Jeder Bereich wird separat gespeichert.' : 'Each section saves independently.'}</p>
+          </aside>
+          <div className={layout.panels}>
+        <div {...panelProps('visibility')}>
+          <section className={`${styles.profilePanel} ${styles.profilePanelFull} ${layout.panel}`} aria-busy={savingVisibility}>
             <div className={styles.panelHeader}>
               <div className={styles.titleBlock}>
                 <h2>{t("sections.public.title")}</h2>
@@ -592,12 +619,12 @@ export default function ProfileSettings({user}) {
           </section>
         </div>
 
-        <FoldSettings />
+        <div {...panelProps('fold')}><FoldSettings /></div>
+        <div {...panelProps('about')}><AboutSettings /></div>
 
-        <AboutSettings />
-
-        <form className={styles.profileGrid} onSubmit={saveProfile}>
-          <section className={`${styles.profilePanel} ${styles.profilePanelFull}`}>
+        <div {...panelProps('identity')}>
+        <form className={styles.profileGrid} onSubmit={event => saveProfile(event, 'identity')}>
+          <section className={`${styles.profilePanel} ${styles.profilePanelFull} ${layout.panel}`}>
             <div className={styles.panelHeader}>
               <div className={styles.titleBlock}>
                 <h2>{t("sections.metadata.title")}</h2>
@@ -607,7 +634,7 @@ export default function ProfileSettings({user}) {
               </div>
             </div>
 
-            <div className={styles.metadataGrid}>
+            <div className={`${styles.metadataGrid} ${layout.identityGrid}`}>
               <label className={styles.field}>
                 {t("fields.firstName")}
                 <input
@@ -845,7 +872,11 @@ export default function ProfileSettings({user}) {
             </div>
           </section>
 
-          <section className={styles.profilePanel}>
+        </form>
+        </div>
+        <div {...panelProps('location')}>
+        <form className={`${styles.profileGrid} ${layout.locationGrid}`} onSubmit={event => saveProfile(event, 'location')}>
+          <section className={`${styles.profilePanel} ${layout.panel}`}>
             <div className={styles.panelHeader}>
               <div className={styles.titleBlock}>
                 <h2>{t("sections.address.title")}</h2>
@@ -948,7 +979,7 @@ export default function ProfileSettings({user}) {
             </div>
           </section>
 
-          <section className={styles.profilePanel}>
+          <section className={`${styles.profilePanel} ${layout.panel}`}>
             <div className={styles.panelHeader}>
               <div className={styles.titleBlock}>
                 <h2>{t("sections.preview.title")}</h2>
@@ -977,6 +1008,9 @@ export default function ProfileSettings({user}) {
             )}
           </section>
         </form>
+        </div>
+          </div>
+        </div>
       </main>
     </div>
   );
