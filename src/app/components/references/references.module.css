@@ -11,19 +11,16 @@
 .context { margin: auto 0 0; color: var(--text-muted); font-size: .85rem; line-height: 1.5; }
 .card a { color: var(--foreground); text-underline-offset: 4px; text-decoration: underline; font-size: .88rem; }
 .pause { flex-shrink: 0; border: 1px solid var(--border); border-radius: 999px; padding: 9px 16px; color: var(--foreground); background: var(--background); cursor: pointer; }
-.viewport { container-type: inline-size; overflow-x: auto; overscroll-behavior-x: contain; max-width: 100%; border-radius: 18px; }
-.track { display: flex; width: max-content; animation: drift var(--duration) linear infinite; }
-.group { display: flex; min-width: 100cqw; gap: 20px; padding-right: 20px; }
-.group .card { width: min(420px, 78vw); flex: 1 0 auto; }
-.track.paused, .viewport:hover .track, .viewport:focus-within .track { animation-play-state: paused; }
+.viewport { container-type: inline-size; overflow-x: auto; overscroll-behavior-x: contain; max-width: 100%; scroll-snap-type: x mandatory; }
+.group { display: flex; gap: 20px; padding-bottom: 8px; }
+.group .card { box-sizing: border-box; width: min(420px, 100cqw); flex: 0 0 min(420px, 100cqw); scroll-snap-align: start; }
+.person > div { min-width: 0; }
 .viewport:focus-visible, .pause:focus-visible, .card a:focus-visible { outline: 3px solid var(--accent, #5773ff); outline-offset: 3px; }
-@keyframes drift { to { transform: translateX(-50%); } }
 @media (max-width: 600px) { .heading { flex-direction: column; } .pause { margin-bottom: 18px; } }
 @media (prefers-reduced-motion: reduce) {
-  .track { animation: none; width: auto; }
-  .group { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); padding-right: 0; width: 100%; }
+  .group { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); }
   .group .card { width: auto; }
-  .duplicate, .pause { display: none; }
+  .pause { display: none; }
 }
 
 .card .excerpt { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; white-space: normal; }

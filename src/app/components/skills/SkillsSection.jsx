@@ -1,9 +1,9 @@
 import {Dialog, DialogTitle, DialogContent, IconButton} from "@mui/material";
-import {Info, X} from "lucide-react";
+import {Hand, Info, X} from "lucide-react";
 import AdminMuiProvider from "../../admin/components/forms/AdminMuiProvider";
 import IndustryIcon from '../IndustryIcon';
 import {useTranslation} from "react-i18next";
-import {useState} from "react";
+import {useId, useState} from "react";
 
 import {useInViewOnce} from "@/lib/useInViewOnce";
 import pageStyles from "../../page.module.css";
@@ -11,15 +11,25 @@ import {useCookieConsent} from "../consent/CookieConsent";
 import SkillsMap from "./SkillsMap";
 import styles from "./skills-section.module.css";
 
+const EMPTY_COUNTRIES = [];
 const INITIAL_SKILL_COUNT = 5;
 const INITIAL_INDUSTRY_COUNT = 6;
 const SKILL_SKELETON_ROWS = Array.from({length: INITIAL_SKILL_COUNT}, (_, index) => index);
 
-const SkillsSection = ({skills, industries = [], loadError = false}) => {
+const SkillsSection = ({skills, countries, initialCountry, industries = [], loadError = false}) => {
+  const mapHintId = useId();
+  const [rotationPaused, setRotationPaused] = useState(false);
   const [selectedDetails, setSelectedDetails] = useState(null);
   const [showAllSkills, setShowAllSkills] = useState(false);
   const [showAllIndustries, setShowAllIndustries] = useState(false);
   const {t} = useTranslation(undefined, {keyPrefix: "skills"});
+  const showCountryCompanies = country => setSelectedDetails({
+    label: country.label,
+    content: <div className={styles.coverageTooltip}>
+      <p>{t("map.companiesTitle")}</p>
+      {country.companies?.length ? <ul>{country.companies.map(company => <li key={company}>{company}</li>)}</ul> : <p>{t("map.noCompanies")}</p>}
+    </div>,
+  });
   const {t: tConsent} = useTranslation(undefined, {
     keyPrefix: "cookieConsent",
   });
@@ -192,18 +202,30 @@ const SkillsSection = ({skills, industries = [], loadError = false}) => {
         <div className={styles.mapShell}>
           {canShowMapFrame ? (
             <>
-              <SkillsMap
-                ref={mapRefObserver}
-                className={styles.mapFrame}
-                mapClassName={styles.map}
-                skeletonClassName={styles.mapSkeleton}
-                allowExternalServices={allowExternalServices}
-                isActive={mapInView}
-                showSkeleton={shouldShowMapSkeleton}
-                skeletonLabel={t("map.loading", {
-                  defaultValue: "Loading experience map",
-                })}
-              />
+              <div className={styles.mapStage} role="group" aria-label={t("map.title")} aria-describedby={allowExternalServices ? mapHintId : undefined}>
+                <SkillsMap
+                  ref={mapRefObserver}
+                  experienceCountries={countries || EMPTY_COUNTRIES}
+                  initialCountry={initialCountry}
+                  autoSpin={!rotationPaused && !selectedDetails}
+                  onCountrySelect={showCountryCompanies}
+                  spinSpeed={3.5}
+                  className={styles.mapFrame}
+                  mapClassName={styles.map}
+                  skeletonClassName={styles.mapSkeleton}
+                  allowExternalServices={allowExternalServices}
+                  isActive={mapInView}
+                  showSkeleton={shouldShowMapSkeleton}
+                  skeletonLabel={t("map.loading", {
+                    defaultValue: "Loading experience map",
+                  })}
+                />
+                {allowExternalServices && <p id={mapHintId} className={styles.mapHint}>
+                  <Hand size={15} aria-hidden="true" />
+                  <span className={styles.mouseHint}>{t("map.interactionHint")}</span>
+                  <span className={styles.touchHint}>{t("map.touchInteractionHint")}</span>
+                </p>}
+              </div>
               {allowExternalServices && (
                 <div className={styles.mapLegend}>
                   <span>
@@ -214,6 +236,18 @@ const SkillsSection = ({skills, industries = [], loadError = false}) => {
                     <span className={`${styles.dot} ${styles.dotWorked}`} />
                     {t("map.worked")}
                   </span>
+                  <select className={styles.countryPicker} value="" aria-label={t("map.companiesByCountry")}
+                    onChange={event => {
+                      const country = countries?.find(item => item.id === event.target.value);
+                      if (country) showCountryCompanies(country);
+                    }}>
+                    <option value="" disabled>{t("map.companiesByCountry")}</option>
+                    {countries?.map(country => <option key={country.id} value={country.id}>{country.label}</option>)}
+                  </select>
+                  <button type="button" className={styles.rotationButton} aria-pressed={rotationPaused}
+                    onClick={() => setRotationPaused(paused => !paused)}>
+                    {t(rotationPaused ? "map.resumeRotation" : "map.pauseRotation")}
+                  </button>
                 </div>
               )}
             </>

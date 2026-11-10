@@ -86,11 +86,13 @@
   font-size: clamp(2.5rem, 5vw, 5rem);
   line-height: 1.02;
   text-wrap: balance;
+  white-space: pre-wrap;
   hyphens: auto;
-  overflow-wrap: anywhere;
+  overflow-wrap: normal;
+  word-break: normal;
 }
 
-.copy h1 span {
+.headlineAccent {
   background: -webkit-linear-gradient(
     120deg,
     #2af5e6 10%,
@@ -99,8 +101,11 @@
   );
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  overflow-wrap: anywhere;
+  overflow-wrap: normal;
+  word-break: normal;
 }
+
+.headlineMuted { color: rgba(255, 255, 255, 0.78); }
 
 .lead {
   min-width: 0;
@@ -352,3 +357,5 @@
     animation-duration: 2.4s;
   }
 }
+
+.lead, .usp, .eyebrow, .offerings li { white-space: pre-line; }

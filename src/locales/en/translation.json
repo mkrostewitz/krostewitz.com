@@ -433,6 +433,13 @@
       "subtitle": "Countries where I have lived, led teams, and built markets across three continents.",
       "lived": "Lived & led teams",
       "worked": "Built markets",
+      "interactionHint": "Drag to turn · Click a country for companies",
+      "touchInteractionHint": "Drag to turn · Tap a country for companies",
+      "companiesTitle": "Companies from my Experience / CV",
+      "companiesByCountry": "Companies by country",
+      "noCompanies": "No company name is recorded for this country.",
+      "pauseRotation": "Pause rotation",
+      "resumeRotation": "Resume rotation",
       "partner": "Partner networks",
       "missingToken": "Add NEXT_PUBLIC_MAPBOX_TOKEN to show the map."
     }

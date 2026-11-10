@@ -3,6 +3,7 @@
 /* eslint-disable @next/next/no-img-element */
 import {useEffect, useState} from "react";
 import PhotoEditor from "../components/forms/PhotoEditor";
+import AboutTranslationDialog from "./AboutTranslationDialog";
 import {useSnackbar} from "../../components/snackbar/SnackbarProvider";
 import styles from "../admin.module.css";
 import aboutStyles from "./about-settings.module.css";
@@ -13,6 +14,7 @@ export default function AboutSettings() {
   const [language, setLanguage] = useState("en");
   const [busy, setBusy] = useState(false);
   const [loadError, setLoadError] = useState("");
+  const [translationOpen, setTranslationOpen] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -82,6 +84,12 @@ export default function AboutSettings() {
                     ))}
                   </div>
                 </div>
+                <div>
+                  <button type="button" className={styles.button} disabled={!copy.headline.trim() || !copy.body.trim()}
+                    onClick={() => setTranslationOpen(true)}>
+                    Translate to {language === "en" ? "German" : "English"}
+                  </button>
+                </div>
                 <label className={styles.field}>Headline
                   <textarea required rows={2} maxLength={500} className={aboutStyles.headline}
                     value={copy.headline} onChange={event => changeCopy("headline", event.target.value)} />
@@ -132,6 +140,14 @@ export default function AboutSettings() {
           </fieldset>
         )}
       </section>
+      {translationOpen && <AboutTranslationDialog source={copy} sourceLanguage={language}
+        onClose={() => setTranslationOpen(false)}
+        onApply={(targetLanguage, translation) => {
+          setAbout(current => ({...current, translations: {...current.translations, [targetLanguage]: translation}}));
+          setLanguage(targetLanguage);
+          setTranslationOpen(false);
+          showSnackbar({type: "success", message: "Translation applied. Save About to publish it."});
+        }} />}
     </form>
   );
 }

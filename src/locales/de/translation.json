@@ -433,6 +433,13 @@
       "subtitle": "Märkte in denen ich gewirkt habe.",
       "lived": "Gelebt & Teams geführt",
       "worked": "Märkte aufgebaut",
+      "interactionHint": "Ziehen zum Drehen · Land für Unternehmen anklicken",
+      "touchInteractionHint": "Ziehen zum Drehen · Land für Unternehmen antippen",
+      "companiesTitle": "Unternehmen aus meinem Lebenslauf",
+      "companiesByCountry": "Unternehmen nach Land",
+      "noCompanies": "Für dieses Land ist kein Unternehmensname hinterlegt.",
+      "pauseRotation": "Drehung pausieren",
+      "resumeRotation": "Drehung fortsetzen",
       "partner": "Partnernetzwerke",
       "missingToken": "Bitte NEXT_PUBLIC_MAPBOX_TOKEN setzen, um die Karte anzuzeigen."
     }

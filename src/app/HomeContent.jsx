@@ -53,7 +53,7 @@ function getLocalizedSkill(skill, language) {
   };
 }
 
-export default function HomeContent({initialSummary = null}) {
+export default function HomeContent({initialSummary = null, initialFold}) {
   const {i18n} = useTranslation();
   const {
     labEnabled,
@@ -101,7 +101,7 @@ export default function HomeContent({initialSummary = null}) {
     <div className={styles.page} id="top">
       <div className={styles.backgroundGlow} aria-hidden />
       <NavBar />
-      <FoldSection />
+      <FoldSection content={initialFold} />
 
       <main className={styles.main}>
         {/* About Me */}
@@ -111,7 +111,7 @@ export default function HomeContent({initialSummary = null}) {
         <ExecutiveSummary skills={databaseSkills} summary={activeSummary} loadError={summaryError} />
 
         {/* My Skills */}
-        {showSkillsSection ? <SkillsSection skills={databaseSkills} industries={activeSummary?.industries || []} loadError={summaryError} /> : null}
+        {showSkillsSection ? <SkillsSection initialCountry={activeSummary?.mapInitialCountry} countries={activeSummary?.countries} skills={databaseSkills} industries={activeSummary?.industries || []} loadError={summaryError} /> : null}
 
         {/* Experience and CV */}
         <TimelineSection />

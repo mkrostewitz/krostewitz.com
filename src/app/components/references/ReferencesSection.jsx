@@ -1,11 +1,11 @@
 "use client";
 
 /* eslint-disable @next/next/no-img-element */
-import {localizeReference} from "../../lib/references.mjs";
+import {localizeReference, referencePresentation} from "../../lib/references.mjs";
 import {Dialog, DialogTitle, DialogContent, IconButton, Typography} from "@mui/material";
 import {X} from "lucide-react";
 import AdminMuiProvider from "../../admin/components/forms/AdminMuiProvider";
-import {useId, useState} from "react";
+import {useEffect, useId, useRef, useState} from "react";
 import {useTranslation} from "react-i18next";
 import {usePublicSettings} from "../public-settings/PublicSettingsProvider";
 import pageStyles from "../../page.module.css";
@@ -19,7 +19,7 @@ function excerpt(quote) {
   return `${shortened.slice(0, boundary > 200 ? boundary : 280)}…`;
 }
 
-function ReferenceCard({item, t, language, full = false, onMore, duplicate = false}) {
+function ReferenceCard({item, t, language, full = false, onMore}) {
   const [failedPhoto, setFailedPhoto] = useState(false);
   return (
     <article className={`${styles.card} ${full ? styles.fullCard : styles.compactCard}`}>
@@ -36,12 +36,12 @@ function ReferenceCard({item, t, language, full = false, onMore, duplicate = fal
         </div>
       </div>
       <blockquote className={full ? undefined : styles.excerpt}>{full ? item.quote : excerpt(item.quote)}</blockquote>
-      {!full && <button type="button" className={styles.more} tabIndex={duplicate ? -1 : undefined} onClick={() => onMore(item.id)} aria-label={t("moreAbout", {name: item.name})}>{t("more")}</button>}
+      {!full && <button type="button" className={styles.more} onClick={() => onMore(item.id)} aria-label={t("moreAbout", {name: item.name})}>{t("more")}</button>}
       {(item.relationship || item.date) && <p className={styles.context}>
         {item.date && <time dateTime={item.date}>{new Date(`${item.date}T12:00:00Z`).toLocaleDateString(language, {year: "numeric", month: "long", day: "numeric", timeZone: "UTC"})}</time>}
         {item.date && item.relationship ? " · " : ""}{item.relationship}
       </p>}
-      {item.linkedinUrl && <a tabIndex={duplicate ? -1 : undefined} href={item.linkedinUrl} target="_blank" rel="noopener noreferrer">{t("linkedin", {name: item.name})} ↗</a>}
+      {item.linkedinUrl && <a href={item.linkedinUrl} target="_blank" rel="noopener noreferrer">{t("linkedin", {name: item.name})} ↗</a>}
     </article>
   );
 }
@@ -51,9 +51,24 @@ export function ReferencesDisplay({references, preview = false}) {
   const titleId = useId();
   const [activeId, setActiveId] = useState(null);
   const [paused, setPaused] = useState(false);
+  const viewportRef = useRef(null);
   const carousel = references.mode === "carousel" && references.items.length > 1;
-  const items = references.items.map((item) => localizeReference(item, i18n.resolvedLanguage || i18n.language));
+  const items = references.items.map((item) => referencePresentation(localizeReference(item, i18n.resolvedLanguage || i18n.language)));
   const activeItem = items.find(item => item.id === activeId);
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    if (!carousel || paused || activeId || !viewport) return;
+    const timer = window.setInterval(() => {
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
+          viewport.matches(":hover, :focus-within")) return;
+      const cards = [...viewport.querySelectorAll("article")];
+      const left = viewport.getBoundingClientRect().left;
+      const next = cards.find(card => card.getBoundingClientRect().left > left + 2);
+      const atEnd = viewport.scrollLeft + viewport.clientWidth >= viewport.scrollWidth - 2;
+      viewport.scrollTo({left: atEnd || !next ? 0 : viewport.scrollLeft + next.getBoundingClientRect().left - left, behavior: "smooth"});
+    }, 18000);
+    return () => window.clearInterval(timer);
+  }, [carousel, paused, activeId]);
   if (!items.length) return null;
   return (
     <section id={preview ? undefined : "references"} className={pageStyles.section} aria-label={t("title")}>
@@ -65,14 +80,9 @@ export function ReferencesDisplay({references, preview = false}) {
         </div>
         {carousel && <button type="button" className={styles.pause} aria-pressed={paused} onClick={() => setPaused(!paused)}>{t(paused ? "resume" : "pause")}</button>}
       </div>
-      <div className={carousel ? styles.viewport : undefined} tabIndex={carousel ? 0 : undefined} aria-label={carousel ? t("carousel") : undefined}>
-        <div className={carousel ? `${styles.track} ${paused || activeItem ? styles.paused : ""}` : styles.grid} style={carousel ? {"--duration": `${Math.max(35, items.length * 18)}s`} : undefined}>
-          <div className={carousel ? styles.group : styles.gridItems}>
-            {items.map((item) => <ReferenceCard key={`${item.id}-${item.photoUrl}`} item={item} t={t} language={i18n.resolvedLanguage || "en"} onMore={setActiveId} />)}
-          </div>
-          {carousel && <div className={`${styles.group} ${styles.duplicate}`} aria-hidden="true">
-            {items.map((item) => <ReferenceCard key={`${item.id}-${item.photoUrl}`} item={item} t={t} language={i18n.resolvedLanguage || "en"} onMore={setActiveId} duplicate />)}
-          </div>}
+      <div ref={viewportRef} className={carousel ? styles.viewport : undefined} tabIndex={carousel ? 0 : undefined} aria-label={carousel ? t("carousel") : undefined}>
+        <div className={carousel ? styles.group : styles.gridItems}>
+          {items.map((item) => <ReferenceCard key={`${item.id}-${item.photoUrl}`} item={item} t={t} language={i18n.resolvedLanguage || "en"} onMore={setActiveId} />)}
         </div>
       </div>
       <AdminMuiProvider>
