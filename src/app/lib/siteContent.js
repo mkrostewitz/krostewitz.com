@@ -165,28 +165,3 @@ export async function saveTranslations(translations, user) {
     updatedBy: user?.email || null,
   };
 }
-
-// Merge only the fold fields atomically so other translations remain intact.
-export async function saveFoldTranslations(translations, user) {
-  const db = await getDb();
-  const defaults = getDefaultTranslations();
-  const fields = Object.fromEntries(supportedLanguages.map(language => [
-    `translations.${language}`,
-    {$mergeObjects: [
-      {$literal: defaults[language]},
-      {$ifNull: [`$translations.${language}`, {}]},
-      {offer: {$mergeObjects: [
-        {$literal: defaults[language].offer},
-        {$ifNull: [`$translations.${language}.offer`, {}]},
-        {$literal: translations[language]},
-      ]}},
-    ]},
-  ]));
-  await db.collection(CONTENT_COLLECTION).updateOne({_id: TRANSLATIONS_ID}, [{$set: {
-    ...fields,
-    updatedAt: '$$NOW',
-    createdAt: {$ifNull: ['$createdAt', '$$NOW']},
-    updatedBy: {$literal: user?.email || null},
-  }}], {upsert: true});
-  revalidatePublicTags(PUBLIC_CACHE_TAGS.translations);
-}

@@ -43,7 +43,7 @@ export default function FoldTranslationDialog({source, sourceLanguage, onApply, 
     {busy && <LinearProgress aria-label="Translating Fold / Hero" />}
     <DialogContent dividers aria-busy={busy}>
       <Stack spacing={2}>
-        <Typography>Translate the current headline, introduction, unique selling proposition, and offering points. Review and edit the result before applying it.</Typography>
+        <Typography>Translate the current headline segments, subheadline, personal statement, cards, and button labels. Review and edit the result before applying it.</Typography>
         <Alert severity="info">Applying replaces the {names[targetLanguage]} text in the editor. Publish it with Save Fold / Hero.</Alert>
         {error && <Alert severity="error">{error}</Alert>}
         {draft && <FoldFields copy={draft} language={targetLanguage} onChange={setDraft} disabled={busy} />}

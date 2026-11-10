@@ -331,3 +331,26 @@ Contact type now accepts one value per lead. The autocomplete replaces the curre
 On first access, the migration copies the legacy contact industry catalog while preserving IDs and merges exact title matches with the existing Industry Focus cards. Saved runtime translations take precedence over the bundled migration fallback. Unmatched cards remain in the catalog for manual assignment. Legacy translations and lead categories are retained as backups, but subsequent edits are made in the CV industry editor. The `experience_industries_v1` marker in `site_content` prevents reseeding or overwriting later edits.
 
 For an explicit migration, run `node scripts/migrate-experience-industries.mjs` to preview counts, then add `--apply` to save a backup and initialize the collection. When transferring an already migrated catalog, copy its migration marker as well as the industry documents. Existing CV assignment IDs must be preserved.
+
+### Homepage Fold content and production transfer
+
+The Fold editor is under **Profile & Settings → Fold / Hero**. Its bilingual plain-text content lives in the existing `site_content` collection, document `homepage-fold`. Headline segments use `primary`, `accent`, or `muted` styles and optional line breaks. The server loads both languages with the homepage; language switching needs no content fetch. The map and other homepage sections are unchanged.
+
+First initialization saves the previous `offer` translations under `migration.legacyOffers` and seeds the new English/German positioning. Existing legacy translation records remain untouched for recovery. Repeating initialization preserves CMS edits. Each save retains the preceding editorial content under `previousContent`.
+
+To copy content to production, deploy this code first. In the source site's Fold editor, click **Export content**. Open the production Fold editor, click **Import content**, select that JSON file, review both languages, and click **Save Fold / Hero**. Importing a file only updates the form until you save. Exports contain editorial content, not credentials, backups, or URLs. Booking continues to use the receiving site's Koalendar settings; the receiving site's LinkedIn destination is preserved.
+
+The command-line equivalent is:
+
+```sh
+# Initialize the configured local database; safe to repeat.
+node scripts/migrate-fold.mjs
+# Export its current saved content to a new file.
+node scripts/migrate-fold.mjs --export /tmp/homepage-fold.json
+# Validate against the production database without writing.
+node --env-file=.env.online scripts/migrate-fold.mjs --import /tmp/homepage-fold.json --dry-run
+# Import the reviewed content into production.
+node --env-file=.env.online scripts/migrate-fold.mjs --import /tmp/homepage-fold.json
+```
+
+Use the appropriate environment file for your deployment. `--dry-run` performs no database writes. Without `--import`, an existing Fold record is never overwritten. Imports replace only Fold editorial fields and preserve the destination bindings. Export refuses to overwrite an existing file. The dynamically rendered homepage reads the record on its next request.
