@@ -101,3 +101,8 @@
 }
 
 .emptyPortrait { display: grid; place-items: center; width: 220px; aspect-ratio: 4 / 5; border: 1px dashed var(--border-muted); border-radius: 8px; }
+
+@container (max-width: 760px) {
+  .layout { grid-template-columns: minmax(0, 1fr); }
+  .sidebar { border-left: 0; border-top: 1px solid var(--border-muted); padding: 24px 0 0; }
+}

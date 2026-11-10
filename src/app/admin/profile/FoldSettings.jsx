@@ -9,6 +9,8 @@ import FoldTranslationDialog from './FoldTranslationDialog';
 import styles from '../admin.module.css';
 import formStyles from './about-settings.module.css';
 
+import layout from "./profile-settings.module.css";
+
 export default function FoldSettings() {
   const {showSnackbar} = useSnackbar();
   const [content, setContent] = useState(null);
@@ -74,23 +76,15 @@ export default function FoldSettings() {
 
   return <>
     <form className={formStyles.form} onSubmit={save}>
-      <section className={`${styles.profilePanel} ${styles.profilePanelFull}`} aria-busy={busy}>
+      <section className={`${styles.profilePanel} ${styles.profilePanelFull} ${layout.panel}`} aria-busy={busy}>
         <div className={styles.titleBlock}>
           <h2>Fold / Hero</h2>
           <p className={styles.muted}>The opening headline and offering text on your homepage.</p>
         </div>
         {error && <Alert severity="error">{error}</Alert>}
         {!translations ? (!error && <p>Loading Fold / Hero…</p>) : <fieldset disabled={busy} className={formStyles.fieldset}>
-          <Stack direction="row" spacing={1} sx={{mb: 2}}>
-            <Button type="button" disabled={busy} onClick={download}>Export content</Button>
-            <Button component="label" disabled={busy}>Import content
-              <input hidden type="file" accept="application/json,.json" onChange={upload} disabled={busy} />
-            </Button>
-          </Stack>
-          <FormControlLabel label="Show eyebrow" control={<Checkbox disabled={busy} checked={content.showEyebrow} onChange={event => setContent(current => ({...current, showEyebrow: event.target.checked}))} />} />
-          <p className={styles.muted}>Booking destination follows Profile & Settings → Koalendar. LinkedIn: {content.destinations?.linkedin?.url}. Exports preserve the destination settings of the site receiving the content.</p>
           <div className={formStyles.copy}>
-            <div className={formStyles.copyHeader}>
+            <div className={layout.editorToolbar}>
               <div className={formStyles.languages} role="group" aria-label="Fold content language">
                 {[['en', 'English'], ['de', 'Deutsch']].map(([value, label]) => <button key={value} type="button"
                   aria-pressed={language === value} onClick={() => setLanguage(value)}>{label}</button>)}
@@ -99,8 +93,21 @@ export default function FoldSettings() {
                 Translate to {language === 'en' ? 'German' : 'English'}
               </button>
             </div>
+            <FormControlLabel label="Show eyebrow above the headline" control={<Checkbox disabled={busy} checked={content.showEyebrow} onChange={event => setContent(current => ({...current, showEyebrow: event.target.checked}))} />} />
             <FoldFields copy={translations[language]} language={language} disabled={busy}
               onChange={copy => setContent(current => ({...current, translations: {...current.translations, [language]: copy}}))} />
+          </div>
+          <div className={layout.transfer}>
+            <details><summary>Content transfer & link settings</summary>
+              <p>Export both languages to copy this component to another site. Imported content stays in this editor until you save.</p>
+              <Stack direction="row" spacing={1} useFlexGap sx={{flexWrap: 'wrap'}}>
+                <Button type="button" variant="outlined" disabled={busy} onClick={download}>Export content</Button>
+                <Button component="label" variant="outlined" disabled={busy}>Import content
+                  <input hidden type="file" accept="application/json,.json" onChange={upload} disabled={busy} />
+                </Button>
+              </Stack>
+              <p>Booking follows your Koalendar settings. LinkedIn: {content.destinations?.linkedin?.url}. Imports preserve this site’s destinations.</p>
+            </details>
           </div>
           <div className={formStyles.footer}>
             <p>Save changes for both languages.</p>

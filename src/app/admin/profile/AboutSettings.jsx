@@ -8,6 +8,8 @@ import {useSnackbar} from "../../components/snackbar/SnackbarProvider";
 import styles from "../admin.module.css";
 import aboutStyles from "./about-settings.module.css";
 
+import layout from "./profile-settings.module.css";
+
 export default function AboutSettings() {
   const {showSnackbar} = useSnackbar();
   const [about, setAbout] = useState(null);
@@ -66,7 +68,7 @@ export default function AboutSettings() {
   const copy = about?.translations?.[language];
   return (
     <form className={aboutStyles.form} onSubmit={save}>
-      <section className={`${styles.profilePanel} ${styles.profilePanelFull}`} aria-busy={busy}>
+      <section className={`${styles.profilePanel} ${styles.profilePanelFull} ${layout.panel}`} aria-busy={busy}>
         <div className={styles.titleBlock}>
           <h2>About</h2>
           <p className={styles.muted}>Your introduction, career highlights, and portrait.</p>
