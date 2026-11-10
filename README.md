@@ -226,6 +226,15 @@ Run `npm run migrate:cv-timeline` with the target database's usual `MONGO_DB_URI
 
 To move your edited timeline to production, export/import the **`cv_timeline` collection**, preserving document IDs and `order`, alongside deploying this code. Replace the target collection rather than merging it, so removed entries stay removed. Also migrate the `site_content` document `_id: "cv_timeline_settings"` to preserve revision and initialization state (required for an intentionally empty timeline). Import before serving traffic. PDF metadata remains in its existing storage. Saves update individual documents; multi-entry changes are not a MongoDB transaction.
 
+Experience classification assignments are ID arrays in each entry’s `classifications` object. When transferring records to production, also merge the referenced `experience_industries` and `skills` records by `_id`, preserving unrelated shared records. Copy the `education` collection for qualifications and language proficiency; do not replace the entire `site_content` collection. Countries use ISO codes and need no separate collection.
+
+The reviewed CV-to-role mapping is in `scripts/data/cv-classifications-2026.json`, including source evidence and unresolved markets. `node scripts/import-cv-classifications.mjs` previews it; adding `--apply` imports it into the localhost database only, after saving an Extended JSON backup in the system temporary directory. The import restores evidenced industry, functional expertise and country assignments for all eight reviewed positions, reuses shared skill IDs and creates the explicitly defined missing skills. It preserves existing selections and all position content, backs up the skill catalog too, verifies saved assignments and unchanged content, and increments the timeline revision. Reload open CV editors afterward. It is a one-time authoring aid, not a recurring synchronization: rerunning it will restore any mapped assignments you subsequently remove.
+
+Education has its own admin page at `/admin/education`, with optional university degrees, vocational qualifications, professional certificates, courses, licenses, school qualifications and other credentials. Each entry has a stable ID, English/German text, optional completion year and verification link, and a `published` flag. New entries are private; public endpoints exclude unpublished entries. Published qualifications appear in a separate homepage section after Experience, in the saved order. The section is hidden when no entries are published. Languages remain in At a glance. Both lists are stored in the dedicated `education` collection, document `_id: "education_settings"` (`entries`, `languages`, and `revision`). On first access, existing data is copied from `site_content` → `education_settings`, preserving qualification IDs, visibility, languages, revision and audit fields. The legacy document remains as a backup and is no longer read or updated once the destination exists. No manual migration is required. For production transfers, copy the `education` collection with its document ID intact; imported education takes precedence over the legacy document.
+
+The homepage initially renders the same database-backed classification lists that its summary API returns, so these labels are available in the HTML before JavaScript runs. “Markets supported” includes documented operating, customer and distribution involvement; it does not imply a subsidiary was established in every country. “Industries & applications” uses the dedicated Experience industry catalog.
+
+
 Public timeline requests bypass caching, so saved changes appear on the next page load. Bundled/legacy translations remain an outage fallback. No server restart or rebuild is needed for timeline edits.
 
 ### Optional Apollo list and sequence actions
@@ -313,3 +322,12 @@ When upgrading existing settings, email becomes optional locally while the previ
 
 
 Contact type now accepts one value per lead. The autocomplete replaces the current choice; import review uses the same control. Existing leads with multiple distinct types retain their stored values and display a warning until one is selected. Local save/import and Apollo sync guards reject unresolved multiple types. The `leadTypes` array is retained for storage compatibility, with zero or one value on new saves. Contact-type list filters can still select multiple types to find leads across categories.
+
+
+### Industry Focus and Experience
+
+`experience_industries` stores industry titles, English/German descriptions, icons and stable IDs. Manage these under **Admin → CV → Industry Focus**. New industries can be created with only a title, either here or while editing an Experience role, and described later. The public Industry Focus cards include only industries assigned to Experience roles; an empty description is allowed.
+
+On first access, the migration copies the legacy contact industry catalog while preserving IDs and merges exact title matches with the existing Industry Focus cards. Saved runtime translations take precedence over the bundled migration fallback. Unmatched cards remain in the catalog for manual assignment. Legacy translations and lead categories are retained as backups, but subsequent edits are made in the CV industry editor. The `experience_industries_v1` marker in `site_content` prevents reseeding or overwriting later edits.
+
+For an explicit migration, run `node scripts/migrate-experience-industries.mjs` to preview counts, then add `--apply` to save a backup and initialize the collection. When transferring an already migrated catalog, copy its migration marker as well as the industry documents. Existing CV assignment IDs must be preserved.

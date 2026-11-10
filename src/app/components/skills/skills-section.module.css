@@ -4,6 +4,7 @@
 }
 
 .skill {
+  position: relative;
   padding: 12px;
   border-radius: 12px;
   border: 1px solid var(--border);
@@ -101,15 +102,6 @@
   animation-delay: var(--animation-delay, 0s);
 }
 
-.skillFill::after {
-  content: attr(data-label);
-  position: absolute;
-  right: 8px;
-  top: -28px;
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-  font-weight: 700;
-}
 
 .legend {
   display: flex;
@@ -319,7 +311,12 @@
   border-radius: 14px;
 }
 
-.mapFallback button {
+.showMoreButton {
+  margin-top: 14px;
+}
+
+.mapFallback button,
+.showMoreButton {
   appearance: none;
   background: transparent;
   border: 1px solid var(--accent);
@@ -332,12 +329,14 @@
   padding: 9px 13px;
 }
 
-.mapFallback button:hover {
+.mapFallback button:hover,
+.showMoreButton:hover {
   background: var(--accent-soft);
   color: var(--accent-hover);
 }
 
-.mapFallback button:focus-visible {
+.mapFallback button:focus-visible,
+.showMoreButton:focus-visible {
   outline: 3px solid var(--focus-ring);
   outline-offset: 3px;
 }
@@ -439,3 +438,27 @@
     transform: scaleX(var(--fill-scale, 1));
   }
 }
+
+.infoButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-start;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.infoButton::after { content: ""; position: absolute; inset: 0; z-index: 1; border-radius: 12px; }
+.skill:has(.infoButton:hover) { border-color: var(--text-secondary); }
+.skill:has(.infoButton:focus-visible) { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+.infoButton:hover { background: var(--surface-soft); color: var(--foreground); }
+.infoButton:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+.coverageTooltip { font-size: 0.875rem; line-height: 1.5; padding: 4px; }
+.coverageTooltip p { margin: 0 0 8px; }
+.coverageTooltip p:last-child { margin: 8px 0 0; }
+.coverageTooltip ul { margin: 4px 0 8px; padding-left: 18px; }

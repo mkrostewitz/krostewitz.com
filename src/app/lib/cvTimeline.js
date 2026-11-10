@@ -4,6 +4,8 @@ import {resources} from "../../lib/translationResources";
 import {getDb} from "./mongo";
 import {CV_TIMELINE_COLLECTION, CV_TIMELINE_META_ID, timelineOperations, ensureTimeline, normalizeTimeline, TimelineError} from "./cvTimelineData.mjs";
 
+import {getExperienceCatalog, validateExperienceReferences} from "./experienceClassifications.mjs";
+
 export async function getCvTimeline() {
   const db = await getDb();
   const document = await ensureTimeline(db, Object.fromEntries(Object.entries(resources).map(([language, value]) => [language, value.translation])));
@@ -16,6 +18,10 @@ export async function saveCvTimeline(input, user) {
     throw new TimelineError("A valid timeline revision is required.");
   }
   const db = await getDb();
+  try { validateExperienceReferences(entries, await getExperienceCatalog(db)); }
+  catch (error) { throw new TimelineError(error.message); }
+  // This deployment uses standalone MongoDB. Each entry keeps its ID lists in
+  // one atomic document update; revision checks reject stale editor saves.
   const result = await db.collection("site_content").updateOne(
     {_id: CV_TIMELINE_META_ID, revision: input.revision},
     {$set: {updatedAt: new Date(), updatedBy: user.email}, $inc: {revision: 1}}

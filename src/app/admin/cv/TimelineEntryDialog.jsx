@@ -5,6 +5,7 @@ import {Alert, Autocomplete, Box, Button, Checkbox, FormControlLabel, Chip, Dial
 import {FileText, Languages, Trash2, Upload, X} from "lucide-react";
 import {normalizeTimeline, TIMELINE_LIMITS} from "../../lib/cvTimelineData.mjs";
 import {SITE_LANGUAGES} from "../../../lib/siteLanguages";
+import ExperienceClassifications from "./ExperienceClassifications";
 import TimelineRichTextEditor from "./TimelineRichTextEditor";
 import {timelineEditorHtml} from "../../lib/timelineRichText.mjs";
 import styles from "./timeline-editor.module.css";
@@ -19,7 +20,8 @@ export default function TimelineEntryDialog({entry, isNew, initialLanguage, onSa
   const [operation, setOperation] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  const busy = Boolean(operation);
+  const [taxonomyBusy, setTaxonomyBusy] = useState(false);
+  const busy = Boolean(operation) || taxonomyBusy;
   const translation = draft.translations[language] || {};
   const period = formatTimelinePeriod(draft, language);
   const documents = draft.documents || [];
@@ -123,6 +125,12 @@ export default function TimelineEntryDialog({entry, isNew, initialLanguage, onSa
               <Typography variant="caption" color="text.secondary">A title is required in at least one language. Missing translations fall back to the other language.</Typography>
             </Box>
           </Box>
+          <Divider />
+          <Stack component="section" aria-labelledby="station-classifications-title" spacing={2}>
+            <Typography id="station-classifications-title" component="h3" variant="subtitle1" sx={{fontWeight: 600}}>Industries, expertise & markets</Typography>
+            <Typography variant="body2" color="text.secondary">Classify this role’s industry experience, functional expertise, and international markets. Selections apply to both languages and contribute to At a glance.</Typography>
+            <ExperienceClassifications value={draft.classifications} disabled={busy} onBusyChange={setTaxonomyBusy} onChange={classifications => setDraft(current => ({...current, classifications}))} />
+          </Stack>
           <Divider />
           <Stack component="section" aria-label="Attached documents" spacing={2}>
             <Stack direction="row" spacing={2} sx={{alignItems: "center", justifyContent: "space-between"}}>

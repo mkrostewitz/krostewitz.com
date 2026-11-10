@@ -1,3 +1,4 @@
+import {normalizeClassifications} from "./experienceClassifications.mjs";
 import {validTimelineDate, timelineDateInput, formatTimelinePeriod} from "./timelineDates.mjs";
 import {sanitizeTimelineHtml, timelineHtmlText, TIMELINE_HTML_LIMIT} from "./timelineRichText.mjs";
 
@@ -89,8 +90,13 @@ export function normalizeTimeline(entries) {
     if (!Object.values(translations).some((value) => value.title && value.period)) {
       throw new TimelineError("Each entry needs a title and period in at least one language.");
     }
+    let classifications;
+    if (entry.classifications !== undefined) {
+      try { classifications = normalizeClassifications(entry.classifications); }
+      catch (error) { throw new TimelineError(error.message); }
+    }
     const documents = normalizeTimelineDocuments(entry.documents);
-    return {id: entry.id, ...group, ...visibility, ...dates, translations, ...(documents.length ? {documents} : {})};
+    return {id: entry.id, ...(classifications ? {classifications} : {}), ...group, ...visibility, ...dates, translations, ...(documents.length ? {documents} : {})};
   });
 }
 
@@ -115,7 +121,7 @@ export async function readTimeline(db) {
   const documents = await db.collection(CV_TIMELINE_COLLECTION).find({_id: {$ne: "timeline"}}).sort({order: 1, _id: 1}).toArray();
   const meta = await db.collection("site_content").findOne({_id: CV_TIMELINE_META_ID});
   return {
-    entries: documents.map(({_id, translations, documents, startDate, endDate, current, employerGroup, showAfterMore}) => ({id: _id, ...(showAfterMore ? {showAfterMore: true} : {}), ...(employerGroup ? {employerGroup} : {}), ...(startDate ? {startDate, endDate, current} : {}), translations, ...(documents?.length ? {documents} : {})})),
+    entries: documents.map(({_id, translations, documents, startDate, endDate, current, employerGroup, showAfterMore, classifications}) => ({id: _id, ...(classifications ? {classifications} : {}), ...(showAfterMore ? {showAfterMore: true} : {}), ...(employerGroup ? {employerGroup} : {}), ...(startDate ? {startDate, endDate, current} : {}), translations, ...(documents?.length ? {documents} : {})})),
     revision: meta?.revision || 0,
   };
 }
@@ -126,10 +132,10 @@ export function timelineOperations(entries, audit = {}, insertOnly = false) {
     filter: {_id: entry.id},
     update: insertOnly ? {$setOnInsert: {
       ...(entry.startDate ? {startDate: entry.startDate, endDate: entry.endDate, current: entry.current} : {}),
-      showAfterMore: entry.showAfterMore === true, employerGroup: entry.employerGroup || "", order, translations: entry.translations, documents: entry.documents || [], createdAt: audit.createdAt || now,
+      ...(entry.classifications ? {classifications: entry.classifications} : {}), showAfterMore: entry.showAfterMore === true, employerGroup: entry.employerGroup || "", order, translations: entry.translations, documents: entry.documents || [], createdAt: audit.createdAt || now,
       updatedAt: audit.updatedAt || now, updatedBy: audit.updatedBy || null,
     }} : {
-      $set: {showAfterMore: entry.showAfterMore === true, employerGroup: entry.employerGroup || "", ...(entry.startDate ? {startDate: entry.startDate, endDate: entry.endDate, current: entry.current} : {}), order, translations: entry.translations, documents: entry.documents || [], updatedAt: now, updatedBy: audit.updatedBy || null},
+      $set: {...(entry.classifications ? {classifications: entry.classifications} : {}), showAfterMore: entry.showAfterMore === true, employerGroup: entry.employerGroup || "", ...(entry.startDate ? {startDate: entry.startDate, endDate: entry.endDate, current: entry.current} : {}), order, translations: entry.translations, documents: entry.documents || [], updatedAt: now, updatedBy: audit.updatedBy || null},
       $setOnInsert: {createdAt: now},
     },
     upsert: true,

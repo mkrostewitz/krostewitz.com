@@ -1,0 +1,187 @@
+{
+  "sources": [
+    "CV EN 2026.pages",
+    "CV DE 2026.pages"
+  ],
+  "policy": "Restore role-supported industries, functional expertise and countries using both CVs and the imported live role descriptions. Preserve existing selections, position text, dates, documents, IDs and shared catalog labels. Country assignments require business involvement, not office location alone.",
+  "roles": [
+    {
+      "id": "entry-2",
+      "identity": "Schlegel",
+      "industries": [
+        "Industrial automation",
+        "Warehouse automation",
+        "Mobility"
+      ],
+      "countries": [
+        "US"
+      ],
+      "evidence": "Schlegel USA: U.S. business establishment; go-to-market focused on intralogistics, mobile machinery and vehicles. CV industry overview names warehouse automation and mobility; the company is a manufacturer of HMI components. Functional evidence: US business leadership, market entry, GTM, operating model, cash/profitability planning and custom CRM/ERP development.",
+      "competencies": [
+        "General Management & Business Buildout",
+        "Market Entry & International Scaling",
+        "Sales & Strategic Customers",
+        "Operations & Process Buildout",
+        "Performance & Steering",
+        "Digital Transformation & Automation",
+        "Software Development"
+      ]
+    },
+    {
+      "id": "entry-1",
+      "identity": "INTUTEC",
+      "industries": [
+        "Industrial automation"
+      ],
+      "countries": [
+        "US"
+      ],
+      "evidence": "INTUTEC: U.S. market entry, sales development and digital distribution solutions for industrial and automation companies; Schlegel USA reference project. Functional evidence: founder/CEO, US market entry, sales networks, digital operating workflows and implemented distribution platform.",
+      "competencies": [
+        "General Management & Business Buildout",
+        "Market Entry & International Scaling",
+        "Sales & Strategic Customers",
+        "Operations & Process Buildout",
+        "Digital Transformation & Automation",
+        "Software Development"
+      ]
+    },
+    {
+      "id": "entry-3",
+      "identity": "CAPTRON North America",
+      "industries": [
+        "Industrial automation",
+        "Warehouse automation",
+        "Traffic & transportation"
+      ],
+      "countries": [
+        "US"
+      ],
+      "evidence": "CAPTRON North America: built and led U.S. subsidiary; manufacturer of capacitive and optical sensors and signal indicators. Do not infer other countries solely from North America or additional industries from customer brand names. Functional evidence: subsidiary leadership, revenue scaling, strategic accounts, localized supply chain, OKRs/profitability and custom business software. Imported live role explicitly names warehouse automation and transportation.",
+      "competencies": [
+        "General Management & Business Buildout",
+        "Market Entry & International Scaling",
+        "Sales & Strategic Customers",
+        "Operations & Process Buildout",
+        "Performance & Steering",
+        "Digital Transformation & Automation",
+        "Software Development"
+      ]
+    },
+    {
+      "id": "entry-4",
+      "identity": "CAPTRON Electronic",
+      "industries": [
+        "Industrial automation",
+        "Traffic & transportation",
+        "Building technology",
+        "Warehouse automation"
+      ],
+      "countries": [
+        "US",
+        "MX",
+        "CA",
+        "AU",
+        "IN"
+      ],
+      "evidence": "CAPTRON business development: CV explicitly names distribution partners in the U.S., Mexico, Canada, Australia and India; go-to-market approaches for traffic & transport, industrial automation and building technology. Functional evidence: market development, distribution/OEM sales and structured partner-management processes. Imported live description explicitly adds warehouse automation.",
+      "competencies": [
+        "Market Entry & International Scaling",
+        "Sales & Strategic Customers",
+        "Operations & Process Buildout"
+      ]
+    },
+    {
+      "id": "entry-5",
+      "identity": "SATECO",
+      "industries": [
+        "Automotive"
+      ],
+      "countries": [
+        "CN",
+        "IN",
+        "KR"
+      ],
+      "evidence": "SATECO Asia: Chinese automotive market entry, Suzhou FICE, regional responsibility for China, India and Korea, automotive OEM and Tier-1 relationships. User confirmed on 2026-11-10 that Korea means South Korea (KR). Functional evidence: FICE establishment, China entry, OEM/Tier-1 sales, team/process buildout and internal workflow system. No standalone software-development claim inferred.",
+      "competencies": [
+        "General Management & Business Buildout",
+        "Market Entry & International Scaling",
+        "Sales & Strategic Customers",
+        "Operations & Process Buildout",
+        "Digital Transformation & Automation"
+      ]
+    },
+    {
+      "id": "entry-6",
+      "identity": "MENTOR",
+      "industries": [],
+      "countries": [
+        "CN"
+      ],
+      "evidence": "Both CVs identify operational leadership in China; imported English record is now MENTOR only. General management and operations apply; no precise served industry inferred.",
+      "competencies": [
+        "General Management & Business Buildout",
+        "Operations & Process Buildout"
+      ]
+    },
+    {
+      "id": "4e18957c-e117-428f-8f09-2d8b8fee2502",
+      "identity": "MBG",
+      "industries": [],
+      "countries": [
+        "CN"
+      ],
+      "competencies": [
+        "Procurement & Supplier Management"
+      ],
+      "evidence": "German CV: international procurement, supplier management and local business relationships. Imported live record explicitly identifies procurement and business activities in China. No product industry specified."
+    },
+    {
+      "id": "0ebe1748-4b33-4b67-b97e-d807222dbe4f",
+      "identity": "Eisbär",
+      "industries": [],
+      "countries": [],
+      "competencies": [
+        "Marketing & Business Projects"
+      ],
+      "evidence": "Both CVs: consulting and support in developing and implementing marketing and business projects. Munich is a location only; no specific served country or industry established."
+    }
+  ],
+  "review": [
+    "New Zealand appears in the overall market overview but is not attributed to a specific role. Confirm the role before assigning NZ.",
+    "Middle East, DACH and ASEAN are regional summaries. Confirm individual countries and role-specific involvement; do not expand them to every member country.",
+    "Hong Kong and Germany are office locations in relevant career records. Do not count them as served markets without supporting business involvement.",
+    "Do not equate supply chain with warehouse automation or merge distinct applications automatically.",
+    "Eisbär: no country or industry inferred from its Munich office. MBG and MENTOR: no served industry inferred from company names.",
+    "Functional assignments are evidence-based interpretations mapped to existing shared skill labels. Only procurement and marketing-project expertise require new shared skills.",
+    "CV text extraction contains page/column spillover; employer attribution was cross-checked with the German CV and the imported live descriptions."
+  ],
+  "newSkills": [
+    {
+      "label": "Procurement & Supplier Management",
+      "translations": {
+        "en": {
+          "label": "Procurement & Supplier Management",
+          "detail": "International purchasing, supplier relationships, and coordination of local business partners"
+        },
+        "de": {
+          "label": "Einkauf & Lieferantenmanagement",
+          "detail": "Internationale Beschaffung, Lieferantenbeziehungen und Koordination lokaler Geschäftspartner"
+        }
+      }
+    },
+    {
+      "label": "Marketing & Business Projects",
+      "translations": {
+        "en": {
+          "label": "Marketing & Business Projects",
+          "detail": "Planning and implementing marketing initiatives and commercial projects"
+        },
+        "de": {
+          "label": "Marketing & Geschäftsprojekte",
+          "detail": "Planung und Umsetzung von Marketingmaßnahmen und geschäftlichen Projekten"
+        }
+      }
+    }
+  ]
+}

@@ -54,6 +54,12 @@
   transform: translateY(-1px);
 }
 
+.nav a[aria-current="location"] {
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  box-shadow: inset 0 -3px 0 var(--accent);
+}
+
 .topControls {
   display: flex;
   align-items: center;

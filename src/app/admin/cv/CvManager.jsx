@@ -6,6 +6,7 @@ import {useLoadingState} from "../../components/loading/LoadingProvider";
 import {useSnackbar} from "../../components/snackbar/SnackbarProvider";
 import AdminHeader from "../AdminHeader";
 import {uploadCvFile} from "../../lib/uploadCvClient.mjs";
+import IndustrySettings from "./IndustrySettings";
 import TimelineEditor from "./TimelineEditor";
 import styles from "../admin.module.css";
 
@@ -188,6 +189,8 @@ export default function CvManager({user}) {
         </div>
         <div style={{marginTop: 24}}>
           <TimelineEditor />
+          <IndustrySettings />
+          <a href="/admin/education">Manage education, qualifications & languages →</a>
         </div>
       </main>
     </div>

@@ -1,6 +1,7 @@
 import {sanitizeTimelineHtml, timelineHtmlText} from "../../lib/timelineRichText.mjs";
 import {FileText, ArrowUpRight, ChevronDown, ChevronUp} from "lucide-react";
 import {useEffect, useState} from "react";
+import {createPortal} from "react-dom";
 import {useTranslation} from "react-i18next";
 
 import {groupTimelineRoles} from "../../lib/timelineGroups.mjs";
@@ -129,7 +130,7 @@ const TimelineSection = () => {
 
       <CvSection />
 
-      {selectedItem && (
+      {selectedItem && createPortal(
         <div
           className={styles.modalBackdrop}
           onMouseDown={(event) => {
@@ -176,7 +177,8 @@ const TimelineSection = () => {
             )}
 
           </article>
-        </div>
+        </div>,
+        document.body
       )}
     </section>
   );

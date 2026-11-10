@@ -379,3 +379,25 @@ export async function uploadTimelineDocument(file, user) {
   });
   return {id, type: "pdf", url, fileName, size: body.byteLength};
 }
+
+export async function uploadAboutPhoto(file, user) {
+  if (!file || typeof file.arrayBuffer !== "function" || !file.size || file.size > 10 * 1024 * 1024) {
+    throw new UploadError("Choose a JPG, PNG, or WebP photo up to 10 MB.");
+  }
+  const body = Buffer.from(await file.arrayBuffer());
+  let mimeType;
+  let extension;
+  if (body[0] === 0xff && body[1] === 0xd8 && body[2] === 0xff) {
+    mimeType = "image/jpeg"; extension = "jpg";
+  } else if (body.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))) {
+    mimeType = "image/png"; extension = "png";
+  } else if (body.subarray(0, 4).toString() === "RIFF" && body.subarray(8, 12).toString() === "WEBP") {
+    mimeType = "image/webp"; extension = "webp";
+  } else {
+    throw new UploadError("The photo must be a JPG, PNG, or WebP image.");
+  }
+  if (body.byteLength > 10 * 1024 * 1024) throw new UploadError("The photo must be 10 MB or smaller.");
+  const key = `${getSiteUploadPrefix()}/about/${crypto.randomUUID()}.${extension}`;
+  const url = await putPublicObject({key, body, contentType: mimeType, metadata: {uploadedBy: user?.email || "admin", purpose: "about-photo"}});
+  return {type: "image", url, key, mimeType, size: body.byteLength};
+}

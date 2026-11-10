@@ -128,7 +128,7 @@
         },
         "skills": {
           "title": "Skills",
-          "description": "Add, remove, reorder, score, and describe the skill bars shown in the public Impact section."
+          "description": "Add, remove, reorder, and describe Impact areas. Bar lengths and ranking are calculated from time in Experience roles assigned to each expertise."
         },
         "address": {
           "title": "Current address",
@@ -245,6 +245,7 @@
       },
       "skills": {
         "newSkill": "New skill {{number}}",
+        "assignmentScale": "Bar length and ranking are calculated from time in the assigned Experience roles.",
         "scoreSummary": "{{score}} / {{max}}"
       },
       "preview": {
@@ -269,6 +270,8 @@
     "altFallback": "Portrait"
   },
   "executiveSummary": {
+    "viewDetails": "View {{label}}: {{count}}",
+    "close": "Close",
     "eyebrow": "Executive Summary",
     "title": "At a glance",
     "languages": {
@@ -292,8 +295,12 @@
       ]
     },
     "stats": {
+      "industriesApplications": "Industries & applications",
+      "marketsSupported": "Markets supported",
+      "internationalMarkets": "International markets",
+      "industries": "Industries served",
+      "competencies": "Functional expertise",
       "yearsLeadership": "Years leading global teams",
-      "revenuePerHead": "Revenue generated",
       "markets": "Markets established"
     }
   },
@@ -366,10 +373,22 @@
     }
   },
   "skills": {
+    "engagementCoverage": "This was a topic in {{percentage}}% of my engagements.",
+    "engagementCompanies": "Companies I did this for",
+    "engagementDetails": "View engagement details for {{label}}",
+    "timeRankingExplanation": "Bar length and ranking reflect time spent in relevant roles; overlapping periods count once.",
+    "timeCoverageAccessible": "Used during {{percentage}}% of my dated experience.",
+    "showMore": "Show more",
+    "showLess": "Show less",
+    "durationCoverage": "{{years}} years · {{percentage}}%",
+    "durationCoverageExplanation": "Share of dated experience where each expertise was used. Overlapping roles count once; roles without dates are excluded.",
+    "coverageLoading": "Loading assignments…",
+    "coverageUnavailable": "Assignment data unavailable",
     "title": "Impact areas",
     "headline": "Where I create value",
+    "closeDetails": "Close details",
     "description": "I combine commercial leadership with hands-on systems thinking-so companies grow faster, execute cleaner, and scale without chaos.",
-    "industriesTitle": "Industry focus",
+    "industriesTitle": "Industry Expertise",
     "industriesSubtitle": "Where I’ve driven outcomes across GTM, operations, and systems delivery.",
     "industries": [
       {

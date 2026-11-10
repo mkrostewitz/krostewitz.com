@@ -128,7 +128,7 @@
         },
         "skills": {
           "title": "Skills",
-          "description": "Skill-Balken im öffentlichen Wirkungsbereich hinzufügen, entfernen, sortieren, bewerten und beschreiben."
+          "description": "Wirkungsfelder hinzufügen, entfernen, sortieren und beschreiben. Balkenlänge und Reihenfolge werden aus der Dauer der zugeordneten Stationen unter Experience berechnet."
         },
         "address": {
           "title": "Aktuelle Adresse",
@@ -245,6 +245,7 @@
       },
       "skills": {
         "newSkill": "Neuer Skill {{number}}",
+        "assignmentScale": "Balkenlänge und Reihenfolge werden aus der Dauer der zugeordneten Stationen unter Experience berechnet.",
         "scoreSummary": "{{score}} / {{max}}"
       },
       "preview": {
@@ -269,6 +270,8 @@
     "altFallback": "Portrait"
   },
   "executiveSummary": {
+    "viewDetails": "{{label}} anzeigen: {{count}}",
+    "close": "Schließen",
     "eyebrow": "Kurzprofil",
     "title": "Auf einen Blick",
     "languages": {
@@ -292,8 +295,12 @@
       ]
     },
     "stats": {
+      "industriesApplications": "Branchen & Anwendungen",
+      "marketsSupported": "Betreute Märkte",
+      "internationalMarkets": "Internationale Märkte",
+      "industries": "Bediente Branchen",
+      "competencies": "Fachkompetenzen",
       "yearsLeadership": "Jahre internationale Führungserfahrung",
-      "revenuePerHead": "Verantworteter Umsatz",
       "markets": "Aufgebaute internationale Märkte"
     }
   },
@@ -366,10 +373,22 @@
     }
   },
   "skills": {
+    "engagementCoverage": "In {{percentage}} % meiner beruflichen Stationen war dies ein Thema.",
+    "engagementCompanies": "Für diese Unternehmen war ich tätig",
+    "engagementDetails": "Details zu den Stationen für {{label}} anzeigen",
+    "timeRankingExplanation": "Balkenlänge und Reihenfolge zeigen die Dauer der relevanten Tätigkeiten; überlappende Zeiträume zählen einmal.",
+    "timeCoverageAccessible": "In {{percentage}} % meiner datierten Berufserfahrung eingesetzt.",
+    "showMore": "Mehr anzeigen",
+    "showLess": "Weniger anzeigen",
+    "durationCoverage": "{{years}} Jahre · {{percentage}} %",
+    "durationCoverageExplanation": "Zeitanteil der datierten Berufserfahrung, in dem die jeweilige Expertise eingesetzt wurde. Überschneidungen zählen einmal; Stationen ohne Datum sind ausgeschlossen.",
+    "coverageLoading": "Zuordnungen werden geladen…",
+    "coverageUnavailable": "Zuordnungen derzeit nicht verfügbar",
     "title": "Wirkungsfelder",
     "headline": "Wo ich Verantwortung übernehme",
+    "closeDetails": "Details schließen",
     "description": "Ich verbinde unternehmerische Führung mit pragmatischer Umsetzung, um Wachstum voranzubringen, Komplexität zu reduzieren und nachhaltige Profitabilität zu sichern.",
-    "industriesTitle": "Branchenfokus",
+    "industriesTitle": "Branchenexpertise",
     "industriesSubtitle": "Branchen, in denen ich Unternehmen aufgebaut, skaliert und operativ verantwortet habe.",
     "industries": [
       {

@@ -3,6 +3,9 @@ import "server-only";
 import {unstable_cache} from "next/cache";
 
 import {getDb} from "./mongo";
+import {normalizeAbout} from "./aboutData.mjs";
+import en from "../../locales/en/translation.json";
+import de from "../../locales/de/translation.json";
 import {ensureReferences, saveReferences, withReferences} from "./referenceStorage.mjs";
 import {normalizeReferences} from "./references.mjs";
 import {
@@ -656,6 +659,7 @@ function serializeProfile(document = {}) {
   const name = normalizeProfileName(document.name, fallbackName);
 
   return {
+    about: normalizeAbout(document.about, {translations: {en: en.about, de: de.about}}),
     address: normalizeSiteAddress(document.address),
     aiChat: normalizeAiChatIntegration(document.aiChat),
     blogEnabled: document.blogEnabled !== false,
@@ -728,6 +732,16 @@ async function readSiteProfile() {
     document = {...document, skillsEnabled: true};
   }
 
+  if (document && document.about === undefined) {
+    const stored = await collection.findOne({_id: "translations"});
+    const about = normalizeAbout({}, {translations: {
+      en: stored?.translations?.en?.about || en.about,
+      de: stored?.translations?.de?.about || de.about,
+    }});
+    await collection.updateOne({_id: PROFILE_ID, about: {$exists: false}}, {$set: {about}});
+    document = await collection.findOne({_id: PROFILE_ID});
+  }
+
   return serializeProfile(withReferences(document || {}, await ensureReferences(db)));
 }
 
@@ -786,6 +800,14 @@ export async function saveSiteProfile(input = {}, user) {
     updatedAt: now,
     updatedBy: user?.email || null,
   };
+
+  if (Object.prototype.hasOwnProperty.call(input, "about")) {
+    try {
+      document.about = normalizeAbout(input.about, {}, {strict: true});
+    } catch (error) {
+      throw new SiteProfileError(error.message);
+    }
+  }
 
   if (hasAddress) {
     document.address = address;

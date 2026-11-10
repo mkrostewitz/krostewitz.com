@@ -1,12 +1,9 @@
-import {
-  CarFront,
-  CircuitBoard,
-  Cog,
-  Factory,
-  TrainFront,
-  Warehouse,
-} from "lucide-react";
+import {Dialog, DialogTitle, DialogContent, IconButton} from "@mui/material";
+import {Info, X} from "lucide-react";
+import AdminMuiProvider from "../../admin/components/forms/AdminMuiProvider";
+import IndustryIcon from '../IndustryIcon';
 import {useTranslation} from "react-i18next";
+import {useState} from "react";
 
 import {useInViewOnce} from "@/lib/useInViewOnce";
 import pageStyles from "../../page.module.css";
@@ -14,32 +11,14 @@ import {useCookieConsent} from "../consent/CookieConsent";
 import SkillsMap from "./SkillsMap";
 import styles from "./skills-section.module.css";
 
-const SKILL_SKELETON_ROWS = Array.from({length: 6}, (_, index) => index);
+const INITIAL_SKILL_COUNT = 5;
+const INITIAL_INDUSTRY_COUNT = 6;
+const SKILL_SKELETON_ROWS = Array.from({length: INITIAL_SKILL_COUNT}, (_, index) => index);
 
-const INDUSTRY_ICONS = {
-  factory: Factory,
-  automation: Cog,
-  infrastructure: TrainFront,
-  automotive: CarFront,
-  electronics: CircuitBoard,
-  intralogistics: Warehouse,
-};
-
-const DEFAULT_INDUSTRY_ICONS = [
-  Factory,
-  Cog,
-  TrainFront,
-  CarFront,
-  CircuitBoard,
-  Warehouse,
-];
-
-function readFiniteNumber(value) {
-  const numericValue = Number(value);
-  return Number.isFinite(numericValue) ? numericValue : null;
-}
-
-const SkillsSection = ({skills}) => {
+const SkillsSection = ({skills, industries = [], loadError = false}) => {
+  const [selectedDetails, setSelectedDetails] = useState(null);
+  const [showAllSkills, setShowAllSkills] = useState(false);
+  const [showAllIndustries, setShowAllIndustries] = useState(false);
   const {t} = useTranslation(undefined, {keyPrefix: "skills"});
   const {t: tConsent} = useTranslation(undefined, {
     keyPrefix: "cookieConsent",
@@ -59,18 +38,12 @@ const SkillsSection = ({skills}) => {
   });
   const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
-  const levelForScore = (score) => {
-    if (score <= 4) return "support";
-    if (score <= 8) return "lead";
-    return "own";
-  };
-
-  const industries = t("industries", {
-    returnObjects: true,
-    defaultValue: [],
-  });
   const hasSkillData = Array.isArray(skills);
-  const skillList = hasSkillData ? skills : [];
+  const skillList = hasSkillData
+    ? [...skills].sort((a, b) => (b.usage?.percentage ?? -1) - (a.usage?.percentage ?? -1))
+    : [];
+  const visibleSkills = showAllSkills ? skillList : skillList.slice(0, INITIAL_SKILL_COUNT);
+  const visibleIndustries = showAllIndustries ? industries : industries.slice(0, INITIAL_INDUSTRY_COUNT);
   const canShowMapFrame = Boolean(
     token && (!isConsentReady || allowExternalServices)
   );
@@ -85,15 +58,26 @@ const SkillsSection = ({skills}) => {
         <h2>{t("headline")}</h2>
         <p className={pageStyles.lead}>{t("description")}</p>
       </div>
-      <div className={styles.skills}>
-        {skillList.length ? skillList.map((skill, idx) => {
-          const score = readFiniteNumber(skill.score);
-          const hasScore = score !== null;
-          const level = levelForScore(score ?? 0);
-          const clamped = hasScore ? Math.min(Math.max(score, 0), 10) : 0;
-          const fillScale = clamped / 10;
+      <div id="impact-areas-list" className={styles.skills}>
+        {skillList.length ? visibleSkills.map((skill, idx) => {
+          const usage = skill.usage;
+          const hasScore = Boolean(usage);
+          const fillScale = usage ? usage.percentage / 100 : 0;
+          const usageText = usage ? t("timeCoverageAccessible", {
+            percentage: Math.round(usage.percentage),
+          }) : t(loadError ? "coverageUnavailable" : "coverageLoading");
+          const details = usage ? (
+            <div className={styles.coverageTooltip}>
+              <p>{t("engagementCoverage", {percentage: Math.round(usage.engagementPercentage ?? 0)})}</p>
+              {usage.companies?.length > 0 && <>
+                <strong>{t("engagementCompanies")}</strong>
+                <ul>{usage.companies.map(company => <li key={company}>{company}</li>)}</ul>
+              </>}
+              <p>{t("timeRankingExplanation")}</p>
+            </div>
+          ) : usageText;
           return (
-            <div key={skill.label} className={styles.skill}>
+            <div key={skill.id} className={styles.skill}>
               <div className={styles.skillTop}>
                 <div>
                   <span className={styles.label}>{skill.label}</span>
@@ -101,20 +85,25 @@ const SkillsSection = ({skills}) => {
                     <p className={styles.detail}>{skill.detail}</p>
                   )}
                 </div>
-                {/* <span className={styles.level}>
-                  {t(`skills.levels.${level}`)}
-                </span> */}
+                <button type="button" className={styles.infoButton} aria-label={t("engagementDetails", {label: skill.label})} aria-haspopup="dialog" onClick={() => setSelectedDetails({label: skill.label, content: details})}>
+                  <Info size={18} aria-hidden="true" />
+                </button>
               </div>
               <div
                 className={styles.skillBar}
-                data-loading={!hasScore || !isSkillsInView || undefined}
-                aria-busy={!hasScore || !isSkillsInView || undefined}
+                role={hasScore ? "meter" : undefined}
+                aria-label={skill.label}
+                aria-valuemin={hasScore ? 0 : undefined}
+                aria-valuemax={hasScore ? 100 : undefined}
+                aria-valuenow={usage?.percentage}
+                aria-valuetext={hasScore ? usageText : undefined}
+                data-loading={(!hasScore && !loadError) || !isSkillsInView || undefined}
+                aria-busy={(!hasScore && !loadError) || !isSkillsInView || undefined}
               >
                 {hasScore && isSkillsInView ? (
                   <div
                     className={styles.skillFill}
                     data-active="true"
-                    data-label={t(`levels.${level}`)}
                     style={{
                       "--fill-scale": fillScale,
                       "--animation-delay": `${idx * 0.08}s`,
@@ -136,39 +125,62 @@ const SkillsSection = ({skills}) => {
           </div>
         )) : null}
       </div>
-      {skillList.length || !hasSkillData ? (
-        <div className={styles.legend}>
-          <span>{t("levels.support")}</span>
-          <span>{t("levels.lead")}</span>
-          <span>{t("levels.own")}</span>
-        </div>
-      ) : null}
-
+      <AdminMuiProvider>
+        <Dialog open={Boolean(selectedDetails)} onClose={() => setSelectedDetails(null)} maxWidth="sm" fullWidth aria-labelledby="impact-area-details-title">
+          <DialogTitle id="impact-area-details-title" sx={{display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2}}>
+            {selectedDetails?.label}
+            <IconButton aria-label={t("closeDetails")} onClick={() => setSelectedDetails(null)}>
+              <X size={20} />
+            </IconButton>
+          </DialogTitle>
+          <DialogContent dividers>{selectedDetails?.content}</DialogContent>
+        </Dialog>
+      </AdminMuiProvider>
+      {skillList.length > INITIAL_SKILL_COUNT && (
+        <button
+          type="button"
+          className={styles.showMoreButton}
+          aria-expanded={showAllSkills}
+          aria-controls="impact-areas-list"
+          onClick={() => setShowAllSkills((previous) => !previous)}
+        >
+          {t(showAllSkills ? "showLess" : "showMore")}
+        </button>
+      )}
       <div className={styles.flashcardsHeader}>
         <h2>{t("industriesTitle")}</h2>
       </div>
 
-      <div className={styles.flashcards}>
-        {industries.map((card, idx) => {
-          const Icon =
-            INDUSTRY_ICONS[card.icon] ||
-            DEFAULT_INDUSTRY_ICONS[idx % DEFAULT_INDUSTRY_ICONS.length];
+      <div id="industry-expertise-list" className={styles.flashcards}>
+        {visibleIndustries.map(card => {
 
           return (
-            <div key={`${card.title}-${idx}`} className={styles.flashcard}>
+            <div key={card.id} className={styles.flashcard}>
               <div className={styles.flashcardHeader}>
                 <span className={styles.flashcardIcon} aria-hidden="true">
-                  <Icon size={18} strokeWidth={1.75} />
+                  <IndustryIcon industry={card} size={18} />
                 </span>
                 <div className={styles.flashcardBody}>
-                  <h4>{card.title}</h4>
-                  <p>{card.detail}</p>
+                  <h4>{card.label}</h4>
+                  {card.detail && <p>{card.detail}</p>}
                 </div>
               </div>
             </div>
           );
         })}
       </div>
+
+      {industries.length > INITIAL_INDUSTRY_COUNT && (
+        <button
+          type="button"
+          className={styles.showMoreButton}
+          aria-expanded={showAllIndustries}
+          aria-controls="industry-expertise-list"
+          onClick={() => setShowAllIndustries(previous => !previous)}
+        >
+          {t(showAllIndustries ? "showLess" : "showMore")}
+        </button>
+      )}
 
       <div className={styles.mapSection}>
         <div className={styles.mapSectionHeader}>

@@ -1,11 +1,19 @@
-import {useEffect, useMemo, useState} from "react";
+import IndustryIcon from '../IndustryIcon';
+import {ChevronRight, X} from "lucide-react";
+import {useEffect, useRef, useState} from "react";
 import {useTranslation} from "react-i18next";
 
 import {useInViewOnce} from "@/lib/useInViewOnce";
 import pageStyles from "../../page.module.css";
 import styles from "./executive-section.module.css";
 
+function countryFlag(code) {
+  if (typeof code !== "string" || !/^[A-Z]{2}$/.test(code)) return "";
+  return String.fromCodePoint(...[...code].map(letter => 127397 + letter.charCodeAt(0)));
+}
+
 function readFiniteNumber(value) {
+  if (value === null || value === undefined) return null;
   const numericValue = Number(value);
   return Number.isFinite(numericValue) ? numericValue : null;
 }
@@ -55,29 +63,36 @@ function useCountUp(target, duration = 2000, shouldStart = false) {
   return value;
 }
 
-const ExecutiveSummary = ({skills = []}) => {
+const ExecutiveSummary = ({skills = [], summary = null, loadError = false}) => {
   const {t} = useTranslation(undefined, {
     keyPrefix: "executiveSummary",
   });
 
-  const languages = t("languages.list", {
-    returnObjects: true,
-  });
+  const [selectedField, setSelectedField] = useState(null);
+  const dialogRef = useRef(null);
+  const statLabels = {
+    countries: t("stats.marketsSupported", {defaultValue: "Markets supported"}),
+    industries: t("stats.industriesApplications", {defaultValue: "Industries & applications"}),
+    competencies: t("stats.competencies", {defaultValue: "Functional expertise"}),
+  };
+  useEffect(() => {
+    if (!selectedField) return undefined;
+    const dialog = dialogRef.current;
+    const trigger = document.activeElement;
+    dialog.showModal();
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      dialog.close();
+      document.body.style.overflow = previousOverflow;
+      trigger?.focus();
+    };
+  }, [selectedField]);
 
-  const languageList = Array.isArray(languages) ? languages : [];
-
-  const stats = useMemo(
-    () => ({
-      leadershipYears: 15,
-      revenue: 253.5,
-      markets: 4,
-    }),
-    [],
-  );
-
-  const leadershipYears = readFiniteNumber(stats.leadershipYears);
-  const revenue = readFiniteNumber(stats.revenue);
-  const markets = readFiniteNumber(stats.markets);
+  const activeSummary = summary;
+  const languageList = activeSummary?.languages || [];
+  const leadershipYears = 15;
+  const markets = activeSummary ? activeSummary.countries.length : null;
   const hasSkillData = Array.isArray(skills);
   const skillBars = hasSkillData
     ? skills
@@ -89,7 +104,7 @@ const ExecutiveSummary = ({skills = []}) => {
         .filter((skill) => skill.score !== null)
     : [];
   const isStatsLoading =
-    leadershipYears === null || revenue === null || markets === null;
+    leadershipYears === null || markets === null;
   const [sectionRef, isInView] = useInViewOnce({
     threshold: 0.2,
     rootMargin: "0px",
@@ -99,18 +114,16 @@ const ExecutiveSummary = ({skills = []}) => {
     2200,
     isInView && leadershipYears !== null,
   );
-  const animatedRevenue = useCountUp(revenue, 2200, isInView && revenue !== null);
   const animatedMarkets = useCountUp(markets, 2200, isInView && markets !== null);
   const isAnimationLoading =
     animatedLeadershipYears === null ||
-    animatedRevenue === null ||
     animatedMarkets === null;
 
   return (
     <section
       id="executiveSummary"
       className={`${pageStyles.section} ${styles.section}`}
-      aria-busy={isStatsLoading || isAnimationLoading}
+      aria-busy={!loadError && (isStatsLoading || isAnimationLoading)}
       ref={sectionRef}
     >
       <div className={pageStyles.sectionHeader}>
@@ -160,27 +173,30 @@ const ExecutiveSummary = ({skills = []}) => {
         <div className={styles.statGrid}>
           {/* Stats Section */}
           <div className={styles.outcomeGrid}>
-            <div className={styles.outcome}>
-              <p>{t("stats.revenuePerHead")}</p>
-              {animatedRevenue === null ? (
-                <span className={styles.valueSkeleton} />
-              ) : (
-                <strong>{formatStatNumber(animatedRevenue, 1)}M US$</strong>
-              )}
-            </div>
-            <div className={styles.outcome}>
-              <p>{t("stats.markets")}</p>
-              {animatedMarkets === null ? (
-                <span className={styles.valueSkeleton} />
-              ) : (
-                <strong>{formatStatNumber(animatedMarkets)}</strong>
-              )}
-            </div>
+            {Object.entries(statLabels).map(([field, label]) => (
+              <div key={field} className={styles.outcome}>
+                <p>{label}</p>
+                {activeSummary ? (
+                  <button
+                    type="button"
+                    className={styles.detailsButton}
+                    aria-haspopup="dialog"
+                    aria-label={t("viewDetails", {label, count: activeSummary[field].length, defaultValue: "View {{label}}: {{count}}"})}
+                    onClick={() => setSelectedField(field)}
+                  >
+                    <ChevronRight size={20} aria-hidden="true" />
+                    <strong>{field === "countries" ? formatStatNumber(animatedMarkets ?? markets) : activeSummary[field].length}</strong>
+                  </button>
+                ) : loadError ? <span>—</span> : <span className={styles.valueSkeleton} />}
+              </div>
+            ))}
           </div>
 
           {/* Languages Section */}
           <div className={styles.languagesGroup}>
             <p>{t("languages.title")}</p>
+            {loadError && !activeSummary && <p role="status">{t("unavailable", {defaultValue: "Summary data is currently unavailable."})}</p>}
+            {!activeSummary && !loadError && <span className={styles.valueSkeleton} />}
             <div className={styles.languagesGrid}>
               {languageList.map((lang) => (
                 <div key={lang.code} className={styles.languageCard}>
@@ -195,6 +211,35 @@ const ExecutiveSummary = ({skills = []}) => {
           </div>
         </div>
       </div>
+      <dialog
+        ref={dialogRef}
+        className={styles.detailsDialog}
+        aria-labelledby="executive-details-title"
+        onCancel={() => setSelectedField(null)}
+        onClick={event => {
+          if (event.target !== event.currentTarget) return;
+          const bounds = event.currentTarget.getBoundingClientRect();
+          if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) setSelectedField(null);
+        }}
+      >
+        <header className={styles.dialogHeader}>
+          <h3 id="executive-details-title">{statLabels[selectedField]}</h3>
+          <button type="button" className={styles.closeButton} onClick={() => setSelectedField(null)} aria-label={t("close", {defaultValue: "Close"})}>
+            <X size={22} aria-hidden="true" />
+          </button>
+        </header>
+        <ul className={`${styles.detailsList} ${selectedField === "countries" ? styles.countryList : selectedField === "industries" ? styles.industryList : ""}`} role="list">
+          {(activeSummary?.[selectedField] || []).map(item => (
+            <li key={item.id}>
+              {selectedField === "countries" && (
+                <span className={styles.countryFlag} aria-hidden="true">{countryFlag(item.id)}</span>
+              )}
+              {selectedField === "industries" && <IndustryIcon industry={item} className={styles.industryIcon} />}
+              <span>{item.label}</span>
+            </li>
+          ))}
+        </ul>
+      </dialog>
     </section>
   );
 };
