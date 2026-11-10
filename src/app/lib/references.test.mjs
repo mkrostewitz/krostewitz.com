@@ -69,3 +69,16 @@ test('German originals can carry English translations and invalid translations a
   assert.throws(() => normalizeReferences({mode: 'cards', items: [{...item, translations: {en: {quote: 'x'.repeat(10001)}}}]}, {strict: true}));
   assert.throws(() => normalizeReferences({mode: 'cards', items: [{...item, translations: {en: null}}]}, {strict: true}));
 });
+
+test('display separates an embedded LinkedIn URL without mutating original or translated records', async () => {
+  const {referencePresentation, localizeReference} = await import('./references.mjs');
+  const link = 'https://www.linkedin.com/in/example/';
+  const item = {...entry, role: `VP Operations${link}`, linkedinUrl: link, translations: {de: {role: `Vizepräsident${link}`}}};
+  const before = structuredClone(item);
+  assert.equal(referencePresentation(item).role, 'VP Operations');
+  assert.equal(referencePresentation(localizeReference(item, 'de')).role, 'Vizepräsident');
+  assert.equal(referencePresentation({...item, linkedinUrl: ''}).linkedinUrl, link);
+  assert.equal(referencePresentation(item).quote, entry.quote);
+  assert.deepEqual(item, before);
+  assert.equal(referencePresentation({...item, role: 'https://linkedin.com.evil.test/in/x'}).role, 'https://linkedin.com.evil.test/in/x');
+});

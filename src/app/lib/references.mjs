@@ -16,6 +16,18 @@ export function localizeReference(item, language) {
 
 export const MAX_REFERENCES = 50;
 
+// Clean display-only metadata; never change stored recommendations or translations.
+export function referencePresentation(item) {
+  let linkedinUrl = item.linkedinUrl;
+  const role = (item.role || "").replace(/https?:\/\/(?:www\.)?linkedin\.com\/[^\s<>"']+/gi, match => {
+    const link = url(match, "LinkedIn profile", false, true);
+    if (!link) return match;
+    linkedinUrl ||= link;
+    return "";
+  }).trim();
+  return {...item, role, linkedinUrl};
+}
+
 function text(value, max, label, strict) {
   const result = typeof value === "string" ? value.trim() : "";
   if (strict && result.length > max) throw new Error(`${label} is too long (maximum ${max} characters).`);

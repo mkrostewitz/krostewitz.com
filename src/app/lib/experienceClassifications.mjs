@@ -42,13 +42,21 @@ export function validateExperienceReferences(entries, catalog) {
     }
   }
 }
+export function countryCompanies(entries, country, language = 'en') {
+  const companies = entries.filter(entry => entry.classifications?.countries?.includes(country)).map(entry =>
+    (entry.translations?.[language]?.company || entry.translations?.en?.company ||
+      Object.values(entry.translations || {}).find(value => value.company)?.company || '').trim()
+  ).filter(Boolean);
+  return [...new Map(companies.map(company => [company.toLocaleLowerCase(), company])).values()];
+}
+
 export function experienceSummary(entries, catalog, language = 'en') {
   const industryCoverage = new Map(assignmentCoverage(entries, catalog.industries, new Date(), language, 'industries').map(item => [item.id, item.days]));
   const rankedIndustries = [...catalog.industries].sort((a, b) => industryCoverage.get(b.id) - industryCoverage.get(a.id));
   return Object.fromEntries(['industries', 'competencies', 'countries'].map(field => {
     const ids = new Set(entries.flatMap(entry => entry.classifications?.[field] || []));
     const options = field === 'countries' ? countryOptions(language) : field === 'industries' ? rankedIndustries : catalog[field];
-    return [field, options.filter(item => ids.has(item.id)).map(item => ({id: item.id, label: item.translations?.[language]?.label || item.label, ...(field === 'industries' ? {detail: item.translations?.[language]?.detail || item.translations?.en?.detail || '', icon: resolveIndustryIcon(item)} : {})}))];
+    return [field, options.filter(item => ids.has(item.id)).map(item => ({id: item.id, label: item.translations?.[language]?.label || item.label, ...(field === 'countries' ? {companies: countryCompanies(entries, item.id, language)} : {}), ...(field === 'industries' ? {detail: item.translations?.[language]?.detail || item.translations?.en?.detail || '', icon: resolveIndustryIcon(item)} : {})}))];
   }));
 }
 

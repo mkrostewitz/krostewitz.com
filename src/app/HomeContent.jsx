@@ -111,7 +111,7 @@ export default function HomeContent({initialSummary = null}) {
         <ExecutiveSummary skills={databaseSkills} summary={activeSummary} loadError={summaryError} />
 
         {/* My Skills */}
-        {showSkillsSection ? <SkillsSection skills={databaseSkills} industries={activeSummary?.industries || []} loadError={summaryError} /> : null}
+        {showSkillsSection ? <SkillsSection initialCountry={activeSummary?.mapInitialCountry} countries={activeSummary?.countries} skills={databaseSkills} industries={activeSummary?.industries || []} loadError={summaryError} /> : null}
 
         {/* Experience and CV */}
         <TimelineSection />

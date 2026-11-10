@@ -118,3 +118,20 @@ test('industries rank by duration with overlapping roles counted once and catalo
   assert.deepEqual(experienceSummary(entries, catalog).industries.map(item => item.id), ['long', 'short', 'tie', 'overlap']);
   assert.deepEqual(catalog.industries.map(item => item.id), ['short', 'long', 'overlap', 'tie', 'unused']);
 });
+
+test('country company lists follow CV assignments, deduplicate, and localize without changing entries', async () => {
+  const {countryCompanies} = await import('./experienceClassifications.mjs');
+  const entries = [
+    {classifications: {countries: ['US', 'CA']}, translations: {en: {company: 'Example Ltd'}, de: {company: 'Beispiel GmbH'}}},
+    {classifications: {countries: ['US']}, translations: {en: {company: 'Example Ltd'}}},
+    {classifications: {countries: ['DE']}, translations: {en: {company: 'Elsewhere'}}},
+    {classifications: {countries: ['US']}, translations: {en: {company: ''}}},
+  ];
+  const before = structuredClone(entries);
+  assert.deepEqual(countryCompanies(entries, 'US'), ['Example Ltd']);
+  assert.deepEqual(countryCompanies(entries, 'CA', 'de'), ['Beispiel GmbH']);
+  assert.deepEqual(countryCompanies(entries, 'CA', 'fr'), ['Example Ltd']);
+  assert.deepEqual(countryCompanies(entries, 'AU'), []);
+  assert.deepEqual(entries, before);
+  assert.deepEqual(countryCompanies(entries.slice(1), 'CA'), []);
+});
