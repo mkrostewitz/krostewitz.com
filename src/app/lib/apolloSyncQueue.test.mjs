@@ -143,3 +143,15 @@ test("enrollment outcome survives background sync and invalidates cached progres
   await run(leads, async () => success);
   assert.deepEqual(leads.doc.apollo.lastEnrollment, attempt);
 });
+
+test('background sync carries the explicit contact language and legacy language fallback', async () => {
+  for (const explicit of [undefined, 'en', 'de']) {
+    const leads = collection();
+    leads.doc.language = 'de';
+    if (explicit) leads.doc.contact.language = explicit;
+    await run(leads, async args => {
+      assert.equal(args.language, explicit || 'de');
+      return success;
+    });
+  }
+});

@@ -2,7 +2,7 @@ export const CATEGORY_FIELDS = ["industries", "products", "applications"];
 
 export async function getContactCategoryCatalog(db) {
   const entries = await Promise.all(CATEGORY_FIELDS.map(async (field) => {
-    const rows = await db.collection(`contact_${field}`).find({}).sort({label: 1}).toArray();
+    const rows = await db.collection(`lead_${field}`).find({}).sort({label: 1}).toArray();
     // Unlike contact selections, the shared catalog is not capped at 50 labels.
     return [field, [...new Map(rows.map(({label}) => {
       const formatted = formatCategoryLabel(label);
@@ -33,7 +33,7 @@ export function normalizeCategories(values) {
 export async function saveContactCategories(db, contact) {
   for (const field of CATEGORY_FIELDS) {
     if (!Object.hasOwn(contact, field)) continue;
-    const collection = db.collection(`contact_${field}`);
+    const collection = db.collection(`lead_${field}`);
     contact[field] = await Promise.all(normalizeCategories(contact[field]).map(async (label) => {
       const _id = label.toLowerCase();
       try { await collection.updateOne({_id}, {$set: {label}}, {upsert: true}); }

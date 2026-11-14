@@ -26,7 +26,7 @@ test('catalogs reuse canonical labels separately and survive clearing a contact'
   const next = await saveContactCategories(db, {industries: ['automation'], products: ['sensors', 'Software']});
   assert.deepEqual(next, {industries: ['Automation'], products: ['Sensors', 'Software']});
   await saveContactCategories(db, {industries: [], products: []});
-  assert.equal(collections.get('contact_products').size, 2);
+  assert.equal(collections.get('lead_products').size, 2);
   const normalized = normalizeContact({firstName: 'Ada', ...next, research: null});
   assert.deepEqual(normalized.products, ['Sensors', 'Software']);
   assert.equal(Object.hasOwn(normalizeContact({firstName: 'Ada'}), 'industries'), false);
@@ -60,4 +60,29 @@ test('existing industry selections fill the combined field and cleared selection
   assert.deepEqual(companyCategories({industries: ['Automation'], applications: []}).applications, ['Automation']);
   assert.deepEqual(companyCategories({industries: ['Automation'], applications: ['automation', 'Robotics']}).applications, ['Automation', 'Robotics']);
   assert.deepEqual(companyCategories({industries: [], applications: []}).applications, []);
+});
+
+test('lead catalog creation, reads and updates use only lead_* collections and preserve translations', async () => {
+  const {getContactCategoryCatalog} = await import('./contactCategories.mjs');
+  const {getCategoryTranslations} = await import('./leadCategoryTranslations.mjs');
+  const collections = new Map(['products', 'applications', 'industries'].map(kind => [`lead_${kind}`, new Map()]));
+  const db = {collection(name) {
+    assert.ok(collections.has(name), `Unexpected collection: ${name}`);
+    const rows = collections.get(name);
+    return {
+      async updateOne({_id}, {$set}) {rows.set(_id, {...rows.get(_id), ...$set});},
+      async findOne({_id}) {return rows.get(_id);},
+      find() {return {sort() {return {async toArray() {return [...rows.values()];}};}};},
+    };
+  }};
+  await saveContactCategories(db, {products: ['Sensors'], applications: ['Automation'], industries: ['Manufacturing']});
+  collections.get('lead_products').get('sensors').translations = {en: 'Sensors', de: 'Sensoren'};
+  await saveContactCategories(db, {products: ['sensors', 'Software']});
+  assert.deepEqual(await getContactCategoryCatalog(db), {
+    industries: ['Manufacturing'], products: ['Sensors', 'Software'], applications: ['Automation'],
+  });
+  const translated = await getCategoryTranslations(db);
+  assert.equal(translated.products.find(row => row.label === 'Sensors').translations.de, 'Sensoren');
+  assert.equal(translated.industries[0].label, 'Manufacturing');
+  assert.equal(translated.applications[0].label, 'Automation');
 });

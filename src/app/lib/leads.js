@@ -596,7 +596,7 @@ export function serializeLead(document) {
     followUpTask: document.followUpTask || "",
     language:
       getSupportedSiteLanguage(
-        document.language ||
+        contact.language || document.language ||
           source.context?.language ||
           source.context?.cvLanguage ||
           document.tracking?.language
@@ -1124,6 +1124,8 @@ async function sendStoredLeadToApollo(args) {
     const [resolved] = await hydrateCompanyLeads((await getDb()).collection("companies"), [{companyId: args.companyId, contact: args.contact}]);
     args = {...args, contact: resolved.contact};
   }
+  const {getCategoryTranslations, localizeCompanyCategories} = await import("./leadCategoryTranslations.mjs");
+  args = {...args, contact: localizeCompanyCategories(args.contact, await getCategoryTranslations(await getDb()), args.language)};
   await validateApolloRequiredFields(args.contact, args.categories);
   const {getApolloApiKey, getApolloSettings, getApolloSourceFieldId, getApolloTagsFieldId, getApolloCompanyFieldId, getApolloSalutationFieldId, getApolloGenderFieldId} = await import("./apolloSettings");
   const {sendLeadToApollo} = await import("./apolloOutreach.mjs");
@@ -1179,7 +1181,7 @@ export async function manageAdminLeadSequence(leadId, input, user) {
     };
     const result = await performSequenceAction({...input, read,
       change: action => changeApolloMembership({apiKey, contactId, sequenceId: input.sequenceId, action}),
-      sync: (enroll, sequenceId = "") => sendStoredLeadToApollo({companyId: lead.companyId, contact: lead.contact, categories: getLeadTypes(lead), contactId, enroll, sequenceId}),
+      sync: (enroll, sequenceId = "") => sendStoredLeadToApollo({companyId: lead.companyId, contact: lead.contact, language: serializeLead(lead).language, categories: getLeadTypes(lead), contactId, enroll, sequenceId}),
     });
     const patch = {"apollo.lastSequenceAction": {...input, message: result.message, attemptedAt: new Date().toISOString(), updatedBy: user.email}};
     if (result.enrollment) patch["apollo.lastEnrollment"] = {sequenceId: input.targetSequenceId, status: result.enrollment.sequenceStatus, message: result.enrollment.message, attemptedAt: new Date().toISOString()};

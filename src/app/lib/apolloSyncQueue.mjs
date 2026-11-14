@@ -1,3 +1,4 @@
+import {storedLeadLanguage} from "./leadCategoryTranslations.mjs";
 import {randomUUID, createHmac, timingSafeEqual} from "node:crypto";
 import {getLeadTypes} from "./leadTypes.mjs";
 
@@ -39,7 +40,7 @@ export async function runApolloSync({leads, filter, send, enroll = false, sequen
     await leads.updateOne(snapshot, {$set: {"apollo.status": "syncing", "apollo.attempts": attempts}});
     let result;
     try {
-      result = await send({companyId: locked.companyId, contact: locked.contact, categories: getLeadTypes(locked), contactId: locked.apollo?.contactId,
+      result = await send({companyId: locked.companyId, contact: locked.contact, language: storedLeadLanguage(locked), categories: getLeadTypes(locked), contactId: locked.apollo?.contactId,
         enroll: background ? false : enroll,
         sequenceId: background || !enroll ? "" : sequenceId,
         onContactLinked: async (contactId) => {

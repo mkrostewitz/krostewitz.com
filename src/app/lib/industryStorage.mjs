@@ -20,7 +20,7 @@ export async function ensureIndustries(db) {
   const stored = await meta.findOne({_id: 'translations'});
   const cards = Object.fromEntries(['en', 'de'].map(language => [language,
     stored?.translations?.[language]?.skills?.industries ?? defaults[language]]));
-  const legacy = await db.collection('contact_industries').find({}).toArray();
+  const legacy = await db.collection('lead_industries').find({}).toArray();
   const collection = db.collection(INDUSTRY_COLLECTION);
   const documents = new Map(legacy.map(row => [String(row._id), {
     label: row.label, translations: {en: {label: row.label, detail: ''}}, icon: '', order: 1000, revision: 0,
