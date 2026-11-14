@@ -80,6 +80,7 @@ export default function OutreachForm({
   const [research, setResearch] = useState(lead?.research || null);
   const [contact, setContact] = useState(() => ({
     ...Object.fromEntries(CONTACT_FIELDS.map(key => [key, lead?.[key] || ""])),
+    language: lead?.language || "en",
     source: lead?.contactSource || "",
     ...companyCategories({
       applications: lead?.applications,
@@ -297,6 +298,11 @@ export default function OutreachForm({
         </div>
 
         {lead?.nameNeedsReview && <Typography className={styles.muted} component="p" variant="body2">Check the first and last name; the existing full name was split automatically.</Typography>}
+        <TextField select label="Contact language" value={contact.language} disabled={saving || preparing}
+          onChange={event => setContact(current => ({...current, language: event.target.value}))}
+          helperText="Products and industries are synced in this language. Choose the matching Apollo sequence separately.">
+          <MenuItem value="en">English</MenuItem><MenuItem value="de">Deutsch</MenuItem>
+        </TextField>
         <LeadContactType required={requiredFields.includes("leadTypes")} value={tags} options={leadTypes} onChange={setTags} disabled={saving || preparing} />
         <LeadSource value={contact.source} onChange={source => setContact(current => ({
             ...current,

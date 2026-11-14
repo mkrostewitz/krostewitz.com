@@ -11,6 +11,7 @@ import { useLoadingState } from "../../components/loading/LoadingProvider";
 import { useSnackbar } from "./LeadSnackbar";
 import {LeadRequirementsSettings} from "./LeadRequirements";
 import LeadCatalog from "./LeadCatalog";
+import CompanyCategoryCatalog from "./CompanyCategoryCatalog";
 import AdminHeader from "../AdminHeader";
 import styles from "../admin.module.css";
 import DisclosureSummary from "./DisclosureSummary";
@@ -359,6 +360,7 @@ export default function LeadManager({
           </div>
           <div className={outreach.headerActions}>
             <LeadRequirementsSettings />
+            <CompanyCategoryCatalog />
             <LeadCatalog onChange={data => setLeadTypes(data.leadTypes)} />
             <LeadButton type="button" onClick={() => setIsImporting(true)} variant="outlined">Import leads</LeadButton>
             <LeadButton type="button" disabled={isCreating} onClick={() => setIsCreating(true)} variant="contained">Add new lead</LeadButton>

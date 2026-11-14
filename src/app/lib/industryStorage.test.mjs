@@ -14,7 +14,7 @@ test('unused industries can be deleted without being reseeded', async () => {
   const item = (await getIndustries(db))[0];
   await deleteIndustry(db, item);
   assert.ok(!(await getIndustries(db)).some(row => row.id === item.id));
-  assert.equal(db.collections.get('contact_industries').size, 2);
+  assert.equal(db.collections.get('lead_industries').size, 2);
   await assert.rejects(deleteIndustry(db, item), {status: 409});
 });
 
@@ -28,19 +28,19 @@ test('deletion rejects assigned industries, stale revisions and invalid requests
   assert.ok((await getIndustries(db)).some(row => row.id === item.id));
 });
 function migratedDb() {
-  return industryDb({site_content: [legacy], contact_industries: [{_id: 'assigned-id', label: 'Automation'}, {_id: 'other-id', label: 'Other'}]});
+  return industryDb({site_content: [legacy], lead_industries: [{_id: 'assigned-id', label: 'Automation'}, {_id: 'other-id', label: 'Other'}]});
 }
 
 test('migration preserves saved bilingual cards, icons, and CV identifiers without changing lead data', async () => {
   const db = migratedDb();
-  const before = structuredClone(db.collections.get('contact_industries'));
+  const before = structuredClone(db.collections.get('lead_industries'));
   const items = await getIndustries(db);
   const industry = items.find(item => item.id === 'assigned-id');
   assert.equal(industry.translations.en.detail, 'Original English description');
   assert.equal(industry.translations.de.detail, 'Original deutsche Beschreibung');
   assert.equal(industry.icon, 'automation');
   assert.deepEqual(db.collections.get('site_content').get('translations'), legacy);
-  assert.deepEqual(db.collections.get('contact_industries'), before);
+  assert.deepEqual(db.collections.get('lead_industries'), before);
   const entries = [{classifications: {industries: ['assigned-id']}}];
   const summary = experienceSummary(entries, {industries: items, competencies: []}, 'de');
   assert.deepEqual(summary.industries, [{id: 'assigned-id', label: 'Automatisierung', detail: 'Original deutsche Beschreibung', icon: 'automation'}]);
@@ -76,7 +76,7 @@ test('new industries need only a title, can be described later, and keep referen
   assert.equal(saved.translations.en.detail, 'My experience');
   await assert.rejects(updateIndustry(db, input), {status: 409});
   assert.equal((await createIndustry(db, 'Medical technology')).id, first.id);
-  assert.equal(db.collections.get('contact_industries').size, 2);
+  assert.equal(db.collections.get('lead_industries').size, 2);
   const summary = experienceSummary([{classifications: {industries: [saved.id]}}], {industries: await getIndustries(db), competencies: []}, 'de');
   assert.equal(summary.industries[0].detail, 'My experience');
   assert.equal(summary.industries[0].label, 'Medical technology');

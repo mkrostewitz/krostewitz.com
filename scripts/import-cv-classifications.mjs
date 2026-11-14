@@ -20,7 +20,7 @@ try {
   const timeline = db.collection('cv_timeline');
   const meta = await db.collection('site_content').findOne({_id: 'cv_timeline_settings'});
   if (!meta || !Number.isSafeInteger(meta.revision)) throw new Error('Initialize the CV editor before importing classifications.');
-  const catalog = await db.collection('contact_industries').find({}).toArray();
+  const catalog = await db.collection('lead_industries').find({}).toArray();
   const entries = await timeline.find({}).toArray();
   const skillsCollection = db.collection('skills');
   const skills = await skillsCollection.find({}).toArray();

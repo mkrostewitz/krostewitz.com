@@ -12,7 +12,7 @@ try {
   const db = client.db(process.env.MONGO_DB_NAME);
   const sources = {
     translations: await db.collection('site_content').findOne({_id: 'translations'}),
-    contactIndustries: await db.collection('contact_industries').find({}).toArray(),
+    contactIndustries: await db.collection('lead_industries').find({}).toArray(),
     industries: await db.collection('experience_industries').find({}).toArray(),
     migration: await db.collection('site_content').findOne({_id: 'experience_industries_v1'}),
   };
