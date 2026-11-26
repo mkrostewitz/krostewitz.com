@@ -10,6 +10,15 @@ import * as Yup from "yup";
 import {useSnackbar} from "../snackbar/SnackbarProvider";
 import styles from "./contact-section.module.css";
 
+const EMPTY_CONTACT_DETAILS = {
+  firstName: "",
+  lastName: "",
+  email: "",
+  phone: "",
+  requestType: "",
+  message: "",
+};
+
 const REQUEST_TYPE_OPTIONS = [
   "headhunter",
   "employer",
@@ -73,6 +82,9 @@ function pageUrl() {
 }
 
 export default function LeadCaptureModal({
+  attachment,
+  postSlug,
+  timelineEntryId,
   cvDownloads = {},
   cvLanguage = "en",
   isOpen,
@@ -83,21 +95,24 @@ export default function LeadCaptureModal({
   const {i18n, t} = useTranslation();
   const {closeSnackbar, showSnackbar} = useSnackbar();
   const [phase, setPhase] = useState("form");
+  const [contactDetails, setContactDetails] = useState(EMPTY_CONTACT_DETAILS);
   const [pendingEmail, setPendingEmail] = useState("");
   const [pendingLeadId, setPendingLeadId] = useState("");
   const [pendingName, setPendingName] = useState("");
   const [downloadUrl, setDownloadUrl] = useState("");
-  const isCvRequest = sourceType === "cv_download";
-  const copyPrefix = isCvRequest ? "cv.form" : "contact.form";
+  const isAttachmentRequest = sourceType === "attachment_download";
+  const isDownloadRequest = sourceType === "cv_download" || isAttachmentRequest;
+  const copyPrefix = isAttachmentRequest ? "attachment.form" : isDownloadRequest ? "cv.form" : "contact.form";
 
   const closeLabelDefault = "Close";
-  const modalTitle = isCvRequest ? t("cv.form.title") : t("contact.form.submit");
+  const modalTitle = isDownloadRequest ? t(`${copyPrefix}.title`) : t("contact.form.submit");
 
   useEffect(() => {
     if (!isOpen) return undefined;
 
     function closeFromKeyboard() {
       setPhase("form");
+      setContactDetails(EMPTY_CONTACT_DETAILS);
       setPendingEmail("");
       setPendingLeadId("");
       setPendingName("");
@@ -125,27 +140,28 @@ export default function LeadCaptureModal({
   const formSchema = useMemo(
     () =>
       Yup.object({
-        name: Yup.string().required(t("contact.form.validation.name")),
+        firstName: Yup.string().trim().required(t("contact.form.validation.firstName")),
+        lastName: Yup.string().trim().required(t("contact.form.validation.lastName")),
         email: Yup.string()
           .email(t("contact.form.validation.email"))
           .required(t("contact.form.validation.email")),
         phone: Yup.string().test(
           "valid-phone",
-          isCvRequest
+          isDownloadRequest
             ? t("cv.form.validation.phone")
             : t("cv.form.validation.phone"),
-          (value) => phoneLooksValid(value, isCvRequest)
+          (value) => phoneLooksValid(value, isDownloadRequest)
         ),
-        requestType: isCvRequest
+        requestType: isDownloadRequest
           ? Yup.string().required(t("cv.form.validation.requestType"))
           : Yup.string(),
-        message: isCvRequest
+        message: isDownloadRequest
           ? Yup.string()
           : Yup.string()
               .min(10, t("contact.form.validation.message"))
               .required(t("contact.form.validation.message")),
       }),
-    [isCvRequest, t]
+    [isDownloadRequest, t]
   );
 
   const verifySchema = useMemo(
@@ -161,6 +177,8 @@ export default function LeadCaptureModal({
   const downloadOptions = useMemo(() => {
     if (!downloadUrl) return [];
 
+    if (isAttachmentRequest) return [{fileName: attachment?.fileName, label: attachment?.fileName || t("attachment.form.downloadReady"), language: "", url: downloadUrl}];
+
     const preferredLanguage = normalizeLanguageCode(cvLanguage);
     const entries = sortCvDownloads(
       Object.entries(cvDownloads || {}).filter(([, asset]) => isLiveCvAsset(asset)),
@@ -171,7 +189,7 @@ export default function LeadCaptureModal({
       return [
         {
           fileName: "",
-          label: t("cv.form.downloadReady"),
+          label: t(`${copyPrefix}.downloadReady`),
           language: preferredLanguage,
           url: downloadUrl,
         },
@@ -186,12 +204,13 @@ export default function LeadCaptureModal({
       language,
       url: addLanguageToDownloadUrl(downloadUrl, language),
     }));
-  }, [cvDownloads, cvLanguage, downloadUrl, t]);
+  }, [attachment, copyPrefix, isAttachmentRequest, cvDownloads, cvLanguage, downloadUrl, t]);
 
   if (!isOpen) return null;
 
   function resetAndClose() {
     setPhase("form");
+    setContactDetails(EMPTY_CONTACT_DETAILS);
     setPendingEmail("");
     setPendingLeadId("");
     setPendingName("");
@@ -218,7 +237,7 @@ export default function LeadCaptureModal({
         <div className={styles.modalHeader}>
           <div>
             <p className={styles.kicker}>
-              {isCvRequest ? t("cv.form.eyebrow") : t("contact.eyebrow")}
+              {isDownloadRequest ? t(`${copyPrefix}.eyebrow`) : t("contact.eyebrow")}
             </p>
             <h3 id="lead-capture-modal-title">{modalTitle}</h3>
           </div>
@@ -239,13 +258,7 @@ export default function LeadCaptureModal({
 
         {phase === "form" && (
           <Formik
-            initialValues={{
-              name: "",
-              email: "",
-              phone: "",
-              requestType: "",
-              message: "",
-            }}
+            initialValues={contactDetails}
             validationSchema={formSchema}
             onSubmit={async (values, {setSubmitting}) => {
               closeSnackbar();
@@ -256,6 +269,10 @@ export default function LeadCaptureModal({
                   body: JSON.stringify({
                     ...values,
                     sourceType,
+                    postSlug,
+                    timelineEntryId,
+                    documentId: attachment?.id,
+                    attachmentKey: attachment?.key || attachment?.fileName,
                     cvLanguage,
                     language: i18n.resolvedLanguage || i18n.language || cvLanguage,
                     pageUrl: pageUrl(),
@@ -278,9 +295,10 @@ export default function LeadCaptureModal({
                 }
 
                 if (data.status === "verify_required") {
+                  setContactDetails({...values});
                   setPendingEmail(values.email);
                   setPendingLeadId(data.leadId || "");
-                  setPendingName(values.name);
+                  setPendingName([values.firstName.trim(), values.lastName.trim()].join(" "));
                   setPhase("verify");
                   showSnackbar({
                     type: "info",
@@ -304,20 +322,31 @@ export default function LeadCaptureModal({
               >
                 <FormikErrorsSnackbar />
                 <div className={styles.modalBody}>
-                  {isCvRequest && (
-                    <p className={styles.formIntro}>{t("cv.form.intro")}</p>
+                  {isDownloadRequest && (
+                    <p className={styles.formIntro}>{t(`${copyPrefix}.intro`)}</p>
                   )}
 
                   <div
                     className={`${styles.fields} ${
-                      isCvRequest ? styles.cvFields : ""
+                      isDownloadRequest ? styles.cvFields : ""
                     }`}
                   >
                     <label className={styles.field}>
-                      {t("contact.form.name")}
+                      {t("contact.form.firstName")}
                       <Field
-                        name="name"
-                        placeholder={t("contact.form.placeholderName")}
+                        name="firstName"
+                        autoComplete="given-name"
+                        maxLength={200}
+                        placeholder={t("contact.form.placeholderFirstName")}
+                      />
+                    </label>
+                    <label className={styles.field}>
+                      {t("contact.form.lastName")}
+                      <Field
+                        name="lastName"
+                        autoComplete="family-name"
+                        maxLength={200}
+                        placeholder={t("contact.form.placeholderLastName")}
                       />
                     </label>
                     <label className={styles.field}>
@@ -329,7 +358,7 @@ export default function LeadCaptureModal({
                       />
                     </label>
 
-                    {isCvRequest && (
+                    {isDownloadRequest && (
                       <>
                         <label className={styles.field}>
                           {t("cv.form.phone")}
@@ -356,7 +385,7 @@ export default function LeadCaptureModal({
                       </>
                     )}
 
-                    {!isCvRequest && (
+                    {!isDownloadRequest && (
                       <label className={styles.field}>
                         {t("contact.form.message")}
                         <Field
@@ -474,7 +503,10 @@ export default function LeadCaptureModal({
                     <button
                       type="button"
                       className={`secondary ${styles.submitButton}`}
-                      onClick={() => setPhase("form")}
+                      onClick={() => {
+                        closeSnackbar();
+                        setPhase("form");
+                      }}
                     >
                       {t("contact.form.verifyEdit")}
                     </button>
@@ -495,7 +527,7 @@ export default function LeadCaptureModal({
               {downloadUrl ? (
                 <>
                   <p className={styles.formIntro}>
-                    {t("cv.form.downloadPrompt")}
+                    {t(`${copyPrefix}.downloadPrompt`)}
                   </p>
                   <div className={styles.actionsRow}>
                     {downloadOptions.map((option, index) => (
@@ -521,6 +553,7 @@ export default function LeadCaptureModal({
                   className={`primary ${styles.submitButton}`}
                   onClick={() => {
                     setPhase("form");
+                    setContactDetails(EMPTY_CONTACT_DETAILS);
                     setPendingName("");
                     setPendingEmail("");
                     setPendingLeadId("");

@@ -1,4 +1,40 @@
 {
+  "attachment": {
+    "form": {
+      "eyebrow": "Document request",
+      "title": "Request document access",
+      "intro": "Please leave your details and verify your email to download this experience attachment.",
+      "phone": "Phone",
+      "placeholderPhone": "+1 650 555 1234",
+      "requestType": "Nature of request",
+      "placeholderRequestType": "Select one",
+      "requestTypes": {
+        "headhunter": "Headhunter",
+        "employer": "Employer",
+        "potential_client": "Potential client",
+        "fan": "Fan",
+        "other": "Other"
+      },
+      "submit": "Request document",
+      "sending": "Sending...",
+      "verifySent": "Check your email for a 6-digit code to unlock the document download.",
+      "verifySuccess": "Email confirmed. Your document is ready.",
+      "successEyebrow": "Access confirmed",
+      "successTitle": "Your document is ready",
+      "downloadPrompt": "Download your requested document below.",
+      "downloadReady": "Download document",
+      "downloadLanguages": {
+        "en": "English CV",
+        "de": "German CV"
+      },
+      "validation": {
+        "phone": "Please enter a valid phone number.",
+        "phoneRequired": "Please enter your phone number.",
+        "requestType": "Please select the nature of your request."
+      },
+      "unavailable": "This attachment is no longer available."
+    }
+  },
   "buttons": {
     "booking": "Schedule a call",
     "linkedin": "LinkedIn"
@@ -621,6 +657,10 @@
       "email": "Email",
       "message": "What would you like to discuss?",
       "placeholderName": "Jane Doe",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "placeholderFirstName": "Jane",
+      "placeholderLastName": "Smith",
       "placeholderEmail": "you@email.com",
       "placeholderMessage": "For example: US market entry, digital B2B sales, process automation, or a specific operational challenge...",
       "submit": "Send message",
@@ -648,6 +688,8 @@
       "errorGeneric": "Something went wrong. Please try again.",
       "validation": {
         "name": "Please enter your name.",
+        "firstName": "Please enter your first name.",
+        "lastName": "Please enter your last name.",
         "email": "Please enter a valid email address.",
         "message": "Please add a bit more detail.",
         "code": "Enter the 6-digit code.",
@@ -670,7 +712,8 @@
       },
       "sources": {
         "contact_form": "Contact form",
-        "cv_download": "CV download"
+        "cv_download": "CV download",
+        "attachment_download": "Experience attachment"
       },
       "requestTypes": {
         "general": "General",
@@ -684,16 +727,19 @@
     "verification": {
       "subject": {
         "cv": "Verify your CV request",
+        "attachment": "Verify your document request",
         "contact": "Verify your contact request"
       },
       "preheader": "Verification code: {{code}}",
       "eyebrow": "Verification",
       "title": {
         "cv": "Confirm your CV access request",
+        "attachment": "Confirm your document access request",
         "contact": "Confirm your message"
       },
       "instruction": {
         "cv": "Please confirm your email to access the CV download.",
+        "attachment": "Please confirm your email to access the document download.",
         "contact": "Please confirm your email to send your message."
       },
       "footer": "This code confirms that the request came from your email address. If you did not request this, you can ignore this email."
@@ -701,23 +747,28 @@
     "requesterCopy": {
       "subject": {
         "cv": "Copy of your CV access request",
+        "attachment": "Copy of your document access request",
         "contact": "Copy of your contact request"
       },
       "preheader": {
         "cv": "Your CV access request has been confirmed.",
+        "attachment": "Your document access request has been confirmed.",
         "contact": "Your contact request has been confirmed."
       },
       "eyebrow": "Request received",
       "title": {
         "cv": "Your CV access request is confirmed",
+        "attachment": "Your document access request is confirmed",
         "contact": "Message received"
       },
       "confirmed": {
         "cv": "Your CV access request has been confirmed and received.",
+        "attachment": "Your document access request has been confirmed and received.",
         "contact": "Your contact request has been confirmed and received."
       },
       "nextStep": {
         "cv": "You can use the secure download links below. They are personal to your verified request.",
+        "attachment": "You can use the secure download links below. They are personal to your verified request.",
         "contact": "I will review your message and reply shortly."
       },
       "cta": "Download CV",
@@ -729,6 +780,7 @@
       },
       "footer": {
         "cv": "If anything needs to be corrected, please reply to this email.",
+        "attachment": "If anything needs to be corrected, please reply to this email.",
         "contact": "This is a copy of the details you submitted."
       }
     }

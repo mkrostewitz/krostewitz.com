@@ -1,7 +1,7 @@
 import {NextResponse} from "next/server";
 
 import {CvFileError, getCvDownloads, normalizeCvLanguage} from "../../../lib/cvFiles";
-import {getLeadByDownloadToken, recordLeadDownload} from "../../../lib/leads";
+import {getLeadByDownloadToken, getLeadByDownloadCookie, recordLeadDownload} from "../../../lib/leads";
 
 export const runtime = "nodejs";
 
@@ -25,7 +25,7 @@ export async function GET(request) {
   const {searchParams} = new URL(request.url);
   const token = searchParams.get("token") || "";
   const requestedLanguage = searchParams.get("language");
-  const lead = await getLeadByDownloadToken(token);
+  const lead = token ? await getLeadByDownloadToken(token) : await getLeadByDownloadCookie(request);
 
   if (!lead) {
     return NextResponse.json({error: "CV download access expired."}, {status: 403});
@@ -61,6 +61,6 @@ export async function GET(request) {
     return NextResponse.json({error: "CV file could not be loaded."}, {status: 502});
   }
 
-  await recordLeadDownload(lead._id);
+  await recordLeadDownload(lead._id, {type: "cv", language, fileName: asset.fileName});
   return new NextResponse(response.body, {headers});
 }

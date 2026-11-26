@@ -17,6 +17,8 @@ import {getCvDownloads} from "../../../lib/cvFiles";
 import {LeadValidationError, verifyPendingLead} from "../../../lib/leads";
 import {getRequestOrigin} from "../../../lib/requestOrigin";
 
+import {setDownloadAccessCookie} from "../../../lib/downloadAccess.mjs";
+
 const CV_DOWNLOAD_LANGUAGE_ORDER = ["en", "de"];
 
 function addLanguageToDownloadUrl(downloadUrl, language) {
@@ -41,7 +43,9 @@ function sortCvDownloadEntries(entries, preferredLanguage) {
 }
 
 async function getRequesterDownloadLinks(downloadUrl, lead) {
-  if (!downloadUrl || lead.source?.type !== "cv_download") return [];
+  if (!downloadUrl) return [];
+  if (lead.source?.type === "attachment_download") return [{href: downloadUrl, label: lead.source.context.fileName}];
+  if (lead.source?.type !== "cv_download") return [];
 
   try {
     const downloads = await getCvDownloads();
@@ -98,6 +102,7 @@ export async function POST(request) {
 
   const body = await request.json().catch(() => ({}));
   let lead;
+  let accessToken = "";
   let downloadUrl = "";
   let requesterDownloadUrl = "";
   let requesterDownloadLinks = [];
@@ -107,7 +112,8 @@ export async function POST(request) {
     lead = result.lead;
 
     if (result.downloadToken) {
-      const url = new URL("/api/cv/download", getRequestOrigin(request));
+      accessToken = result.downloadToken;
+      const url = new URL(lead.source.type === "attachment_download" ? "/api/attachments/download" : "/api/cv/download", getRequestOrigin(request));
       url.searchParams.set("token", result.downloadToken);
       downloadUrl = `${url.pathname}${url.search}`;
       requesterDownloadUrl = url.toString();
@@ -141,7 +147,7 @@ export async function POST(request) {
   const ownerMailOptions = {
     from,
     to: notificationRecipients,
-    subject: isCvRequest
+    subject: lead.source.type === "attachment_download" ? `Experience attachment request from ${lead.name}` : isCvRequest
       ? `CV download request from ${lead.name}`
       : `New contact from ${lead.name}`,
     replyTo: lead.email,
@@ -183,19 +189,19 @@ export async function POST(request) {
       warnings.push("copy_failed");
     }
 
-    return NextResponse.json({
+    return setDownloadAccessCookie(NextResponse.json({
       ok: true,
       lead,
       downloadUrl,
       ...(warnings.length ? {warning: warnings.join(",")} : {}),
-    });
+    }), accessToken, new URL(getRequestOrigin(request)).protocol === "https:");
   } catch (error) {
     console.error("Contact final send error", error);
-    return NextResponse.json({
+    return setDownloadAccessCookie(NextResponse.json({
       ok: true,
       lead,
       downloadUrl,
       warning: "notify_failed",
-    });
+    }), accessToken, new URL(getRequestOrigin(request)).protocol === "https:");
   }
 }

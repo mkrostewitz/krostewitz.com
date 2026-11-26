@@ -39,7 +39,7 @@ export async function GET(request) {
     ]);
 
     return NextResponse.json(
-      {blogEnabled: true, posts, categories},
+      {blogEnabled: true, posts: posts.map(post => ({...post, attachments: post.attachments.map(({fileName, size, key}) => ({fileName, size, key}))})), categories},
       {headers: POSTS_CACHE_HEADERS}
     );
   } catch (error) {

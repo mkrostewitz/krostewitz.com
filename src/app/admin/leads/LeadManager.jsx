@@ -36,6 +36,9 @@ const SOURCE_OPTIONS = [{
   value: "contact_form",
   label: "Contact form"
 }, {
+  value: "attachment_download",
+  label: "Experience attachment"
+}, {
   value: "cv_download",
   label: "CV download"
 }, {

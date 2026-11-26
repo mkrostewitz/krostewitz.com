@@ -13,6 +13,7 @@ import {getLeadTypes, normalizeLeadTypes, saveLeadTypes} from "./leadTypes.mjs";
 import {saveContactCategories} from "./contactCategories.mjs";
 
 import crypto from "crypto";
+import {DOWNLOAD_ACCESS_COOKIE, DOWNLOAD_ACCESS_SECONDS} from "./downloadAccess.mjs";
 import {ObjectId} from "mongodb";
 
 import {FALLBACK_LANGUAGE} from "../../lib/languageDetection";
@@ -22,6 +23,7 @@ import {
 } from "../../lib/siteLanguages";
 import {getDb} from "./mongo";
 import {contactNames, normalizeContact, normalizeActivity, normalizeDay, CLOSED_STATUSES} from "./leadOutreach.mjs";
+import {resolveDownloadAttachment} from "./attachmentDownloads";
 import {normalizeCvLanguage} from "./cvFiles";
 import {
   getClientIp,
@@ -32,9 +34,9 @@ import {
 } from "./requestGeo";
 
 const LEADS_COLLECTION = "leads";
-const DOWNLOAD_TOKEN_MAX_AGE_MS = 1000 * 60 * 60 * 24;
+const DOWNLOAD_TOKEN_MAX_AGE_MS = 1000 * DOWNLOAD_ACCESS_SECONDS;
 
-export const LEAD_SOURCE_TYPES = ["contact_form", "cv_download"];
+export const LEAD_SOURCE_TYPES = ["contact_form", "cv_download", "attachment_download"];
 export const LEAD_REQUEST_TYPES = [
   "general",
   "headhunter",
@@ -150,11 +152,11 @@ function normalizeSourceType(value) {
 }
 
 function normalizeRequestType(value, sourceType) {
-  const requestType = String(value || (sourceType === "cv_download" ? "" : "general"))
+  const requestType = String(value || (["cv_download", "attachment_download"].includes(sourceType) ? "" : "general"))
     .trim()
     .toLowerCase();
 
-  if (!requestType && sourceType === "cv_download") {
+  if (!requestType && ["cv_download", "attachment_download"].includes(sourceType)) {
     throw new LeadValidationError(
       "Request type is required.",
       400,
@@ -459,10 +461,18 @@ async function getRequestTracking(request, input = {}) {
 
 function normalizeLeadInput(input = {}, request) {
   const sourceType = normalizeSourceType(input.sourceType);
-  const name = cleanText(input.name, 160);
+  const firstName = cleanText(input.firstName, 200);
+  const lastName = cleanText(input.lastName, 200);
+  if (!firstName) {
+    throw new LeadValidationError("First name is required.", 400, "contact.form.validation.firstName");
+  }
+  if (!lastName) {
+    throw new LeadValidationError("Last name is required.", 400, "contact.form.validation.lastName");
+  }
+  const name = `${firstName} ${lastName}`;
   const email = normalizeEmail(input.email);
   const requestType = normalizeRequestType(input.requestType, sourceType);
-  const phone = normalizePhone(input.phone, sourceType === "cv_download");
+  const phone = normalizePhone(input.phone, ["cv_download", "attachment_download"].includes(sourceType));
   const message = cleanText(input.message, 4000);
   const language = getPreferredLeadLanguage(input, request, sourceType);
 
@@ -499,13 +509,23 @@ function normalizeLeadInput(input = {}, request) {
     }
   }
 
+  if (sourceType === "attachment_download") {
+    context.postSlug = cleanText(input.postSlug, 200);
+    context.attachmentKey = cleanText(input.attachmentKey, 1000);
+    context.timelineEntryId = cleanText(input.timelineEntryId, 100);
+    context.documentId = cleanText(input.documentId, 100);
+    if (context.timelineEntryId ? !context.documentId : (!context.postSlug || !context.attachmentKey)) {
+      throw new LeadValidationError("Select an experience attachment.", 400);
+    }
+  }
+
   return {
     language,
-    contact: {name, email, phone},
+    contact: {firstName, lastName, name, email, phone},
     request: {type: requestType, message},
     source: {
       type: sourceType,
-      label: sourceType === "cv_download" ? "CV download" : "Contact form",
+      label: sourceType === "attachment_download" ? "Experience attachment" : sourceType === "cv_download" ? "CV download" : "Contact form",
       context,
     },
   };
@@ -626,6 +646,12 @@ export async function createPendingLead(input, request) {
   await ensureLeadIndexes(db);
 
   const normalized = normalizeLeadInput(input, request);
+  if (normalized.source.type === "attachment_download") {
+    const context = normalized.source.context;
+    const attachment = await resolveDownloadAttachment(context);
+    if (!attachment) throw new LeadValidationError("Attachment is not available.", 404, "attachment.form.unavailable");
+    context.fileName = attachment.fileName;
+  }
   const now = new Date();
   const verificationCode = crypto.randomInt(100000, 999999).toString();
   const document = {
@@ -706,7 +732,7 @@ export async function verifyPendingLead({leadId, email, code}) {
   };
   let downloadToken = "";
 
-  if (existing.source?.type === "cv_download") {
+  if (["cv_download", "attachment_download"].includes(existing.source?.type)) {
     downloadToken = crypto.randomBytes(32).toString("base64url");
     update.downloadTokenHash = hashDownloadToken(downloadToken);
     update.downloadTokenExpiresAt = new Date(now.getTime() + DOWNLOAD_TOKEN_MAX_AGE_MS);
@@ -725,7 +751,7 @@ export async function verifyPendingLead({leadId, email, code}) {
   };
 }
 
-export async function getLeadByDownloadToken(token) {
+export async function getLeadByDownloadToken(token, sourceType = "cv_download") {
   if (!token) return null;
 
   const db = await getDb();
@@ -733,13 +759,19 @@ export async function getLeadByDownloadToken(token) {
 
   return getLeadsCollection(db).findOne({
     downloadTokenHash: hashDownloadToken(token),
-    "source.type": "cv_download",
+    "source.type": sourceType,
     "verification.status": "verified",
     downloadTokenExpiresAt: {$gt: new Date()},
   });
 }
 
-export async function recordLeadDownload(leadId) {
+export async function getLeadByDownloadCookie(request) {
+  const token = request.cookies?.get(DOWNLOAD_ACCESS_COOKIE)?.value;
+  if (!token) return null;
+  return getLeadByDownloadToken(token, {$in: ["cv_download", "attachment_download"]});
+}
+
+export async function recordLeadDownload(leadId, document = null) {
   const db = await getDb();
   await ensureLeadIndexes(db);
 
@@ -747,6 +779,7 @@ export async function recordLeadDownload(leadId) {
     {_id: leadId},
     {
       $set: {
+        ...(document ? {lastDownloadedDocument: document} : {}),
         downloadedAt: new Date(),
         updatedAt: new Date(),
       },

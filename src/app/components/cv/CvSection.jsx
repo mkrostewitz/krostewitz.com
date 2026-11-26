@@ -1,5 +1,6 @@
 "use client";
 
+import {downloadWithExistingAccess} from "../../lib/downloadAccessClient.mjs";
 import {useEffect, useMemo, useState} from "react";
 import {useTranslation} from "react-i18next";
 
@@ -76,7 +77,9 @@ const CvSection = () => {
         type="button"
         className={`primary ${styles.cvButton}`}
         title={cvDownload.fileName || t("cv.download")}
-        onClick={() => setIsModalOpen(true)}
+        onClick={async () => {
+          if (!await downloadWithExistingAccess("/api/cv/download", {language})) setIsModalOpen(true);
+        }}
       >
         {t("cv.download")}
       </button>

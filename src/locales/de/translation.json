@@ -1,4 +1,40 @@
 {
+  "attachment": {
+    "form": {
+      "eyebrow": "Dokument anfordern",
+      "title": "Zugriff auf das Dokument anfordern",
+      "intro": "Bitte hinterlasse deine Kontaktdaten und bestätige deine E-Mail-Adresse, um diesen Anhang herunterzuladen.",
+      "phone": "Telefon",
+      "placeholderPhone": "+49 157 12345678",
+      "requestType": "Art der Anfrage",
+      "placeholderRequestType": "Bitte auswählen",
+      "requestTypes": {
+        "headhunter": "Headhunter",
+        "employer": "Arbeitgeber",
+        "potential_client": "Potenzieller Kunde",
+        "fan": "Fan",
+        "other": "Sonstiges"
+      },
+      "submit": "Dokument anfordern",
+      "sending": "Wird gesendet...",
+      "verifySent": "Du erhältst per E-Mail einen sechsstelligen Code zum Freischalten des Downloads.",
+      "verifySuccess": "E-Mail bestätigt. Dein Dokument ist bereit.",
+      "successEyebrow": "Zugriff bestätigt",
+      "successTitle": "Dein Dokument ist bereit",
+      "downloadPrompt": "Lade hier dein angefordertes Dokument herunter.",
+      "downloadReady": "Dokument herunterladen",
+      "downloadLanguages": {
+        "en": "Englischer Lebenslauf",
+        "de": "Deutscher Lebenslauf"
+      },
+      "validation": {
+        "phone": "Bitte geben Sie eine gültige Telefonnummer ein.",
+        "phoneRequired": "Bitte geben Sie Ihre Telefonnummer ein.",
+        "requestType": "Bitte wählen Sie die Art Ihrer Anfrage aus."
+      },
+      "unavailable": "Dieser Anhang ist nicht mehr verfügbar."
+    }
+  },
   "buttons": {
     "booking": "Gespräch vereinbaren",
     "linkedin": "Auf LinkedIn verbinden"
@@ -622,6 +658,10 @@
       "email": "E-Mail",
       "message": "Worum geht es konkret?",
       "placeholderName": "Max Mustermann",
+      "firstName": "Vorname",
+      "lastName": "Nachname",
+      "placeholderFirstName": "Erika",
+      "placeholderLastName": "Mustermann",
       "placeholderEmail": "du@email.de",
       "placeholderMessage": "Zum Beispiel: Markteintritt USA, digitaler Vertrieb oder effizientere Auftragsabwicklung ...",
       "submit": "Nachricht senden",
@@ -649,6 +689,8 @@
       "errorGeneric": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
       "validation": {
         "name": "Bitte geben Sie Ihren Namen ein.",
+        "firstName": "Bitte geben Sie Ihren Vornamen ein.",
+        "lastName": "Bitte geben Sie Ihren Nachnamen ein.",
         "email": "Bitte geben Sie eine gültige E-Mail-Adresse ein.",
         "message": "Bitte fügen Sie etwas mehr Details hinzu.",
         "code": "Bitte geben Sie den 6-stelligen Code ein.",
@@ -671,7 +713,8 @@
       },
       "sources": {
         "contact_form": "Kontaktformular",
-        "cv_download": "Lebenslauf-Download"
+        "cv_download": "Lebenslauf-Download",
+        "attachment_download": "Erfahrungsanhang"
       },
       "requestTypes": {
         "general": "Allgemein",
@@ -685,16 +728,19 @@
     "verification": {
       "subject": {
         "cv": "Lebenslauf-Anfrage bestätigen",
+        "attachment": "Dokument-Anfrage bestätigen",
         "contact": "Kontaktanfrage bestätigen"
       },
       "preheader": "Bestätigungscode: {{code}}",
       "eyebrow": "Bestätigung",
       "title": {
         "cv": "Bestätigen Sie Ihre Anfrage zum Lebenslauf-Zugriff",
+        "attachment": "Bestätigen Sie Ihre Anfrage zum Dokument-Zugriff",
         "contact": "Bestätigen Sie Ihre Nachricht"
       },
       "instruction": {
         "cv": "Bitte bestätigen Sie Ihre E-Mail-Adresse, um den Lebenslauf herunterzuladen.",
+        "attachment": "Bitte bestätigen Sie Ihre E-Mail-Adresse, um den Dokument herunterzuladen.",
         "contact": "Bitte bestätigen Sie Ihre E-Mail-Adresse, damit Ihre Nachricht gesendet wird."
       },
       "footer": "Dieser Code bestätigt, dass die Anfrage von Ihrer E-Mail-Adresse stammt. Wenn Sie diese Anfrage nicht gestellt haben, können Sie diese E-Mail ignorieren."
@@ -702,23 +748,28 @@
     "requesterCopy": {
       "subject": {
         "cv": "Kopie Ihrer Lebenslauf-Anfrage",
+        "attachment": "Kopie Ihrer Dokument-Anfrage",
         "contact": "Kopie Ihrer Kontaktanfrage"
       },
       "preheader": {
         "cv": "Ihre Lebenslauf-Zugriffsanfrage wurde bestätigt.",
+        "attachment": "Ihre Dokument-Zugriffsanfrage wurde bestätigt.",
         "contact": "Ihre Kontaktanfrage wurde bestätigt."
       },
       "eyebrow": "Anfrage erhalten",
       "title": {
         "cv": "Ihre Lebenslauf-Anfrage ist bestätigt",
+        "attachment": "Ihre Dokument-Anfrage ist bestätigt",
         "contact": "Nachricht erhalten"
       },
       "confirmed": {
         "cv": "Ihre Lebenslauf-Zugriffsanfrage wurde bestätigt und empfangen.",
+        "attachment": "Ihre Dokument-Zugriffsanfrage wurde bestätigt und empfangen.",
         "contact": "Ihre Kontaktanfrage wurde bestätigt und empfangen."
       },
       "nextStep": {
         "cv": "Sie können die sicheren Download-Links unten verwenden. Sie sind Ihrer bestätigten Anfrage persönlich zugeordnet.",
+        "attachment": "Sie können die sicheren Download-Links unten verwenden. Sie sind Ihrer bestätigten Anfrage persönlich zugeordnet.",
         "contact": "Ich prüfe Ihre Nachricht und melde mich zeitnah."
       },
       "cta": "Lebenslauf herunterladen",
@@ -730,6 +781,7 @@
       },
       "footer": {
         "cv": "Falls etwas korrigiert werden muss, antworten Sie bitte auf diese E-Mail.",
+        "attachment": "Falls etwas korrigiert werden muss, antworten Sie bitte auf diese E-Mail.",
         "contact": "Dies ist eine Kopie der von Ihnen übermittelten Angaben."
       }
     }
