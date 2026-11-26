@@ -234,7 +234,7 @@ export default async function BlogPostPage({params, searchParams}) {
             dangerouslySetInnerHTML={{__html: post.contentHtml}}
           />
 
-          <PostDownloads attachments={post.attachments} language={language} />
+          <PostDownloads postSlug={post.slug} attachments={post.attachments.map(({fileName, size, key}) => ({fileName, size, key}))} language={language} />
 
           <NewsletterSignup language={language} />
 

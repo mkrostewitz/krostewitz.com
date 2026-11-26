@@ -233,7 +233,7 @@ export default async function AdminPostPreviewPage({params, searchParams}) {
             dangerouslySetInnerHTML={{__html: previewPost.contentHtml}}
           />
 
-          <PostDownloads attachments={previewPost.attachments} language={language} />
+          <PostDownloads preview attachments={previewPost.attachments} language={language} />
         </article>
       </main>
       <PublicFooter />

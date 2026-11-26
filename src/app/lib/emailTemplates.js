@@ -179,7 +179,7 @@ function normalizeDownloadLinks(translator, downloadUrl, downloadLinks = []) {
 }
 
 function getRequestVariant(lead) {
-  return lead.source?.type === "cv_download" ? "cv" : "contact";
+  return lead.source?.type === "attachment_download" ? "attachment" : lead.source?.type === "cv_download" ? "cv" : "contact";
 }
 
 function getGreeting(lead, translator) {
@@ -454,7 +454,7 @@ function formatInternalRequestType(value) {
 
 function internalLeadBaseDetails(lead, options = {}) {
   const fields = INTERNAL_EMAIL_COPY.fields;
-  const isCvRequest = lead.source?.type === "cv_download";
+  const isCvRequest = ["cv_download", "attachment_download"].includes(lead.source?.type);
   const sourceValue =
     INTERNAL_EMAIL_COPY.sources[lead.source?.type] ||
     lead.source?.label ||
@@ -462,6 +462,7 @@ function internalLeadBaseDetails(lead, options = {}) {
 
   return [
     {label: fields.source, value: sourceValue},
+    {label: "Document", value: lead.source?.context?.fileName},
     {
       label: fields.requestType,
       value: isCvRequest
@@ -503,7 +504,7 @@ function localizedLeadBaseDetails(lead, translator, options = {}) {
 }
 
 function requesterSummaryLines(lead, translator) {
-  const isCvRequest = lead.source?.type === "cv_download";
+  const isCvRequest = ["cv_download", "attachment_download"].includes(lead.source?.type);
   const fields = {
     name: tEmail(translator, "common.fields.name", {}, "Name"),
     email: tEmail(translator, "common.fields.email", {}, "Email"),
@@ -606,7 +607,7 @@ export async function getRequesterCopyEmailText(
         "",
         `${tEmail(
           translator,
-          "requesterCopy.downloadLabel",
+          lead.source?.type === "attachment_download" ? "common.sources.attachment_download" : "requesterCopy.downloadLabel",
           {},
           "CV downloads"
         )}:`,
@@ -713,15 +714,15 @@ export async function renderLeadVerificationEmail({
 
 export async function renderOwnerLeadNotificationEmail({lead, origin}) {
   const tracking = lead.tracking || {};
-  const isCvRequest = lead.source?.type === "cv_download";
+  const isCvRequest = ["cv_download", "attachment_download"].includes(lead.source?.type);
 
   return renderBrandedEmail({
     origin,
     preheader: `${lead.name || "A lead"} submitted a ${
-      isCvRequest ? "CV request" : "contact request"
+      lead.source?.type === "attachment_download" ? "document request" : isCvRequest ? "CV request" : "contact request"
     }.`,
     eyebrow: "New lead",
-    title: isCvRequest
+    title: lead.source?.type === "attachment_download" ? `Experience attachment request from ${lead.name}` : isCvRequest
       ? `CV download request from ${lead.name}`
       : `New contact from ${lead.name}`,
     paragraphs: [

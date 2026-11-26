@@ -1,3 +1,4 @@
+import {downloadWithExistingAccess} from "../../lib/downloadAccessClient.mjs";
 import {sanitizeTimelineHtml, timelineHtmlText} from "../../lib/timelineRichText.mjs";
 import {FileText, ArrowUpRight, ChevronDown, ChevronUp} from "lucide-react";
 import {useEffect, useState} from "react";
@@ -7,22 +8,22 @@ import {useTranslation} from "react-i18next";
 import {groupTimelineRoles} from "../../lib/timelineGroups.mjs";
 import {localizeTimeline} from "../../lib/cvTimelineData.mjs";
 import {useInViewOnce} from "@/lib/useInViewOnce";
+import LeadCaptureModal from "../contact/LeadCaptureModal";
 import CvSection from "../cv/CvSection";
 import pageStyles from "../../page.module.css";
 import styles from "./timeline-section.module.css";
 
-function DocumentLinks({documents, t}) {
+function DocumentLinks({documents, t, onRequest}) {
   if (!documents?.length) return null;
   return <div className={styles.documentPanel}>
     <h4>{t("timelineDialog.documents")}</h4>
     <ul className={styles.documentLinks}>
       {documents.map(doc => <li key={doc.id}>
-        <a href={doc.url} target="_blank" rel="noopener noreferrer" onClick={event => event.stopPropagation()}>
+        <button type="button" onClick={event => {event.stopPropagation(); onRequest(doc);}}>
           <span className={styles.documentIcon}><FileText size={22} aria-hidden="true" /></span>
           <span className={styles.documentTitle}>{doc.title.replace(/_/g, " ").replace(/\.pdf$/i, "")}<small>PDF{doc.language ? ` · ${t(`timelineDialog.documentLanguages.${doc.language}`)}` : ""}</small></span>
           <ArrowUpRight className={styles.documentArrow} size={18} aria-hidden="true" />
-          <span className={styles.srOnly}>{t("timelineDialog.opensNewTab")}</span>
-        </a>
+        </button>
       </li>)}
     </ul>
   </div>;
@@ -32,6 +33,7 @@ const TimelineSection = () => {
   const {t, i18n} = useTranslation();
   const [sectionRef, inView] = useInViewOnce({threshold: 0.15});
   const [selectedIndex, setSelectedIndex] = useState(null);
+  const [requestedDocument, setRequestedDocument] = useState(null);
   const [expanded, setExpanded] = useState(false);
   const [entries, setEntries] = useState(null);
   const fallback = t("timeline", {returnObjects: true});
@@ -79,6 +81,12 @@ const TimelineSection = () => {
     };
   }, [selectedIndex]);
 
+  const requestDocument = async (entry, attachment) => {
+    if (await downloadWithExistingAccess("/api/attachments/download", {timelineEntryId: entry.id, documentId: attachment.id})) return;
+    setSelectedIndex(null);
+    setRequestedDocument({timelineEntryId: entry.id, attachment});
+  };
+
   const hiddenCount = timeline.filter(item => item.showAfterMore).length;
   const closeDialog = () => setSelectedIndex(null);
 
@@ -110,7 +118,7 @@ const TimelineSection = () => {
               {item.company && <p className={styles.company}>{item.company}</p>}
               <p className={styles.location}>{item.location}</p>
               <p>{item.detail}</p>
-              <DocumentLinks documents={item.documents} t={t} />
+              <DocumentLinks documents={item.documents} t={t} onRequest={doc => requestDocument(item, doc)} />
               <button type="button" className={styles.timelineAction} aria-label={t("timelineDialog.open", {title: item.title})} onClick={event => {event.stopPropagation(); setSelectedIndex(idx);}}>
                 {t("timelineDialog.viewDetails")}
               </button>
@@ -129,6 +137,17 @@ const TimelineSection = () => {
       </div>}
 
       <CvSection />
+      {requestedDocument && createPortal(
+        <LeadCaptureModal
+          attachment={requestedDocument.attachment}
+          timelineEntryId={requestedDocument.timelineEntryId}
+          cvLanguage={i18n.resolvedLanguage || i18n.language || "en"}
+          isOpen
+          onClose={() => setRequestedDocument(null)}
+          sourceType="attachment_download"
+        />,
+        document.body
+      )}
 
       {selectedItem && createPortal(
         <div
@@ -161,7 +180,7 @@ const TimelineSection = () => {
                 {t("timelineDialog.close")}
               </button>
             </header>
-            <DocumentLinks documents={selectedItem.documents} t={t} />
+            <DocumentLinks documents={selectedItem.documents} t={t} onRequest={doc => requestDocument(selectedItem, doc)} />
 
             {selectedItem.detailHtml !== undefined ? <div id="timeline-dialog-summary" className={`${styles.modalSummary} ${styles.richText}`} dangerouslySetInnerHTML={{__html: sanitizeTimelineHtml(selectedItem.detailHtml)}} /> : <p id="timeline-dialog-summary" className={styles.modalSummary}>{selectedItem.detail}</p>}
 

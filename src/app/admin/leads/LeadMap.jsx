@@ -12,6 +12,7 @@ function leadTitle(lead) { return lead.name || lead.email || "Contact"; }
 const MAP_SOURCES = {
   contact_form: {label: "Contact form", color: "#2563eb"},
   manual: {label: "Personal outreach", color: "#9333ea"},
+  attachment_download: {label: "Experience attachment", color: "#7c3aed"},
   cv_download: {label: "CV download", color: "#ea580c"},
 };
 const UNKNOWN_SOURCE = {label: "Other source", color: "#64748b"};

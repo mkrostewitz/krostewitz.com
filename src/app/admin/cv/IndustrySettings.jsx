@@ -94,9 +94,9 @@ export default function IndustrySettings() {
         <Button variant="contained" type="submit" disabled={busy || loading || !label.trim()} sx={{flexShrink: 0}}>Add industry</Button>
       </Stack>
       <Box>
-        <Stack direction={{xs: 'column', sm: 'row'}} spacing={2} alignItems={{sm: 'center'}} justifyContent="space-between" sx={{mb: 2}}>
+        <Stack direction={{xs: 'column', sm: 'row'}} spacing={2} sx={{mb: 2, alignItems: {sm: 'center'}, justifyContent: 'space-between'}}>
           <Box sx={{flexShrink: 0}}>
-            <Typography component="h3" variant="subtitle1" fontWeight={600}>Industry library</Typography>
+            <Typography component="h3" variant="subtitle1" sx={{fontWeight: 600}}>Industry library</Typography>
             <Typography variant="body2" color="text.secondary" role="status">
               {loading ? 'Loading industries…' : `${visibleIndustries.length} of ${industries.length} industries · A–Z`}
             </Typography>
@@ -120,7 +120,7 @@ export default function IndustrySettings() {
               <IndustryIcon industry={item} size={20} />
             </Box>
             <Box sx={{minWidth: 0}}>
-              <Typography component="h4" variant="body1" fontWeight={600} sx={{overflowWrap: 'anywhere'}}>{item.label}</Typography>
+              <Typography component="h4" variant="body1" sx={{fontWeight: 600, overflowWrap: 'anywhere'}}>{item.label}</Typography>
               <Typography variant="body2" color="text.secondary" sx={{overflowWrap: 'anywhere'}}>DE: {item.translations?.de?.label || 'German title missing'}</Typography>
               <Typography variant="body2" color="text.secondary" sx={{mt: 0.5, overflowWrap: 'anywhere', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden'}}>
                 {item.translations?.en?.detail || 'No English description yet.'}
@@ -159,7 +159,7 @@ export default function IndustrySettings() {
             <TextField label={`${language === 'en' ? 'English' : 'German'} description (optional)`} multiline minRows={2} value={editing?.translations[language].detail || ''} onChange={event => change(language, 'detail', event.target.value)} disabled={busy} slotProps={{htmlInput: {maxLength: 4000}}} />
           </Stack>)}
           <TextField select label="Icon" helperText="Automatic matches the industry title. Choose an icon to override it." value={editing?.icon || ''} disabled={busy} onChange={event => setEditing(current => ({...current, icon: event.target.value}))}>
-            {Object.entries(ICONS).map(([value, title]) => <MenuItem key={value} value={value}><Stack direction="row" alignItems="center" spacing={1.5}><IndustryIcon industry={{...editing, icon: value}} /><span>{title}</span></Stack></MenuItem>)}
+            {Object.entries(ICONS).map(([value, title]) => <MenuItem key={value} value={value}><Stack direction="row" spacing={1.5} sx={{alignItems: 'center'}}><IndustryIcon industry={{...editing, icon: value}} /><span>{title}</span></Stack></MenuItem>)}
           </TextField>
         </Stack></DialogContent>
         <DialogActions><Button disabled={busy} onClick={() => setEditing(null)}>Close</Button><Button type="submit" disabled={busy}>Save industry</Button></DialogActions>
